@@ -29,9 +29,9 @@ public class UIManager : MonoBehaviour
             "The memory fades, leaving only dread and wonder.");
     }
 
-    public void ShowMemoryFragment(string title, string body)
+    public void ShowMemoryFragment(string title, string body, int panelIndex = 1)
     {
-        hud?.ShowMemoryOverlay(title, body);
+        hud?.ShowMemoryOverlay(title, body, panelIndex);
     }
 
     public void CloseMemoryView()
@@ -42,5 +42,6 @@ public class UIManager : MonoBehaviour
     public void ShowKeyDiscoveryNotification(KeyManager.KeyData key)
     {
         hud?.ShowToast($"Discovered: {key.keyName}", 4f);
+        hud?.FlashKeyDiscovered();
     }
 }

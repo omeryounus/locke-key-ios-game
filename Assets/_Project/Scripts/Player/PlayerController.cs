@@ -19,23 +19,27 @@ public class PlayerController : MonoBehaviour
     private bool isGrounded;
     private bool isGhostPhasing;
     private Coroutine ghostPhaseRoutine;
+    private EventBus eventBus;
+    private float ghostMoveMultiplier = 0.85f;
 
     public bool IsGhostPhasing => isGhostPhasing;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        eventBus = Resources.Load<EventBus>("EventBus");
     }
 
     public void Move(float horizontalInput)
     {
-        if (isGhostPhasing) return;
-        rb.linearVelocity = new Vector2(horizontalInput * moveSpeed, rb.linearVelocity.y);
+        var speed = isGhostPhasing ? moveSpeed * ghostMoveMultiplier : moveSpeed;
+        rb.linearVelocity = new Vector2(horizontalInput * speed, rb.linearVelocity.y);
     }
 
     public void Jump()
     {
-        if (isGhostPhasing || !isGrounded) return;
+        if (!isGrounded) return;
+        if (isGhostPhasing) return;
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
     }
 
@@ -60,6 +64,8 @@ public class PlayerController : MonoBehaviour
     private IEnumerator GhostPhaseRoutine(float duration)
     {
         isGhostPhasing = true;
+        eventBus?.GhostPhaseStarted();
+
         var collider = GetComponent<Collider2D>();
         if (collider != null)
             collider.isTrigger = true;
@@ -71,6 +77,7 @@ public class PlayerController : MonoBehaviour
 
         isGhostPhasing = false;
         ghostPhaseRoutine = null;
+        eventBus?.GhostPhaseEnded();
     }
 
     private void OnCollisionEnter2D(Collision2D collision)

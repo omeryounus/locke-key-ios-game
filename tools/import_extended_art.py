@@ -410,16 +410,9 @@ def slice_row(src: Path, count: int, out_specs: list[tuple[str, str]]) -> None:
         bbox = crop.getbbox()
         if bbox:
             crop = crop.crop(bbox)
-        dest = UI_OUT / name
+        dest = RES_UI / name
         crop.save(dest, format="PNG", optimize=True)
         (Path(str(dest) + ".meta")).write_text(sprite_meta(guid, ppu=100))
-        shutil_copy_to_resources(dest, name, guid)
-
-
-def shutil_copy_to_resources(src: Path, name: str, guid: str) -> None:
-    dest = RES_UI / name
-    dest.write_bytes(src.read_bytes())
-    (Path(str(dest) + ".meta")).write_text(sprite_meta(guid, ppu=100))
 
 
 def normal_guid_for_sprite(sprite_guid: str) -> str:

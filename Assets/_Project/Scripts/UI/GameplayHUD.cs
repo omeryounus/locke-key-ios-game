@@ -16,10 +16,18 @@ public class GameplayHUD : MonoBehaviour
     private Text hintText;
     private Text toastText;
     private Image keyStatusIcon;
+    private Image keySlotImage;
+    private KeySlotHUD keySlotHud;
+    private Image memoryPanelImage;
     private Image houseKeyIcon;
     private GameObject memoryOverlay;
     private Text memoryBodyText;
     private float toastTimer;
+    private GameObject leftButton;
+    private GameObject rightButton;
+    private GameObject jumpButton;
+    private GameObject interactButton;
+    private GameObject useKeyButton;
 
     private void Awake()
     {
@@ -52,7 +60,7 @@ public class GameplayHUD : MonoBehaviour
         toastTimer = duration;
     }
 
-    public void ShowMemoryOverlay(string title, string body)
+    public void ShowMemoryOverlay(string title, string body, int panelIndex = 1)
     {
         if (memoryOverlay == null) return;
         memoryOverlay.SetActive(true);
@@ -63,12 +71,42 @@ public class GameplayHUD : MonoBehaviour
 
         if (memoryBodyText != null)
             memoryBodyText.text = body;
+
+        if (memoryPanelImage != null)
+        {
+            var panels = MemoryPanelLibrary.LoadDefault();
+            memoryPanelImage.sprite = panels != null ? panels.GetPanel(panelIndex) : null;
+            memoryPanelImage.enabled = memoryPanelImage.sprite != null;
+        }
+
+        FindFirstObjectByType<ParticleVFXController>()?.PlayMemoryBurst(Vector3.zero);
+    }
+
+    public void FlashKeyDiscovered()
+    {
+        keySlotHud?.FlashDiscovered();
     }
 
     public void HideMemoryOverlay()
     {
         if (memoryOverlay != null)
             memoryOverlay.SetActive(false);
+    }
+
+    public void SetControlVisibility(bool? move = null, bool? jump = null, bool? interact = null, bool? useKey = null)
+    {
+        if (move.HasValue)
+        {
+            if (leftButton != null) leftButton.SetActive(move.Value);
+            if (rightButton != null) rightButton.SetActive(move.Value);
+        }
+
+        if (jump.HasValue && jumpButton != null)
+            jumpButton.SetActive(jump.Value);
+        if (interact.HasValue && interactButton != null)
+            interactButton.SetActive(interact.Value);
+        if (useKey.HasValue && useKeyButton != null)
+            useKeyButton.SetActive(useKey.Value);
     }
 
     private void TickToast()
@@ -95,6 +133,8 @@ public class GameplayHUD : MonoBehaviour
 
         if (keyStatusIcon != null && iconLibrary != null)
             keyStatusIcon.sprite = ResolveActiveKeyIcon();
+
+        keySlotHud?.Refresh();
 
         if (houseKeyIcon != null && iconLibrary != null)
         {
@@ -139,8 +179,21 @@ public class GameplayHUD : MonoBehaviour
 
         keyStatusIcon = CreateStatusIcon(canvasGo.transform, "KeyStatusIcon",
             new Vector2(24f, -20f), 40f);
+
+        var keySlotGo = new GameObject("KeySlot", typeof(RectTransform), typeof(Image), typeof(KeySlotHUD));
+        keySlotGo.transform.SetParent(canvasGo.transform, false);
+        var keySlotRect = keySlotGo.GetComponent<RectTransform>();
+        keySlotRect.anchorMin = new Vector2(0f, 1f);
+        keySlotRect.anchorMax = new Vector2(0f, 1f);
+        keySlotRect.pivot = new Vector2(0f, 1f);
+        keySlotRect.anchoredPosition = new Vector2(180f, -12f);
+        keySlotRect.sizeDelta = new Vector2(72f, 72f);
+        keySlotImage = keySlotGo.GetComponent<Image>();
+        keySlotImage.preserveAspect = true;
+        keySlotHud = keySlotGo.GetComponent<KeySlotHUD>();
+
         keyStatusText = CreateText(canvasGo.transform, "KeyStatus", font, 24, TextAnchor.UpperLeft,
-            new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(72f, -24f), new Vector2(860f, 36f), accentColor);
+            new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(260f, -24f), new Vector2(860f, 36f), accentColor);
 
         houseKeyIcon = CreateStatusIcon(canvasGo.transform, "HouseKeyIcon",
             new Vector2(24f, -60f), 32f);
@@ -159,25 +212,27 @@ public class GameplayHUD : MonoBehaviour
         var controlBar = CreatePanel(canvasGo.transform, "ControlBar", panelColor,
             new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 0f), new Vector2(0f, 140f));
 
-        CreateHoldButton(controlBar.transform, "Left", iconLibrary?.moveLeft, font, buttonColor, accentColor,
+        leftButton = CreateHoldButton(controlBar.transform, "Left", iconLibrary?.moveLeft, font, buttonColor, accentColor,
             new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(24f, 20f), new Vector2(180f, 100f),
             () => gameplay?.SetMoveInput(-1f), () => gameplay?.SetMoveInput(0f));
 
-        CreateHoldButton(controlBar.transform, "Right", iconLibrary?.moveRight, font, buttonColor, accentColor,
+        rightButton = CreateHoldButton(controlBar.transform, "Right", iconLibrary?.moveRight, font, buttonColor, accentColor,
             new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(220f, 20f), new Vector2(180f, 100f),
             () => gameplay?.SetMoveInput(1f), () => gameplay?.SetMoveInput(0f));
 
-        CreateTapButton(controlBar.transform, "Jump", iconLibrary?.jump, font, buttonColor, accentColor,
+        jumpButton = CreateTapButton(controlBar.transform, "Jump", iconLibrary?.jump, font, buttonColor, accentColor,
             new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(416f, 20f), new Vector2(180f, 100f),
             () => gameplay?.RequestJump());
 
-        CreateTapButton(controlBar.transform, "Interact", iconLibrary?.interact, font, buttonColor, accentColor,
+        interactButton = CreateTapButton(controlBar.transform, "Interact", iconLibrary?.interact, font, buttonColor, accentColor,
             new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-416f, 20f), new Vector2(180f, 100f),
             () => gameplay?.RequestInteract());
 
-        CreateTapButton(controlBar.transform, "Use Key", iconLibrary?.useKey, font, buttonColor, accentColor,
+        useKeyButton = CreateTapButton(controlBar.transform, "Use Key", iconLibrary?.useKey, font, buttonColor, accentColor,
             new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-216f, 20f), new Vector2(180f, 100f),
             () => gameplay?.RequestUseKey());
+
+        SetControlVisibility(interact: false, jump: false, useKey: false);
 
         memoryOverlay = BuildMemoryOverlay(canvasGo.transform, font, panelColor, accentColor);
         memoryOverlay.SetActive(false);
@@ -207,6 +262,17 @@ public class GameplayHUD : MonoBehaviour
 
         var panel = CreatePanel(overlay.transform, "MemoryPanel", panelColor,
             new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-520f, -280f), new Vector2(1040f, 560f));
+
+        var panelImageGo = new GameObject("MemoryPanelArt", typeof(RectTransform), typeof(Image));
+        panelImageGo.transform.SetParent(panel.transform, false);
+        memoryPanelImage = panelImageGo.GetComponent<Image>();
+        memoryPanelImage.preserveAspect = true;
+        memoryPanelImage.color = Color.white;
+        var panelImageRect = panelImageGo.GetComponent<RectTransform>();
+        panelImageRect.anchorMin = Vector2.zero;
+        panelImageRect.anchorMax = Vector2.one;
+        panelImageRect.offsetMin = Vector2.zero;
+        panelImageRect.offsetMax = Vector2.zero;
 
         CreateText(panel.transform, "Title", font, 34, TextAnchor.UpperCenter,
             new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -36f), new Vector2(960f, 48f), accentColor);
@@ -273,7 +339,7 @@ public class GameplayHUD : MonoBehaviour
         return text;
     }
 
-    private static void CreateTapButton(Transform parent, string label, Sprite icon, Font font, Color bg, Color textColor,
+    private static GameObject CreateTapButton(Transform parent, string label, Sprite icon, Font font, Color bg, Color textColor,
         Vector2 anchorMin, Vector2 anchorMax, Vector2 anchoredPos, Vector2 sizeDelta, UnityEngine.Events.UnityAction onTap)
     {
         var go = new GameObject(label + "Button", typeof(RectTransform), typeof(Image), typeof(Button));
@@ -302,9 +368,11 @@ public class GameplayHUD : MonoBehaviour
             CreateText(go.transform, "Label", font, 22, TextAnchor.MiddleCenter,
                 Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, textColor).text = label;
         }
+
+        return go;
     }
 
-    private static void CreateHoldButton(Transform parent, string label, Sprite icon, Font font, Color bg, Color textColor,
+    private static GameObject CreateHoldButton(Transform parent, string label, Sprite icon, Font font, Color bg, Color textColor,
         Vector2 anchorMin, Vector2 anchorMax, Vector2 anchoredPos, Vector2 sizeDelta,
         UnityEngine.Events.UnityAction onDown, UnityEngine.Events.UnityAction onUp)
     {
@@ -331,6 +399,8 @@ public class GameplayHUD : MonoBehaviour
             CreateText(go.transform, "Label", font, 22, TextAnchor.MiddleCenter,
                 Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, textColor).text = label;
         }
+
+        return go;
     }
 
     private class HoldButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerExitHandler

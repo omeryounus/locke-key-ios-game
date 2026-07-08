@@ -5,8 +5,9 @@ using UnityEngine;
 /// </summary>
 public class EchoEntity : MonoBehaviour
 {
-    [SerializeField] private float moveSpeed = 1.6f;
-    [SerializeField] private float lifetime = 9f;
+    [SerializeField] private float moveSpeed = 1.15f;
+    [SerializeField] private float hiddenSpeedMultiplier = 0.2f;
+    [SerializeField] private float lifetime = 14f;
     [SerializeField] private float reachDistance = 0.75f;
 
     private Transform player;
@@ -36,15 +37,9 @@ public class EchoEntity : MonoBehaviour
             return;
         }
 
-        var playerController = player.GetComponent<PlayerController>();
-        if (playerController != null && playerController.IsGhostPhasing)
-        {
-            Despawn();
-            return;
-        }
-
+        var speed = HideSpot.IsPlayerHidden ? moveSpeed * hiddenSpeedMultiplier : moveSpeed;
         var dir = (player.position - transform.position).normalized;
-        transform.position += dir * (moveSpeed * Time.deltaTime);
+        transform.position += dir * (speed * Time.deltaTime);
 
         if (spriteRenderer != null)
         {

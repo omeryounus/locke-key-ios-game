@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Prefer tools/verify_unity.sh ios for pre-commit verification.
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 UNITY_VERSION="${UNITY_VERSION:-6000.5.2f1}"
 

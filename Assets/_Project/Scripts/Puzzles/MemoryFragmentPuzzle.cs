@@ -42,7 +42,8 @@ public class MemoryFragmentPuzzle : PuzzleBase
             "Rendell at the Black Door",
             "The portrait exhales cold light. You are standing in a hallway that was never built.\n\n" +
             "Rendell Locke turns toward you — or toward someone who isn't there yet.\n\n" +
-            "\"The house remembers everything,\" he says. \"Even the things we tried to bury.\"");
+            "\"The house remembers everything,\" he says. \"Even the things we tried to bury.\"",
+            panelIndex: 1);
 
         MarkAsSolved();
     }

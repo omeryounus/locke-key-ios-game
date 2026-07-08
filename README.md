@@ -71,6 +71,44 @@ tools/build_ios.sh
 
 Bundle ID: `com.lockekeystudio.keyhouse` · Target iOS 13.0+
 
+### Pre-commit Verification
+
+**Linux (no Unity editor):** catches most asset/meta/scene reference issues:
+
+```bash
+tools/verify_linux.sh static
+# or: python3 tools/verify_static.py
+```
+
+**Linux (with Unity editor or Docker):** adds script compile + asset import:
+
+```bash
+tools/verify_linux.sh unity          # native Linux Unity 6000.5.2f1
+tools/verify_linux_docker.sh         # GameCI Docker image (needs license)
+```
+
+**macOS (required for iOS):**
+
+```bash
+export UNITY_PATH="/Applications/Unity/Hub/Editor/6000.5.2f1/Unity.app/Contents/MacOS/Unity"
+tools/verify_unity.sh project   # compile, import, key assets
+tools/verify_unity.sh ios       # full iOS Xcode project build (slower)
+```
+
+| Check | Linux static | Linux Unity | macOS iOS build |
+|-------|-------------|-------------|-----------------|
+| GUID / meta validity | yes | yes | yes |
+| Scene/asset GUID refs | yes | yes | yes |
+| C# compile | no | yes | yes |
+| Asset import | no | yes | yes |
+| iOS Xcode project | no | no | yes |
+
+Optional git hook (macOS, requires Unity):
+
+```bash
+tools/install_git_hooks.sh
+```
+
 ### First Open Notes
 
 - Unity may regenerate `Packages/packages-lock.json` and some ProjectSettings — commit those changes.
@@ -89,17 +127,20 @@ To re-import after regenerating source images:
 python3 tools/import_art_assets.py
 python3 tools/patch_chapter1_sprites.py
 python3 tools/import_extended_art.py      # normal maps, UI icons, parallax
+python3 tools/import_ui_vfx_assets.py     # key slots, VFX sheets, memory panels
 python3 tools/patch_chapter1_parallax.py
 ```
 
-**Art folders:** `Sprites/`, `NormalMaps/`, `Parallax/`, `UI/Icons/` · HUD icons load from `Resources/Art/UI/UIIconLibrary.asset`
+**Art folders:** `Sprites/`, `NormalMaps/`, `Parallax/`, `UI/KeySlots/`, `VFX/`, `Memory/Panels/` · HUD loads from `Resources/Art/UI/` (`UIIconLibrary`, `KeySlotLibrary`)
 
-### Chapter 1 Play Flow
+### Chapter 1 Play Flow (Storyboard Beats)
 
-1. Pick up the **house key** → unlock the **stuck door**
-2. Claim the **Ghost Key** → push the **collapsed bookshelf**
-3. Phase through the **sealed door** (Echo spawns)
-4. Claim the **Head Key** → interact with the **family portrait** for a memory teaser
+1. **Arrival** — move toward the glinting **house key** (movement tutorial)
+2. **Stuck door** — unlock foyer door (rattle if no key; warm light on open)
+3. **Library** — push bookshelf **3 times** → Ghost Key appears in alcove
+4. **Ghost Key use** — stand at sealed door, tap **Use Key**, phase through (VFX + vignette)
+5. **Echo encounter** — hide behind the arch or escape through the passage
+6. Claim the **Head Key** → interact with the **family portrait** for a memory teaser
 
 ## Core Architecture
 

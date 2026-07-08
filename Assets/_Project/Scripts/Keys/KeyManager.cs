@@ -121,6 +121,16 @@ public class KeyManager : MonoBehaviour
             return;
         }
 
+        if (currentActiveKey.abilityType == KeyAbilityType.GhostPhase)
+        {
+            var sealedDoor = FindFirstObjectByType<SealedDoorPuzzle>();
+            if (sealedDoor != null && !sealedDoor.isSolved && !sealedDoor.IsPlayerInRange())
+            {
+                Debug.Log("Move closer to the sealed door before using the Ghost Key.");
+                return;
+            }
+        }
+
         // Trigger the specific ability
         ActivateAbility(currentActiveKey.abilityType);
 
@@ -128,10 +138,9 @@ public class KeyManager : MonoBehaviour
         if (currentActiveKey.usesRemaining > 0)
             currentActiveKey.usesRemaining--;
 
-        if (currentActiveKey.hasRisk)
-        {
+        // Echo spawn is scripted after ghost phase ends near the sealed door (Beat 5).
+        if (currentActiveKey.hasRisk && currentActiveKey.abilityType != KeyAbilityType.GhostPhase)
             CheckForHorrorConsequence(currentActiveKey.riskLevel);
-        }
 
         // Notify listeners (puzzle system, horror manager, etc.)
         OnKeyUsed?.Invoke(currentActiveKey);

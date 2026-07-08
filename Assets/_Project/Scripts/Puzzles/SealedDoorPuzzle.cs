@@ -1,47 +1,95 @@
 using UnityEngine;
 
 /// <summary>
-/// Chapter 1 tutorial puzzle — requires Ghost Key to phase through a sealed door.
+/// Beat 4 — sealed door opens only while the Ghost Key phase is active (Use Key, not Interact).
 /// </summary>
 public class SealedDoorPuzzle : PuzzleBase
 {
     [SerializeField] private Collider2D doorCollider;
     [SerializeField] private GameObject passageTrigger;
     [SerializeField] private SpriteRenderer doorRenderer;
+    [SerializeField] private float useKeyRange = 3f;
+
+    private Transform player;
+    private bool passageEnabled;
+
+    public override bool CanInteract => !isSolved;
 
     public override string InteractionHint =>
         isSolved
             ? string.Empty
-            : "Sealed door — use the Ghost Key (Interact)";
+            : "Sealed door — tap Use Key when nearby";
 
     protected override void Awake()
     {
         base.Awake();
         puzzleID = "chapter1_sealed_door";
-        requiresSpecificKey = true;
-        requiredKeyType = KeyType.Ghost;
+        requiresSpecificKey = false;
+        player = FindFirstObjectByType<PlayerController>()?.transform;
+
+        if (passageTrigger != null)
+            passageTrigger.SetActive(false);
     }
 
-    protected override void TrySolve()
+    private void OnEnable()
     {
-        var ghostKey = FindFirstObjectByType<GhostKey>();
-        if (ghostKey == null || !ghostKey.CanActivate())
+        if (eventBus != null)
         {
-            OnPuzzleFailed();
-            return;
+            eventBus.OnGhostPhaseStarted += HandleGhostPhaseStarted;
+            eventBus.OnGhostPhaseEnded += HandleGhostPhaseEnded;
         }
+    }
 
-        ghostKey.Activate();
+    private void OnDisable()
+    {
+        if (eventBus == null) return;
+        eventBus.OnGhostPhaseStarted -= HandleGhostPhaseStarted;
+        eventBus.OnGhostPhaseEnded -= HandleGhostPhaseEnded;
+    }
 
+    public override void Interact()
+    {
+        if (isSolved) return;
+        Debug.Log("The door is sealed by old magic. Stand close and tap Use Key.");
+    }
+
+    protected override void TrySolve() { }
+
+    public bool IsPlayerInRange()
+    {
+        if (player == null) return false;
+        return Vector2.Distance(player.position, transform.position) <= useKeyRange;
+    }
+
+    private void HandleGhostPhaseStarted()
+    {
+        if (isSolved || player == null || !IsPlayerInRange())
+            return;
+
+        passageEnabled = true;
         if (doorCollider != null)
             doorCollider.enabled = false;
+
+        if (doorRenderer != null)
+            doorRenderer.color = new Color(0.35f, 0.75f, 0.55f, 0.4f);
 
         if (passageTrigger != null)
             passageTrigger.SetActive(true);
 
-        if (doorRenderer != null)
-            doorRenderer.color = new Color(0.3f, 0.8f, 0.5f, 0.35f);
+        Debug.Log("You phase through the sealed door...");
+    }
+
+    private void HandleGhostPhaseEnded()
+    {
+        if (!passageEnabled || isSolved)
+            return;
 
         MarkAsSolved();
+
+        if (doorCollider != null)
+            doorCollider.enabled = false;
+
+        if (doorRenderer != null)
+            doorRenderer.color = new Color(0.3f, 0.55f, 0.42f, 0.35f);
     }
 }

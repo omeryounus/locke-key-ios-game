@@ -7,7 +7,7 @@ public class EchoEncounterManager : MonoBehaviour
 {
     [SerializeField] private Transform spawnPoint;
     [SerializeField] private Sprite echoSprite;
-    [SerializeField] private bool spawnOnSealedDoor = true;
+    [SerializeField] private bool spawnOnGhostPhaseEnd = true;
     [SerializeField] private bool spawnOnEchoEvent = true;
 
     private EventBus eventBus;
@@ -24,8 +24,8 @@ public class EchoEncounterManager : MonoBehaviour
             if (spawnOnEchoEvent)
                 eventBus.OnEchoTriggered += HandleEchoTriggered;
 
-            if (spawnOnSealedDoor)
-                eventBus.OnPuzzleSolved += HandlePuzzleSolved;
+            if (spawnOnGhostPhaseEnd)
+                eventBus.OnGhostPhaseEnded += HandleGhostPhaseEnded;
         }
     }
 
@@ -34,7 +34,7 @@ public class EchoEncounterManager : MonoBehaviour
         if (eventBus == null) return;
 
         eventBus.OnEchoTriggered -= HandleEchoTriggered;
-        eventBus.OnPuzzleSolved -= HandlePuzzleSolved;
+        eventBus.OnGhostPhaseEnded -= HandleGhostPhaseEnded;
     }
 
     private void HandleEchoTriggered()
@@ -42,9 +42,10 @@ public class EchoEncounterManager : MonoBehaviour
         SpawnEcho();
     }
 
-    private void HandlePuzzleSolved(PuzzleBase puzzle)
+    private void HandleGhostPhaseEnded()
     {
-        if (puzzle == null || puzzle.puzzleID != "chapter1_sealed_door")
+        var sealedDoor = FindFirstObjectByType<SealedDoorPuzzle>();
+        if (sealedDoor == null || !sealedDoor.isSolved)
             return;
 
         SpawnEcho();

@@ -12,6 +12,8 @@ public class TouchGameplayController : MonoBehaviour
     public PlayerInventory inventory;
 
     private float moveInput;
+
+    public float MoveInput => moveInput;
     private bool jumpRequested;
     private bool interactRequested;
     private bool useKeyRequested;
@@ -67,16 +69,28 @@ public class TouchGameplayController : MonoBehaviour
         if (!string.IsNullOrEmpty(hint))
             return hint;
 
+        var beat = FindFirstObjectByType<ChapterBeatDirector>();
+        if (beat != null)
+        {
+            return beat.CurrentBeat switch
+            {
+                ChapterBeatDirector.Beat.Arrival => "Move toward the glinting house key",
+                ChapterBeatDirector.Beat.StuckDoor => inventory != null && inventory.HasHouseKey
+                    ? "Unlock the stuck foyer door"
+                    : "Find the glinting house key outside",
+                ChapterBeatDirector.Beat.Library => keyManager?.ownedKeys.Exists(k => k.abilityType == KeyManager.KeyAbilityType.GhostPhase) == true
+                    ? "Head to the sealed door"
+                    : "Push the collapsed bookshelf, then claim the Ghost Key",
+                ChapterBeatDirector.Beat.GhostKeyUse => "Stand at the sealed door and tap Use Key",
+                ChapterBeatDirector.Beat.EchoEncounter => "Hide behind the arch or escape through the passage",
+                _ => "Claim the Head Key and study the family portrait"
+            };
+        }
+
         if (inventory != null && !inventory.HasHouseKey)
             return "Find the house key on the left";
 
-        if (keyManager?.currentActiveKey == null)
-            return "Unlock the stuck door, then claim the Ghost Key";
-
-        if (keyManager.currentActiveKey.abilityType == KeyManager.KeyAbilityType.GhostPhase)
-            return "Push the bookshelf aside, open the sealed door, flee the Echo";
-
-        return "Claim the Head Key and study the family portrait";
+        return "Explore Keyhouse";
     }
 
     private void ReadKeyboard()
