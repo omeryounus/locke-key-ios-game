@@ -19,6 +19,17 @@ BUILTIN_GUIDS = {
 PROJECT_GUID_PREFIXES = ("a1b2c3d4", "b1", "b2", "b3", "b4", "e1f2a3b4")
 
 
+def check_meta_yaml() -> list[str]:
+    errors: list[str] = []
+    for meta in ROOT.rglob("*.meta"):
+        text = meta.read_text(encoding="utf-8", errors="replace")
+        if "assetBundleVariant:\n" in text or text.rstrip("\n").endswith("assetBundleVariant:"):
+            errors.append(
+                f"Invalid YAML in {meta.relative_to(ROOT)}: assetBundleVariant needs trailing space"
+            )
+    return errors
+
+
 def check_meta_guids() -> list[str]:
     errors: list[str] = []
     for meta in ROOT.rglob("*.meta"):
@@ -131,6 +142,7 @@ def check_required_assets() -> list[str]:
 def main() -> int:
     guid_index = build_guid_index()
     errors = [
+        *check_meta_yaml(),
         *check_meta_guids(),
         *check_duplicate_guids(),
         *check_preset_manager(),
