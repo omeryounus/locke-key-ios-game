@@ -24,6 +24,13 @@ public class MemoryFragmentPuzzle : PuzzleBase
             uiManager = FindFirstObjectByType<UIManager>();
     }
 
+    public override void RestoreSolvedState()
+    {
+        base.RestoreSolvedState();
+        if (portraitRenderer != null)
+            portraitRenderer.color = new Color(0.75f, 0.55f, 0.95f, 1f);
+    }
+
     protected override void TrySolve()
     {
         var headKey = FindFirstObjectByType<HeadKey>();

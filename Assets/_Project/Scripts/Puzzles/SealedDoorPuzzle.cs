@@ -116,6 +116,19 @@ public class SealedDoorPuzzle : PuzzleBase
         Debug.Log("The sealed door snaps shut — you must phase all the way through.");
     }
 
+    public override void RestoreSolvedState()
+    {
+        base.RestoreSolvedState();
+        passageOpen = true;
+        playerCrossed = true;
+        if (doorCollider != null)
+            doorCollider.enabled = false;
+        if (doorRenderer != null)
+            doorRenderer.color = new Color(0.3f, 0.55f, 0.42f, 0.35f);
+        if (passageTrigger != null)
+            passageTrigger.SetActive(true);
+    }
+
     private void ResealDoor()
     {
         passageOpen = false;

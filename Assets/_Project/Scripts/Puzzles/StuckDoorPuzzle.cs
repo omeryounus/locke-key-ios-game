@@ -52,6 +52,7 @@ public class StuckDoorPuzzle : PuzzleBase
         if (playerInventory == null || !playerInventory.HasHouseKey)
         {
             StartCoroutine(RattleDoor());
+            FindFirstObjectByType<GameAudioController>()?.PlayDoorRattle();
             Debug.Log("The handle rattles — you need the house key.");
             return;
         }
@@ -60,6 +61,16 @@ public class StuckDoorPuzzle : PuzzleBase
     }
 
     protected override void TrySolve() { }
+
+    public override void RestoreSolvedState()
+    {
+        base.RestoreSolvedState();
+        if (doorCollider != null)
+            doorCollider.enabled = false;
+        if (warmLeakLight != null)
+            warmLeakLight.intensity = 0.75f;
+        transform.position = doorBasePos + Vector3.right * 0.18f;
+    }
 
     private IEnumerator RattleDoor()
     {

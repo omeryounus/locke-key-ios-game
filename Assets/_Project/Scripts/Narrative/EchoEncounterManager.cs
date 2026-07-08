@@ -37,6 +37,12 @@ public class EchoEncounterManager : MonoBehaviour
         eventBus.OnGhostPhaseEnded -= HandleGhostPhaseEnded;
     }
 
+    public void RestoreFromSave(ChapterSaveData save)
+    {
+        if (save == null) return;
+        hasSpawned = save.echoEncounterCleared;
+    }
+
     private void HandleEchoTriggered()
     {
         SpawnEcho();

@@ -8,6 +8,8 @@ public class HeadKeyPickup : MonoBehaviour, IInteractable
     [SerializeField] private KeyManager keyManager;
     [SerializeField] private SpriteRenderer keyRenderer;
 
+    [SerializeField] private string pickupId = "head_key";
+
     private bool isAvailable;
     private bool collected;
     private EventBus eventBus;
@@ -29,6 +31,24 @@ public class HeadKeyPickup : MonoBehaviour, IInteractable
             eventBus.OnPuzzleSolved += HandlePuzzleSolved;
 
         SetVisible(false);
+    }
+
+    public void RestoreFromSave(ChapterSaveManager save)
+    {
+        if (save == null) return;
+
+        if (save.IsPickupCollected(pickupId))
+        {
+            collected = true;
+            SetVisible(false);
+            return;
+        }
+
+        if (save.IsPuzzleSolved("chapter1_sealed_door"))
+        {
+            isAvailable = true;
+            SetVisible(true);
+        }
     }
 
     private void OnDestroy()
@@ -54,6 +74,8 @@ public class HeadKeyPickup : MonoBehaviour, IInteractable
         keyManager.GrantHeadKey();
         collected = true;
         SetVisible(false);
+        PickupFeedback.PlayKeyPickup("Head Key claimed — memories stir at the edge of sight.");
+        ChapterSaveManager.Instance?.RecordPickupCollected(pickupId);
     }
 
     private void SetVisible(bool visible)

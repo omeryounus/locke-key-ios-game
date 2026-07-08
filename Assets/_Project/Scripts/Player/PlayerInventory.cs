@@ -12,4 +12,6 @@ public class PlayerInventory : MonoBehaviour
         HasHouseKey = true;
         Debug.Log("Inventory: House key acquired.");
     }
+
+    public void RestoreHouseKey(bool hasKey) => HasHouseKey = hasKey;
 }

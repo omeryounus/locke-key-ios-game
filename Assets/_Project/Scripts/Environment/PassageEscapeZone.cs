@@ -27,5 +27,8 @@ public class PassageEscapeZone : MonoBehaviour
             Destroy(echo.gameObject);
 
         beatDirector?.NotifyEchoEscaped();
+        ChapterSaveManager.Instance?.RecordEchoCleared();
+        ChapterSaveManager.Instance?.RecordChapterComplete();
+        Resources.Load<EventBus>("EventBus")?.ChapterCompleted();
     }
 }

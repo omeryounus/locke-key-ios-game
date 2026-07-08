@@ -3,25 +3,26 @@ using UnityEngine;
 /// <summary>
 /// Beat 1 — glinting house key near the exterior planter.
 /// </summary>
-public class HouseKeyPickup : MonoBehaviour, IInteractable
+public class HouseKeyPickup : SaveablePickup, IInteractable
 {
     [SerializeField] private PlayerInventory playerInventory;
     [SerializeField] private SpriteRenderer keyRenderer;
     [SerializeField] private ChapterBeatDirector beatDirector;
     [SerializeField] private float glintScale = 0.12f;
     [SerializeField] private float glintSpeed = 3.2f;
-
-    private bool collected;
     private Vector3 baseScale;
     private float glintPhase;
 
-    public bool CanInteract => !collected;
+    public bool CanInteract => !Collected;
 
     public string InteractionHint =>
-        collected ? string.Empty : "Glinting house key — tap Interact";
+        Collected ? string.Empty : "Glinting house key — tap Interact";
 
-    private void Awake()
+    protected override void Awake()
     {
+        pickupId = "house_key";
+        base.Awake();
+
         if (playerInventory == null)
             playerInventory = FindFirstObjectByType<PlayerInventory>();
         if (beatDirector == null)
@@ -36,7 +37,7 @@ public class HouseKeyPickup : MonoBehaviour, IInteractable
 
     private void Update()
     {
-        if (collected) return;
+        if (Collected) return;
 
         glintPhase += Time.deltaTime * glintSpeed;
         var pulse = 1f + Mathf.Sin(glintPhase) * glintScale;
@@ -52,15 +53,18 @@ public class HouseKeyPickup : MonoBehaviour, IInteractable
 
     public void Interact()
     {
-        if (collected || playerInventory == null) return;
+        if (Collected || playerInventory == null) return;
 
         playerInventory.PickupHouseKey();
-        collected = true;
+        MarkCollected();
         beatDirector?.NotifyHouseKeyCollected();
+        PickupFeedback.PlayKeyPickup("House key collected — return to the entrance.");
+        ChapterSaveManager.Instance?.SaveNow();
+    }
 
+    protected override void ApplyCollectedVisuals()
+    {
         if (keyRenderer != null)
             keyRenderer.enabled = false;
-
-        PickupFeedback.PlayKeyPickup("House key collected — return to the entrance.");
     }
 }

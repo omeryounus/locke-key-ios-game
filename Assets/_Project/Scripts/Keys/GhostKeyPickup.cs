@@ -9,6 +9,8 @@ public class GhostKeyPickup : MonoBehaviour, IInteractable
     [SerializeField] private SpriteRenderer keyRenderer;
     [SerializeField] private ChapterBeatDirector beatDirector;
 
+    [SerializeField] private string pickupId = "ghost_key";
+
     private bool isAvailable;
     private bool collected;
     private EventBus eventBus;
@@ -34,6 +36,26 @@ public class GhostKeyPickup : MonoBehaviour, IInteractable
             eventBus.OnPuzzleSolved += HandlePuzzleSolved;
 
         SetVisible(false);
+    }
+
+    public void RestoreFromSave(ChapterSaveManager save)
+    {
+        if (save == null) return;
+
+        if (save.IsPickupCollected(pickupId))
+        {
+            collected = true;
+            SetVisible(false);
+            return;
+        }
+
+        if (save.IsPuzzleSolved("chapter1_bookshelf"))
+        {
+            isAvailable = true;
+            SetVisible(true);
+            if (GetComponent<InteractGlow>() == null)
+                gameObject.AddComponent<InteractGlow>();
+        }
     }
 
     private void OnDestroy()
@@ -64,6 +86,7 @@ public class GhostKeyPickup : MonoBehaviour, IInteractable
         beatDirector?.NotifyGhostKeyCollected();
         SetVisible(false);
         PickupFeedback.PlayKeyPickup("Ghost Key claimed — the HUD pulses with pale light.");
+        ChapterSaveManager.Instance?.RecordPickupCollected(pickupId);
     }
 
     private void SetVisible(bool visible)

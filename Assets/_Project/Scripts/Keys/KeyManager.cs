@@ -46,7 +46,11 @@ public class KeyManager : MonoBehaviour
         Omega              // Ultimate / late-game
     }
 
-    public void GrantGhostKey()
+    public void GrantGhostKey() => EnsureGhostKey(silent: false);
+
+    public void GrantHeadKey() => EnsureHeadKey(silent: false);
+
+    private void EnsureGhostKey(bool silent)
     {
         if (ownedKeys.Exists(k => k.abilityType == KeyAbilityType.GhostPhase))
             return;
@@ -62,11 +66,15 @@ public class KeyManager : MonoBehaviour
             riskLevel = 0.3f
         };
 
-        DiscoverNewKey(ghostKey);
+        if (silent)
+            ownedKeys.Add(ghostKey);
+        else
+            DiscoverNewKey(ghostKey);
+
         SelectKey(ghostKey);
     }
 
-    public void GrantHeadKey()
+    private void EnsureHeadKey(bool silent)
     {
         if (ownedKeys.Exists(k => k.abilityType == KeyAbilityType.HeadMemory))
             return;
@@ -82,7 +90,11 @@ public class KeyManager : MonoBehaviour
             riskLevel = 0.5f
         };
 
-        DiscoverNewKey(headKey);
+        if (silent)
+            ownedKeys.Add(headKey);
+        else
+            DiscoverNewKey(headKey);
+
         SelectKey(headKey);
     }
 
@@ -202,6 +214,48 @@ public class KeyManager : MonoBehaviour
             ownedKeys.Add(newKey);
             Debug.Log($"New key discovered: {newKey.keyName}");
             uiManager?.ShowKeyDiscoveryNotification(newKey);
+            Resources.Load<EventBus>("EventBus")?.KeyDiscovered(MapAbilityToKeyType(newKey.abilityType));
+            ChapterSaveManager.Instance?.SaveNow();
         }
     }
+
+    public void RestoreFromSave(ChapterSaveData save)
+    {
+        if (save == null) return;
+
+        if (save.hasGhostKey)
+            EnsureGhostKey(silent: true);
+        if (save.hasHeadKey)
+            EnsureHeadKey(silent: true);
+
+        if (!string.IsNullOrEmpty(save.activeKeyAbility))
+        {
+            var match = ownedKeys.Find(k => k.abilityType.ToString() == save.activeKeyAbility);
+            if (match != null)
+                SelectKey(match);
+        }
+    }
+
+    public void CaptureToSave(ChapterSaveData save)
+    {
+        if (save == null) return;
+
+        save.hasGhostKey = ownedKeys.Exists(k => k.abilityType == KeyAbilityType.GhostPhase);
+        save.hasHeadKey = ownedKeys.Exists(k => k.abilityType == KeyAbilityType.HeadMemory);
+        save.activeKeyAbility = currentActiveKey != null
+            ? currentActiveKey.abilityType.ToString()
+            : string.Empty;
+    }
+
+    private static KeyType MapAbilityToKeyType(KeyAbilityType ability) =>
+        ability switch
+        {
+            KeyAbilityType.GhostPhase => KeyType.Ghost,
+            KeyAbilityType.HeadMemory => KeyType.Head,
+            KeyAbilityType.MirrorTravel => KeyType.Mirror,
+            KeyAbilityType.AnywhereDoor => KeyType.Anywhere,
+            KeyAbilityType.ShadowManipulate => KeyType.Shadow,
+            KeyAbilityType.Omega => KeyType.Omega,
+            _ => KeyType.Ghost
+        };
 }

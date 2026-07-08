@@ -8,8 +8,8 @@ public static class PickupFeedback
     public static void PlayKeyPickup(string message)
     {
         Debug.Log(message);
-#if UNITY_IOS && !UNITY_EDITOR
-        Handheld.Vibrate();
-#endif
+        GameHaptics.KeyPickup();
+        var audio = Object.FindFirstObjectByType<GameAudioController>();
+        audio?.PlayKeyPickup();
     }
 }

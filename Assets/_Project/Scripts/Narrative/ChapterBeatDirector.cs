@@ -40,6 +40,7 @@ public class ChapterBeatDirector : MonoBehaviour
         {
             eventBus.OnPuzzleSolved += HandlePuzzleSolved;
             eventBus.OnGhostPhaseEnded += HandleGhostPhaseEnded;
+            eventBus.OnEchoCaught += NotifyEchoCaught;
         }
 
         ApplyBeat(Beat.Arrival, announce: false);
@@ -51,6 +52,7 @@ public class ChapterBeatDirector : MonoBehaviour
         if (eventBus == null) return;
         eventBus.OnPuzzleSolved -= HandlePuzzleSolved;
         eventBus.OnGhostPhaseEnded -= HandleGhostPhaseEnded;
+        eventBus.OnEchoCaught -= NotifyEchoCaught;
     }
 
     private void Update()
@@ -109,12 +111,31 @@ public class ChapterBeatDirector : MonoBehaviour
             AdvanceTo(Beat.Aftermath);
     }
 
+    public void NotifyEchoCaught()
+    {
+        if (currentBeat != Beat.EchoEncounter) return;
+        hud?.ShowToast("The Echo found you — hide or run!", 3f);
+        eventBus?.SetTension(0.98f);
+    }
+
+    public void RestoreFromSave(int beatIndex)
+    {
+        var beat = (Beat)Mathf.Clamp(beatIndex, 0, (int)Beat.Aftermath);
+        houseKeyCollected = beatIndex >= (int)Beat.StuckDoor;
+        playerHasMoved = beatIndex > (int)Beat.Arrival;
+        ApplyBeat(beat, announce: false);
+
+        if (beatIndex > (int)Beat.Arrival)
+            cameraFollow?.EndArrivalIntro();
+    }
+
     private void AdvanceTo(Beat beat)
     {
         if ((int)beat <= (int)currentBeat && beat != Beat.Arrival)
             return;
 
         ApplyBeat(beat, announce: true);
+        ChapterSaveManager.Instance?.RecordBeat((int)beat);
     }
 
     private void ApplyBeat(Beat beat, bool announce)

@@ -59,6 +59,18 @@ public class CollapsedBookshelfPuzzle : PuzzleBase
         Debug.Log("A hidden alcove opens — something glimmers inside.");
     }
 
+    public override void RestoreSolvedState()
+    {
+        base.RestoreSolvedState();
+        pushesDone = pushesRequired;
+        if (blockingCollider != null)
+            blockingCollider.enabled = false;
+        if (shelfTransform != null)
+            shelfTransform.position += Vector3.right * (pushDistance * pushesRequired);
+        if (shelfRenderer != null)
+            shelfRenderer.color = new Color(0.35f, 0.28f, 0.2f, 0.55f);
+    }
+
     private void SpawnDebrisBurst()
     {
         for (var i = 0; i < 3; i++)

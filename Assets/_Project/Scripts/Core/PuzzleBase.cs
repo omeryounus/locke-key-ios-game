@@ -64,10 +64,16 @@ public abstract class PuzzleBase : MonoBehaviour, IInteractable
         };
     }
 
+    public virtual void RestoreSolvedState()
+    {
+        isSolved = true;
+    }
+
     protected virtual void MarkAsSolved()
     {
         isSolved = true;
         eventBus?.PuzzleSolved(this);
+        ChapterSaveManager.Instance?.RecordPuzzleSolved(puzzleID);
         Debug.Log($"Puzzle solved: {puzzleID}");
     }
 

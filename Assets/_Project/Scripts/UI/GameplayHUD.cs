@@ -10,6 +10,8 @@ public class GameplayHUD : MonoBehaviour
     [SerializeField] private TouchGameplayController gameplay;
     [SerializeField] private UIManager uiManager;
     [SerializeField] private UIIconLibrary iconLibrary;
+    [SerializeField] private GameObject hudPrefab;
+    [SerializeField] private bool preferAuthoredPrefab = true;
 
     private Text keyStatusText;
     private Text houseKeyText;
@@ -43,7 +45,8 @@ public class GameplayHUD : MonoBehaviour
         if (uiManager != null)
             uiManager.BindHUD(this);
 
-        BuildCanvas();
+        if (!TryLoadAuthoredHud())
+            BuildCanvas();
     }
 
     private void Update()
@@ -151,6 +154,90 @@ public class GameplayHUD : MonoBehaviour
         if (label.Contains("Ghost")) return iconLibrary.ghostKeyIcon;
         if (label.Contains("Head")) return iconLibrary.headKeyIcon;
         return null;
+    }
+
+    private bool TryLoadAuthoredHud()
+    {
+        if (!preferAuthoredPrefab) return false;
+
+        var prefab = hudPrefab != null
+            ? hudPrefab
+            : Resources.Load<GameObject>("UI/GameplayHUD");
+
+        if (prefab == null) return false;
+
+        EnsureEventSystem();
+
+        var instance = Instantiate(prefab);
+        instance.name = "GameplayCanvas";
+        var bindings = instance.GetComponent<GameplayHUDBindings>();
+        if (bindings == null) return false;
+
+        keyStatusText = bindings.keyStatusText;
+        houseKeyText = bindings.houseKeyText;
+        hintText = bindings.hintText;
+        toastText = bindings.toastText;
+        keyStatusIcon = bindings.keyStatusIcon;
+        keySlotImage = bindings.keySlotImage;
+        keySlotHud = bindings.keySlotHud;
+        memoryPanelImage = bindings.memoryPanelImage;
+        houseKeyIcon = bindings.houseKeyIcon;
+        memoryOverlay = bindings.memoryOverlay;
+        memoryBodyText = bindings.memoryBodyText;
+        leftButton = bindings.leftButton;
+        rightButton = bindings.rightButton;
+        jumpButton = bindings.jumpButton;
+        interactButton = bindings.interactButton;
+        useKeyButton = bindings.useKeyButton;
+
+        WirePrefabButtons();
+        SetControlVisibility(interact: false, jump: false, useKey: false);
+        return true;
+    }
+
+    private void WirePrefabButtons()
+    {
+        if (leftButton != null)
+            WireHoldButton(leftButton, () => gameplay?.SetMoveInput(-1f), () => gameplay?.SetMoveInput(0f));
+        if (rightButton != null)
+            WireHoldButton(rightButton, () => gameplay?.SetMoveInput(1f), () => gameplay?.SetMoveInput(0f));
+        if (jumpButton != null)
+            WireTapButton(jumpButton, () => gameplay?.RequestJump());
+        if (interactButton != null)
+            WireTapButton(interactButton, () => gameplay?.RequestInteract());
+        if (useKeyButton != null)
+            WireTapButton(useKeyButton, () => gameplay?.RequestUseKey());
+
+        if (memoryOverlay != null)
+        {
+            var close = memoryOverlay.transform.Find("MemoryPanel/CloseButton");
+            if (close != null)
+                WireTapButton(close.gameObject, () =>
+                {
+                    HideMemoryOverlay();
+                    uiManager?.CloseMemoryView();
+                });
+        }
+    }
+
+    private static void WireTapButton(GameObject buttonGo, UnityEngine.Events.UnityAction onTap)
+    {
+        var button = buttonGo.GetComponent<Button>();
+        if (button == null) return;
+        button.onClick.RemoveAllListeners();
+        button.onClick.AddListener(onTap);
+    }
+
+    private static void WireHoldButton(GameObject buttonGo, UnityEngine.Events.UnityAction onDown,
+        UnityEngine.Events.UnityAction onUp)
+    {
+        var hold = buttonGo.GetComponent<HoldButton>();
+        if (hold == null)
+            hold = buttonGo.AddComponent<HoldButton>();
+        hold.onDown.RemoveAllListeners();
+        hold.onUp.RemoveAllListeners();
+        hold.onDown.AddListener(onDown);
+        hold.onUp.AddListener(onUp);
     }
 
     private void BuildCanvas()

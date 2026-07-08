@@ -25,6 +25,7 @@ public class EventBus : ScriptableObject
     // Horror / Atmosphere Events
     public event Action<float> OnTensionChanged; // 0-1 scale
     public event Action OnEchoTriggered;
+    public event Action OnEchoCaught;
     public event Action OnGhostPhaseStarted;
     public event Action OnGhostPhaseEnded;
 
@@ -41,6 +42,8 @@ public class EventBus : ScriptableObject
     public void SetTension(float tension) => OnTensionChanged?.Invoke(Mathf.Clamp01(tension));
 
     public void TriggerEcho() => OnEchoTriggered?.Invoke();
+
+    public void EchoCaught() => OnEchoCaught?.Invoke();
 
     public void GhostPhaseStarted() => OnGhostPhaseStarted?.Invoke();
 
