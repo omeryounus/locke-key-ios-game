@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!78 &1
+TagManager:
+  serializedVersion: 2
+  tags:
+  - Player
+  - Interactable
+  - Echo
+  layers:
+  - Default
+  - TransparentFX
+  - Ignore Raycast
+  - 
+  - Water
+  - UI
+  - 
+  - 
+  - Player
+  - Interactable
+  - Environment
+  - Puzzle
+  - Echo
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  m_SortingLayers:
+  - name: Default
+    uniqueID: 0
+    locked: 0
+  - name: Background
+    uniqueID: 1234567891
+    locked: 0
+  - name: Environment
+    uniqueID: 1234567892
+    locked: 0
+  - name: Characters
+    uniqueID: 1234567893
+    locked: 0
+  - name: Foreground
+    uniqueID: 1234567894
+    locked: 0
+  - name: UI
+    uniqueID: 1234567895
+    locked: 0

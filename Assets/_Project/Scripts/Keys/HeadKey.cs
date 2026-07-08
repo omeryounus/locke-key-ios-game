@@ -1,0 +1,49 @@
+using UnityEngine;
+
+/// <summary>
+/// Head Key — view memories locked inside objects and minds.
+/// </summary>
+public class HeadKey : MonoBehaviour, IKeyAbility
+{
+    [SerializeField] private string keyName = "Head Key";
+    [SerializeField] private string description = "Unlock memories hidden in Keyhouse.";
+    [SerializeField] private float cooldown = 12f;
+
+    private UIManager uiManager;
+    private EventBus eventBus;
+    private float cooldownTimer;
+
+    public string KeyName => keyName;
+    public string Description => description;
+    public KeyType Type => KeyType.Head;
+
+    private void Awake()
+    {
+        uiManager = FindFirstObjectByType<UIManager>();
+        eventBus = Resources.Load<EventBus>("EventBus");
+    }
+
+    private void Update()
+    {
+        if (cooldownTimer > 0f)
+            cooldownTimer -= Time.deltaTime;
+    }
+
+    public void Activate()
+    {
+        if (!CanActivate()) return;
+
+        cooldownTimer = cooldown;
+        uiManager?.OpenMemoryView();
+        eventBus?.KeyActivated(this);
+        eventBus?.SetTension(0.45f);
+    }
+
+    public void Deactivate()
+    {
+        eventBus?.KeyDeactivated(this);
+        eventBus?.SetTension(0.15f);
+    }
+
+    public bool CanActivate() => cooldownTimer <= 0f;
+}

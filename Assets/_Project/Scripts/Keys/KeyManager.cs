@@ -1,0 +1,198 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+/// <summary>
+/// Core Key Management System for Locke & Key iOS Game
+/// Handles key collection, activation, and ability triggering.
+/// This is a foundational prototype script.
+/// </summary>
+public class KeyManager : MonoBehaviour
+{
+    [Header("Key Data")]
+    public List<KeyData> ownedKeys = new List<KeyData>();
+    public KeyData currentActiveKey;
+
+    [Header("References")]
+    public PlayerController player;           // Reference to player movement/interaction
+    public UIManager uiManager;               // For updating key UI
+
+    // Event for when a key is used (can trigger puzzles, horror, etc.)
+    public delegate void KeyUsedEvent(KeyData key);
+    public event KeyUsedEvent OnKeyUsed;
+
+    /// <summary>
+    /// Represents a single magical key and its properties.
+    /// </summary>
+    [System.Serializable]
+    public class KeyData
+    {
+        public string keyName;                    // e.g., "Ghost Key"
+        public string description;                // Flavor text
+        public KeyAbilityType abilityType;        // What it does
+        public bool isActive = false;             // Currently selected?
+        public int usesRemaining = -1;            // -1 = unlimited, otherwise limited uses
+        public float cooldown = 0f;               // Cooldown between uses
+        public bool hasRisk = false;              // Does using this attract demons?
+        public float riskLevel = 0f;              // 0-1 scale of danger
+    }
+
+    public enum KeyAbilityType
+    {
+        GhostPhase,        // Phase through objects
+        HeadMemory,        // Enter minds / view memories
+        MirrorTravel,      // Travel through reflections
+        AnywhereDoor,      // Create temporary doors
+        ShadowManipulate,  // Control shadows
+        Omega              // Ultimate / late-game
+    }
+
+    public void GrantGhostKey()
+    {
+        if (ownedKeys.Exists(k => k.abilityType == KeyAbilityType.GhostPhase))
+            return;
+
+        var ghostKey = new KeyData
+        {
+            keyName = "Ghost Key",
+            description = "Allows the bearer to phase through solid matter for a short time.",
+            abilityType = KeyAbilityType.GhostPhase,
+            usesRemaining = -1,
+            cooldown = 8f,
+            hasRisk = true,
+            riskLevel = 0.3f
+        };
+
+        DiscoverNewKey(ghostKey);
+        SelectKey(ghostKey);
+    }
+
+    public void GrantHeadKey()
+    {
+        if (ownedKeys.Exists(k => k.abilityType == KeyAbilityType.HeadMemory))
+            return;
+
+        var headKey = new KeyData
+        {
+            keyName = "Head Key",
+            description = "Unlocks the mind. Use to explore memories and thoughts.",
+            abilityType = KeyAbilityType.HeadMemory,
+            usesRemaining = -1,
+            cooldown = 12f,
+            hasRisk = true,
+            riskLevel = 0.5f
+        };
+
+        DiscoverNewKey(headKey);
+        SelectKey(headKey);
+    }
+
+    /// <summary>
+    /// Call this when player selects a key from inventory/UI.
+    /// </summary>
+    public void SelectKey(KeyData key)
+    {
+        if (!ownedKeys.Contains(key)) return;
+
+        // Deactivate previous key
+        if (currentActiveKey != null)
+            currentActiveKey.isActive = false;
+
+        currentActiveKey = key;
+        currentActiveKey.isActive = true;
+
+        Debug.Log($"Selected: {key.keyName}");
+        uiManager?.UpdateActiveKeyUI(key);
+    }
+
+    /// <summary>
+    /// Main method called when player uses the currently active key (e.g., tap "Use Key" button).
+    /// </summary>
+    public void UseActiveKey()
+    {
+        if (currentActiveKey == null)
+        {
+            Debug.LogWarning("No key selected!");
+            return;
+        }
+
+        if (currentActiveKey.usesRemaining == 0)
+        {
+            Debug.Log("This key has no uses left.");
+            return;
+        }
+
+        // Trigger the specific ability
+        ActivateAbility(currentActiveKey.abilityType);
+
+        // Handle uses and risk
+        if (currentActiveKey.usesRemaining > 0)
+            currentActiveKey.usesRemaining--;
+
+        if (currentActiveKey.hasRisk)
+        {
+            CheckForHorrorConsequence(currentActiveKey.riskLevel);
+        }
+
+        // Notify listeners (puzzle system, horror manager, etc.)
+        OnKeyUsed?.Invoke(currentActiveKey);
+
+        // Cooldown handling would go here in a full implementation
+    }
+
+    private void ActivateAbility(KeyAbilityType ability)
+    {
+        switch (ability)
+        {
+            case KeyAbilityType.GhostPhase:
+                player?.ActivateGhostPhase(duration: 5f);
+                break;
+
+            case KeyAbilityType.HeadMemory:
+                // Trigger memory viewing UI or puzzle
+                uiManager?.OpenMemoryView();
+                break;
+
+            case KeyAbilityType.MirrorTravel:
+                player?.TryMirrorTravel();
+                break;
+
+            case KeyAbilityType.AnywhereDoor:
+                // Open door creation UI or raycast to place door
+                Debug.Log("Anywhere Key activated - Door creation mode");
+                break;
+
+            case KeyAbilityType.ShadowManipulate:
+                player?.ManipulateShadows();
+                break;
+
+            case KeyAbilityType.Omega:
+                Debug.Log("Omega Key used - Major story consequences!");
+                // Trigger end-game sequence
+                break;
+        }
+    }
+
+    private void CheckForHorrorConsequence(float risk)
+    {
+        var eventBus = Resources.Load<EventBus>("EventBus");
+        float roll = Random.Range(0f, 1f);
+        if (roll < risk)
+        {
+            Debug.Log("Risk triggered! A demonic Echo has been attracted...");
+            eventBus?.TriggerEcho();
+        }
+    }
+
+    /// <summary>
+    /// Add a newly discovered key to the player's collection.
+    /// </summary>
+    public void DiscoverNewKey(KeyData newKey)
+    {
+        if (!ownedKeys.Contains(newKey))
+        {
+            ownedKeys.Add(newKey);
+            Debug.Log($"New key discovered: {newKey.keyName}");
+            uiManager?.ShowKeyDiscoveryNotification(newKey);
+        }
+    }
+}

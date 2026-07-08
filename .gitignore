@@ -1,0 +1,30 @@
+# Unity generated folders
+Library/
+Temp/
+Obj/
+Build/
+Builds/
+Logs/
+UserSettings/
+
+# Visual Studio / Rider
+.vs/
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Unity package cache (keep manifest.json and packages-lock.json)
+[Pp]ackages/packages-lock.json.bak
+
+# Backup files
+*.unitypackage
+
+# AI generated assets manifest (root only; Art folder manifest is tracked)
+/ai_assets_manifest.json
+
+# Python
+__pycache__/
+*.pyc
