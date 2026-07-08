@@ -12,14 +12,25 @@ public class TouchGameplayController : MonoBehaviour
     public PlayerInventory inventory;
 
     private float moveInput;
+    private bool inputLocked;
 
     public float MoveInput => moveInput;
+
+    public void SetInputLocked(bool locked)
+    {
+        inputLocked = locked;
+        if (locked)
+            moveInput = 0f;
+    }
     private bool jumpRequested;
     private bool interactRequested;
     private bool useKeyRequested;
 
     private void Update()
     {
+        if (inputLocked)
+            return;
+
         ReadKeyboard();
 
         if (player != null)

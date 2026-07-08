@@ -25,6 +25,7 @@ public class ChapterRoomDirector : MonoBehaviour
         if (room == currentRoom) return;
 
         currentRoom = room;
+        ChapterSaveManager.Instance?.RecordRoom((int)room);
         ApplyRoomAmbience(room);
 
         var index = (int)room;

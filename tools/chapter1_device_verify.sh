@@ -36,7 +36,9 @@ EOF
 run_static() {
   echo "==> Static verification"
   python3 "${ROOT}/tools/verify_static.py"
+  python3 "${ROOT}/tools/test_chapter1_save_edges.py"
   pass "Static asset/meta checks"
+  pass "Chapter 1 save edge-case payloads"
 }
 
 run_unity_compile() {

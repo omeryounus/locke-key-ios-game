@@ -94,10 +94,6 @@ TextureImporter:
     ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
-  secondaryTextures:
-  - name: _NormalMap
-    guid: b2000000000000090000000000000009
-    type: 3
   spriteSheet:
     serializedVersion: 2
     sprites: []

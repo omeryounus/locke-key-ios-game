@@ -108,12 +108,6 @@ public class EchoEntity : MonoBehaviour
         hasCaughtPlayer = true;
         eventBus?.EchoCaught();
         beatDirector?.NotifyEchoCaught();
-
-        var rb = player.GetComponent<Rigidbody2D>();
-        if (rb != null)
-            rb.linearVelocity = Vector2.zero;
-
-        player.position += Vector3.left * 0.8f;
         Despawn();
     }
 

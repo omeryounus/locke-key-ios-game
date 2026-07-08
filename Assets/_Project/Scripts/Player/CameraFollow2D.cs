@@ -12,6 +12,8 @@ public class CameraFollow2D : MonoBehaviour
 
     private bool introActive;
     private Vector3 introOffset;
+    private float pulseTimer;
+    private float pulseStrength;
 
     public void BeginArrivalIntro()
     {
@@ -25,6 +27,12 @@ public class CameraFollow2D : MonoBehaviour
         introOffset = Vector3.zero;
     }
 
+    public void Pulse(float strength, float duration)
+    {
+        pulseStrength = strength;
+        pulseTimer = duration;
+    }
+
     private void LateUpdate()
     {
         if (target == null) return;
@@ -36,5 +44,16 @@ public class CameraFollow2D : MonoBehaviour
 
         if (introActive)
             introOffset = Vector3.Lerp(introOffset, Vector3.zero, Time.deltaTime * 0.8f);
+
+        if (pulseTimer > 0f)
+        {
+            pulseTimer -= Time.deltaTime;
+            var cam = GetComponent<Camera>();
+            if (cam != null)
+            {
+                var baseSize = 5f;
+                cam.orthographicSize = baseSize + Mathf.Sin(Time.time * 24f) * pulseStrength * pulseTimer;
+            }
+        }
     }
 }

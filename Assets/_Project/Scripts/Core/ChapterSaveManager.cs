@@ -12,6 +12,16 @@ public class ChapterSaveManager : MonoBehaviour
     [SerializeField] private bool autoSave = true;
     [SerializeField] private float positionSaveInterval = 2f;
 
+    private static readonly Dictionary<int, Vector2> BeatCheckpoints = new()
+    {
+        { 0, new Vector2(-2f, -1f) },
+        { 1, new Vector2(-1f, -1f) },
+        { 2, new Vector2(2f, -1f) },
+        { 3, new Vector2(4.5f, -1f) },
+        { 4, new Vector2(5.2f, -1f) },
+        { 5, new Vector2(8.5f, -1f) },
+    };
+
     private ChapterSaveData data = new();
     private float positionSaveTimer;
     private bool isApplying;
@@ -39,6 +49,16 @@ public class ChapterSaveManager : MonoBehaviour
             Instance = null;
     }
 
+    private void OnApplicationPause(bool paused)
+    {
+        if (paused) SaveNow();
+    }
+
+    private void OnApplicationQuit()
+    {
+        SaveNow();
+    }
+
     private void Start()
     {
         ApplyLoadedState();
@@ -62,6 +82,7 @@ public class ChapterSaveManager : MonoBehaviour
         if (!File.Exists(path))
         {
             data = new ChapterSaveData();
+            SeedCheckpointForBeat(0);
             return;
         }
 
@@ -73,11 +94,17 @@ public class ChapterSaveManager : MonoBehaviour
                 data.solvedPuzzleIds = new List<string>();
             if (data.collectedPickupIds == null)
                 data.collectedPickupIds = new List<string>();
+
+            if (data.version < 2)
+                MigrateV1ToV2();
         }
         catch
         {
             data = new ChapterSaveData();
         }
+
+        if (!data.hasSavedPosition)
+            SeedCheckpointForBeat(data.currentBeat);
     }
 
     public void SaveNow()
@@ -89,6 +116,35 @@ public class ChapterSaveManager : MonoBehaviour
     public void ResetSave()
     {
         data = new ChapterSaveData();
+        SeedCheckpointForBeat(0);
+        WriteSave();
+    }
+
+    public Vector3 GetCheckpointPosition()
+    {
+        if (data.checkpointX != 0f || data.checkpointY != 0f)
+            return new Vector3(data.checkpointX, data.checkpointY, 0f);
+
+        return BeatCheckpoints.TryGetValue(data.currentBeat, out var pos)
+            ? new Vector3(pos.x, pos.y, 0f)
+            : Vector3.zero;
+    }
+
+    public void RecordCheckpoint(Vector3 position)
+    {
+        data.checkpointX = position.x;
+        data.checkpointY = position.y;
+        WriteSave();
+    }
+
+    public void RecordCheckpointForBeat(int beatIndex)
+    {
+        data.currentBeat = Mathf.Max(data.currentBeat, beatIndex);
+        var pos = BeatCheckpoints.TryGetValue(beatIndex, out var cp)
+            ? cp
+            : new Vector2(data.playerX, data.playerY);
+        data.checkpointX = pos.x;
+        data.checkpointY = pos.y;
         WriteSave();
     }
 
@@ -104,6 +160,9 @@ public class ChapterSaveManager : MonoBehaviour
             return;
 
         data.solvedPuzzleIds.Add(puzzleId);
+        if (puzzleId == "chapter1_bookshelf")
+            data.ghostKeyRevealed = true;
+        CapturePlayerPosition();
         WriteSave();
     }
 
@@ -113,6 +172,7 @@ public class ChapterSaveManager : MonoBehaviour
             return;
 
         data.collectedPickupIds.Add(pickupId);
+        CapturePlayerPosition();
         WriteSave();
     }
 
@@ -120,18 +180,33 @@ public class ChapterSaveManager : MonoBehaviour
     {
         if (beatIndex <= data.currentBeat) return;
         data.currentBeat = beatIndex;
-        WriteSave();
+        RecordCheckpointForBeat(beatIndex);
     }
 
     public void RecordChapterComplete()
     {
         data.chapterComplete = true;
+        data.echoEncounterActive = false;
         WriteSave();
     }
 
     public void RecordEchoCleared()
     {
         data.echoEncounterCleared = true;
+        data.echoEncounterActive = false;
+        WriteSave();
+    }
+
+    public void RecordEchoEncounterStarted()
+    {
+        data.echoEncounterActive = true;
+        data.echoEncounterCleared = false;
+        WriteSave();
+    }
+
+    public void RecordRoom(int roomIndex)
+    {
+        data.currentRoom = roomIndex;
         WriteSave();
     }
 
@@ -140,8 +215,10 @@ public class ChapterSaveManager : MonoBehaviour
         isApplying = true;
 
         var player = FindFirstObjectByType<PlayerController>();
-        if (player != null && (data.playerX != 0f || data.playerY != 0f))
+        if (player != null && data.hasSavedPosition)
             player.transform.position = new Vector3(data.playerX, data.playerY, 0f);
+        else if (player != null && data.currentBeat > 0)
+            player.transform.position = GetCheckpointPosition();
 
         var inventory = FindFirstObjectByType<PlayerInventory>();
         inventory?.RestoreHouseKey(data.hasHouseKey);
@@ -191,6 +268,10 @@ public class ChapterSaveManager : MonoBehaviour
         var beatDirector = FindFirstObjectByType<ChapterBeatDirector>();
         if (beatDirector != null)
             data.currentBeat = (int)beatDirector.CurrentBeat;
+
+        var roomDirector = FindFirstObjectByType<ChapterRoomDirector>();
+        if (roomDirector != null)
+            data.currentRoom = (int)roomDirector.CurrentRoom;
     }
 
     private void CapturePlayerPosition()
@@ -201,6 +282,28 @@ public class ChapterSaveManager : MonoBehaviour
         var pos = player.transform.position;
         data.playerX = pos.x;
         data.playerY = pos.y;
+        data.hasSavedPosition = true;
+    }
+
+    private void MigrateV1ToV2()
+    {
+        data.version = 2;
+        if (data.playerX != 0f || data.playerY != 0f)
+            data.hasSavedPosition = true;
+        if (IsPuzzleSolved("chapter1_bookshelf"))
+            data.ghostKeyRevealed = true;
+        if (data.currentBeat >= (int)ChapterBeatDirector.Beat.EchoEncounter && !data.echoEncounterCleared)
+            data.echoEncounterActive = true;
+        SeedCheckpointForBeat(data.currentBeat);
+    }
+
+    private void SeedCheckpointForBeat(int beatIndex)
+    {
+        if (BeatCheckpoints.TryGetValue(beatIndex, out var cp))
+        {
+            data.checkpointX = cp.x;
+            data.checkpointY = cp.y;
+        }
     }
 
     private void WriteSave()

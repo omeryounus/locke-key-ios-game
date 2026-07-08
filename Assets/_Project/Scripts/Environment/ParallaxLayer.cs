@@ -7,6 +7,8 @@ public class ParallaxLayer : MonoBehaviour
 {
     [SerializeField] private float scrollFactor = 0.2f;
 
+    public void Configure(float factor) => scrollFactor = factor;
+
     private Transform cameraTransform;
     private float lastCameraX;
 

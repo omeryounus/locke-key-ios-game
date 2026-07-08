@@ -14,7 +14,9 @@ public class SealedDoorPuzzle : PuzzleBase
     private Transform player;
     private bool passageOpen;
     private bool playerCrossed;
+    private bool shimmering;
     private Color doorBaseColor = Color.white;
+    private Color shimmerColor = new(0.45f, 0.95f, 0.82f, 0.55f);
 
     public override bool CanInteract => !isSolved;
 
@@ -79,6 +81,22 @@ public class SealedDoorPuzzle : PuzzleBase
         playerCrossed = true;
     }
 
+    public void BeginShimmer() => shimmering = true;
+
+    public void EndShimmer()
+    {
+        shimmering = false;
+        if (doorRenderer != null && !isSolved)
+            doorRenderer.color = doorBaseColor;
+    }
+
+    private void Update()
+    {
+        if (!shimmering || doorRenderer == null) return;
+        var pulse = 0.45f + Mathf.PingPong(Time.time * 2.4f, 0.35f);
+        doorRenderer.color = new Color(shimmerColor.r, shimmerColor.g, shimmerColor.b, pulse);
+    }
+
     private void HandleGhostPhaseStarted()
     {
         if (isSolved || player == null || !IsPlayerInRange())
@@ -90,8 +108,9 @@ public class SealedDoorPuzzle : PuzzleBase
         if (doorCollider != null)
             doorCollider.enabled = false;
 
+        shimmering = true;
         if (doorRenderer != null)
-            doorRenderer.color = new Color(0.35f, 0.75f, 0.55f, 0.4f);
+            doorRenderer.color = shimmerColor;
 
         if (passageTrigger != null)
             passageTrigger.SetActive(true);
@@ -112,6 +131,7 @@ public class SealedDoorPuzzle : PuzzleBase
             return;
         }
 
+        EndShimmer();
         ResealDoor();
         Debug.Log("The sealed door snaps shut — you must phase all the way through.");
     }

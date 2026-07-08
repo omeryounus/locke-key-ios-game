@@ -114,8 +114,6 @@ public class ChapterBeatDirector : MonoBehaviour
     public void NotifyEchoCaught()
     {
         if (currentBeat != Beat.EchoEncounter) return;
-        hud?.ShowToast("The Echo found you — hide or run!", 3f);
-        eventBus?.SetTension(0.98f);
     }
 
     public void RestoreFromSave(int beatIndex)

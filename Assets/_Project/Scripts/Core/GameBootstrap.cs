@@ -34,8 +34,12 @@ public class GameBootstrap : MonoBehaviour
             gameObject.AddComponent<ChapterRoomDirector>();
         if (GetComponent<GameAudioController>() == null)
             gameObject.AddComponent<GameAudioController>();
-        if (GetComponent<GhostPhaseVFX>() == null)
-            gameObject.AddComponent<GhostPhaseVFX>();
+        if (GetComponent<GhostPhaseMomentController>() == null)
+            gameObject.AddComponent<GhostPhaseMomentController>();
+        if (GetComponent<EchoRecoveryController>() == null)
+            gameObject.AddComponent<EchoRecoveryController>();
+        if (GetComponent<ChapterRoomBackgrounds>() == null)
+            gameObject.AddComponent<ChapterRoomBackgrounds>();
         if (GetComponent<ParticleVFXController>() == null)
             gameObject.AddComponent<ParticleVFXController>();
         if (GetComponent<EchoTensionController>() == null)
@@ -49,6 +53,15 @@ public class GameBootstrap : MonoBehaviour
             passage.AddComponent<PassageEscapeZone>();
 
         EnsureRoomZones();
+        EnsurePlayerAnimator();
+    }
+
+    private static void EnsurePlayerAnimator()
+    {
+        var player = FindFirstObjectByType<PlayerController>();
+        if (player == null || player.GetComponent<PlayerSpriteAnimator>() != null)
+            return;
+        player.gameObject.AddComponent<PlayerSpriteAnimator>();
     }
 
     private static void EnsureRoomZones()

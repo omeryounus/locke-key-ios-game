@@ -242,6 +242,8 @@ public class KeyManager : MonoBehaviour
 
         save.hasGhostKey = ownedKeys.Exists(k => k.abilityType == KeyAbilityType.GhostPhase);
         save.hasHeadKey = ownedKeys.Exists(k => k.abilityType == KeyAbilityType.HeadMemory);
+        save.ghostKeyRevealed = save.ghostKeyRevealed
+            || ChapterSaveManager.Instance?.IsPuzzleSolved("chapter1_bookshelf") == true;
         save.activeKeyAbility = currentActiveKey != null
             ? currentActiveKey.abilityType.ToString()
             : string.Empty;

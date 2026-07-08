@@ -13,6 +13,7 @@ public class EchoEncounterManager : MonoBehaviour
     private EventBus eventBus;
     private PlayerController player;
     private bool hasSpawned;
+    private bool encounterActive;
 
     private void Awake()
     {
@@ -40,7 +41,25 @@ public class EchoEncounterManager : MonoBehaviour
     public void RestoreFromSave(ChapterSaveData save)
     {
         if (save == null) return;
-        hasSpawned = save.echoEncounterCleared;
+
+        if (save.chapterComplete || save.echoEncounterCleared)
+        {
+            hasSpawned = true;
+            encounterActive = false;
+            return;
+        }
+
+        encounterActive = save.echoEncounterActive;
+        hasSpawned = !encounterActive;
+
+        if (encounterActive)
+            SpawnEcho(force: true);
+    }
+
+    public void RespawnEchoIfNeeded()
+    {
+        if (!encounterActive || player == null) return;
+        SpawnEcho(force: true);
     }
 
     private void HandleEchoTriggered()
@@ -57,12 +76,17 @@ public class EchoEncounterManager : MonoBehaviour
         SpawnEcho();
     }
 
-    private void SpawnEcho()
+    private void SpawnEcho(bool force = false)
     {
-        if (hasSpawned || player == null)
-            return;
+        if (player == null) return;
+        if (!force && hasSpawned) return;
+
+        foreach (var existing in FindObjectsByType<EchoEntity>(FindObjectsSortMode.None))
+            Destroy(existing.gameObject);
 
         hasSpawned = true;
+        encounterActive = true;
+        ChapterSaveManager.Instance?.RecordEchoEncounterStarted();
 
         var echoGo = new GameObject("Echo");
         echoGo.transform.position = spawnPoint != null
@@ -72,16 +96,19 @@ public class EchoEncounterManager : MonoBehaviour
         var renderer = echoGo.AddComponent<SpriteRenderer>();
         renderer.sprite = echoSprite != null
             ? echoSprite
-            : CreatePlaceholderSprite();
+            : LoadEchoFrame() ?? CreatePlaceholderSprite();
         renderer.color = new Color(0.55f, 0.1f, 0.18f, 0.35f);
         renderer.sortingOrder = 6;
 
+        echoGo.AddComponent<EchoSpriteAnimator>();
         var echo = echoGo.AddComponent<EchoEntity>();
         echo.Initialize(player.transform);
 
         eventBus?.SetTension(0.85f);
         Debug.Log("An Echo has been drawn to the Ghost Key's power...");
     }
+
+    private static Sprite LoadEchoFrame() => Resources.Load<Sprite>("Art/Enemies/echo_00");
 
     private static Sprite CreatePlaceholderSprite()
     {

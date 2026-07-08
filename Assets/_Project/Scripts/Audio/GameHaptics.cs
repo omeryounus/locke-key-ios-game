@@ -9,6 +9,7 @@ public static class GameHaptics
     public static void Unlock() => PlayLight();
     public static void PhaseStart() => PlayMedium();
     public static void EchoContact() => PlayHeavy();
+    public static void ColdPhase() => PlayMedium();
 
     private static void PlayLight()
     {

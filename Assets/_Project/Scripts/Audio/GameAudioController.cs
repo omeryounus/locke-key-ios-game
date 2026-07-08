@@ -19,13 +19,17 @@ public class GameAudioController : MonoBehaviour
     private AudioClip memoryTransitionClip;
     private AudioClip echoContactClip;
     private AudioClip tensionLoopClip;
+    private AudioClip echoWhisperClip;
     private bool tensionPlaying;
+    private bool muffled;
+    private float baseMasterVolume;
 
     private void Awake()
     {
         oneShotSource = GetComponent<AudioSource>();
         oneShotSource.playOnAwake = false;
         oneShotSource.spatialBlend = 0f;
+        baseMasterVolume = masterVolume;
 
         var loopGo = new GameObject("TensionLoop");
         loopGo.transform.SetParent(transform);
@@ -42,7 +46,7 @@ public class GameAudioController : MonoBehaviour
 
         eventBus.OnKeyDiscovered += HandleKeyDiscovered;
         eventBus.OnGhostPhaseStarted += HandleGhostPhaseStarted;
-        eventBus.OnGhostPhaseEnded += StopTensionLoop;
+        eventBus.OnGhostPhaseEnded += HandleGhostPhaseEndedAudio;
         eventBus.OnEchoTriggered += HandleEchoSpawned;
         eventBus.OnEchoCaught += HandleEchoContact;
         eventBus.OnTensionChanged += HandleTensionChanged;
@@ -55,7 +59,7 @@ public class GameAudioController : MonoBehaviour
 
         eventBus.OnKeyDiscovered -= HandleKeyDiscovered;
         eventBus.OnGhostPhaseStarted -= HandleGhostPhaseStarted;
-        eventBus.OnGhostPhaseEnded -= StopTensionLoop;
+        eventBus.OnGhostPhaseEnded -= HandleGhostPhaseEndedAudio;
         eventBus.OnEchoTriggered -= HandleEchoSpawned;
         eventBus.OnEchoCaught -= HandleEchoContact;
         eventBus.OnTensionChanged -= HandleTensionChanged;
@@ -69,12 +73,27 @@ public class GameAudioController : MonoBehaviour
     public void PlayDoorUnlock() => PlayOneShot(doorUnlockClip);
     public void PlayMemoryTransition() => PlayOneShot(memoryTransitionClip);
     public void PlayEchoContact() => PlayOneShot(echoContactClip);
+    public void PlayEchoWhisper() => PlayOneShot(echoWhisperClip, volumeScale: 0.42f);
+
+    public void SetMuffled(bool enabled)
+    {
+        muffled = enabled;
+        masterVolume = enabled ? baseMasterVolume * 0.38f : baseMasterVolume;
+        if (oneShotSource != null)
+            oneShotSource.pitch = enabled ? 0.72f : 1f;
+        if (tensionSource != null)
+            tensionSource.pitch = enabled ? 0.68f : 1f;
+    }
 
     private void HandleGhostPhaseStarted()
     {
         PlayOneShot(ghostPhaseClip);
-        GameHaptics.PhaseStart();
         StartTensionLoop();
+    }
+
+    private void HandleGhostPhaseEndedAudio()
+    {
+        SetMuffled(false);
     }
 
     private void HandleEchoSpawned()
@@ -114,10 +133,10 @@ public class GameAudioController : MonoBehaviour
         }
     }
 
-    private void PlayOneShot(AudioClip clip)
+    private void PlayOneShot(AudioClip clip, float volumeScale = 1f)
     {
         if (clip == null || oneShotSource == null) return;
-        oneShotSource.PlayOneShot(clip, masterVolume);
+        oneShotSource.PlayOneShot(clip, masterVolume * volumeScale);
     }
 
     private void StartTensionLoop()
@@ -144,6 +163,26 @@ public class GameAudioController : MonoBehaviour
         memoryTransitionClip = CreateSwell(160f, 280f, 0.75f);
         echoContactClip = CreateNoiseBurst(0.14f, 0.5f);
         tensionLoopClip = CreateLoopPad(110f, 2.4f);
+        echoWhisperClip = CreateWhisper(0.85f);
+    }
+
+    private static AudioClip CreateWhisper(float duration)
+    {
+        const int sampleRate = 44100;
+        var samples = Mathf.Max(1, (int)(sampleRate * duration));
+        var data = new float[samples];
+        for (var i = 0; i < samples; i++)
+        {
+            var t = i / (float)sampleRate;
+            var env = Mathf.SmoothStep(0f, 1f, Mathf.Min(1f, t * 4f)) * (1f - t / duration);
+            var noise = (Random.value * 2f - 1f) * 0.22f;
+            var tone = Mathf.Sin(2f * Mathf.PI * 180f * t) * 0.08f;
+            data[i] = (noise + tone) * env;
+        }
+
+        var clip = AudioClip.Create("whisper", samples, 1, sampleRate, false);
+        clip.SetData(data, 0);
+        return clip;
     }
 
     private static AudioClip CreateChime(float freq, float duration, float volume, float secondTone = 0f)
