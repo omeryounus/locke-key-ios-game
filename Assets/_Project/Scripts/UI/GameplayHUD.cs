@@ -406,7 +406,11 @@ public class GameplayHUD : MonoBehaviour
         var instance = Instantiate(prefab);
         instance.name = "GameplayCanvas";
         var bindings = instance.GetComponent<GameplayHUDBindings>();
-        if (bindings == null) return false;
+        if (bindings == null)
+        {
+            Destroy(instance);
+            return false;
+        }
 
         keyStatusText = bindings.keyStatusText;
         houseKeyText = bindings.houseKeyText;
