@@ -57,6 +57,7 @@ GUIDS = {
     "Assets/_Project/Scripts/Keys/GhostKeyPickup.cs": "a1b2c3d4e5f6789012345678abcdef18",
     "Assets/_Project/Scripts/Puzzles/CollapsedBookshelfPuzzle.cs": "a1b2c3d4e5f6789012345678abcdef19",
     "Assets/_Project/Scripts/UI/GameplayHUD.cs": "a1b2c3d4e5f6789012345678abcdef20",
+    "Assets/_Project/Scripts/UI/HoldButton.cs": "a1b2c3d4e5f6789012345678abcdef4e",
     "Assets/_Project/Scripts/Keys/HeadKey.cs": "a1b2c3d4e5f6789012345678abcdef21",
     "Assets/_Project/Scripts/Puzzles/MemoryFragmentPuzzle.cs": "a1b2c3d4e5f6789012345678abcdef22",
     "Assets/_Project/Scripts/Keys/HeadKeyPickup.cs": "a1b2c3d4e5f6789012345678abcdef23",

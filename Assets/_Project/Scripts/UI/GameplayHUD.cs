@@ -489,14 +489,4 @@ public class GameplayHUD : MonoBehaviour
 
         return go;
     }
-
-    private class HoldButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerExitHandler
-    {
-        public UnityEngine.Events.UnityEvent onDown = new();
-        public UnityEngine.Events.UnityEvent onUp = new();
-
-        public void OnPointerDown(PointerEventData eventData) => onDown.Invoke();
-        public void OnPointerUp(PointerEventData eventData) => onUp.Invoke();
-        public void OnPointerExit(PointerEventData eventData) => onUp.Invoke();
-    }
 }

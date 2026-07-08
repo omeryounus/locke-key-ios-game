@@ -238,7 +238,7 @@ public static class GameplayHUDPrefabBuilder
     private static GameObject CreateHoldButton(Transform parent, string label, Sprite icon, Font font, Color bg, Color textColor,
         Vector2 anchorMin, Vector2 anchorMax, Vector2 anchoredPos, Vector2 sizeDelta)
     {
-        var go = new GameObject(label + "Button", typeof(RectTransform), typeof(Image), typeof(HoldButtonStub));
+        var go = new GameObject(label + "Button", typeof(RectTransform), typeof(Image), typeof(HoldButton));
         go.transform.SetParent(parent, false);
         var image = go.GetComponent<Image>();
         image.color = icon != null ? Color.white : bg;
@@ -259,12 +259,5 @@ public static class GameplayHUDPrefabBuilder
         }
 
         return go;
-    }
-
-    private class HoldButtonStub : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerExitHandler
-    {
-        public void OnPointerDown(PointerEventData eventData) { }
-        public void OnPointerUp(PointerEventData eventData) { }
-        public void OnPointerExit(PointerEventData eventData) { }
     }
 }
