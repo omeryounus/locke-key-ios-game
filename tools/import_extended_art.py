@@ -10,8 +10,9 @@ from pathlib import Path
 
 from PIL import Image, ImageFilter
 
+from art_sources import resolve_art_sources
+
 ROOT = Path(__file__).resolve().parents[1]
-SRC = Path("/home/agentv/.grok/sessions/%2Fhome%2Fagentv/019f4048-c7a0-7142-b679-11c8eb03f471/images")
 SPRITES = ROOT / "Assets/_Project/Art/Sprites"
 NORMALS = ROOT / "Assets/_Project/Art/NormalMaps"
 UI_OUT = ROOT / "Assets/_Project/Art/UI/Icons"
@@ -460,10 +461,12 @@ def update_sprite_metas_with_normals() -> dict[str, str]:
     return mapping
 
 
-def import_parallax() -> dict[str, str]:
+def import_parallax(src_dir: Path) -> dict[str, str]:
     guids: dict[str, str] = {}
     for src_name, out_name, guid, width in PARALLAX:
-        src = SRC / src_name
+        src = src_dir / src_name
+        if not src.exists():
+            raise FileNotFoundError(f"Missing parallax source: {src}")
         img = fit_width(Image.open(src).convert("RGBA"), width)
         dest = PARALLAX_OUT / out_name
         img.save(dest, format="PNG", optimize=True)
@@ -473,10 +476,13 @@ def import_parallax() -> dict[str, str]:
     return guids
 
 
-def import_ui_icons() -> dict[str, str]:
+def import_ui_icons(src_dir: Path) -> dict[str, str]:
     guids: dict[str, str] = {}
     for src_name, count, specs in UI_SLICES:
-        slice_row(SRC / src_name, count, specs)
+        src = src_dir / src_name
+        if not src.exists():
+            raise FileNotFoundError(f"Missing UI source: {src}")
+        slice_row(src, count, specs)
         for name, guid in specs:
             guids[name.replace(".png", "").replace("icon_", "")] = guid
             print(f"UI icon: {name}")
@@ -549,11 +555,14 @@ def write_script_metas() -> None:
 
 
 def main() -> None:
+    src_dir = resolve_art_sources()
+    print(f"Using art sources: {src_dir}")
+
     write_folders()
     write_script_metas()
     normals = update_sprite_metas_with_normals()
-    parallax = import_parallax()
-    icons = import_ui_icons()
+    parallax = import_parallax(src_dir)
+    icons = import_ui_icons(src_dir)
     write_ui_icon_library_asset(icons)
     update_manifest(normals, parallax, icons)
     print("Extended art import complete.")

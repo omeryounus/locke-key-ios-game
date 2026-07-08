@@ -81,6 +81,8 @@ Bundle ID: `com.lockekeystudio.keyhouse` · Target iOS 13.0+
 
 Chapter 1 sprites live in `Assets/_Project/Art/Sprites/` (AI-generated per Art Bible). Manifest: `Assets/_Project/Art/ai_assets_manifest.json`.
 
+Source JPEGs (`1.jpg`–`16.jpg`) are bundled in `tools/art_sources/`. Override with `LOCKE_ART_SOURCES` if you keep originals elsewhere.
+
 To re-import after regenerating source images:
 
 ```bash

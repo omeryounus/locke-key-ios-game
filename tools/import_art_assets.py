@@ -9,8 +9,9 @@ from pathlib import Path
 
 from PIL import Image
 
+from art_sources import resolve_art_sources
+
 ROOT = Path(__file__).resolve().parents[1]
-SRC = Path("/home/agentv/.grok/sessions/%2Fhome%2Fagentv/019f4048-c7a0-7142-b679-11c8eb03f471/images")
 OUT = ROOT / "Assets/_Project/Art/Sprites"
 
 ASSETS = [
@@ -223,6 +224,9 @@ def write_folder_metas() -> None:
 
 
 def main() -> None:
+    src_dir = resolve_art_sources()
+    print(f"Using art sources: {src_dir}")
+
     OUT.mkdir(parents=True, exist_ok=True)
     write_folder_metas()
 
@@ -236,7 +240,7 @@ def main() -> None:
     guid_map: dict[str, str] = {}
 
     for src_name, rel_out, guid, long_edge, cut_bg in ASSETS:
-        src = SRC / src_name
+        src = src_dir / src_name
         if not src.exists():
             raise FileNotFoundError(src)
 
