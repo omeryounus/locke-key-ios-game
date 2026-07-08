@@ -81,6 +81,18 @@ def beat_snapshot(beat: int) -> dict:
     return base
 
 
+def has_progress(data: dict) -> bool:
+    return (
+        data.get("currentBeat", 0) > 0
+        or data.get("hasHouseKey")
+        or data.get("hasGhostKey")
+        or data.get("hasHeadKey")
+        or data.get("chapterComplete")
+        or len(data.get("solvedPuzzleIds") or []) > 0
+        or len(data.get("collectedPickupIds") or []) > 0
+    )
+
+
 def assert_fields(data: dict, **expected) -> None:
     for key, value in expected.items():
         assert data[key] == value, f"{key}: expected {value!r}, got {data[key]!r}"
@@ -94,6 +106,11 @@ def main() -> None:
         "sealed_door_solved": (4, {"solvedPuzzleIds": lambda v: "chapter1_sealed_door" in v}),
         "chapter_complete": (5, {"chapterComplete": True, "echoEncounterCleared": True}),
     }
+
+    assert not has_progress(beat_snapshot(0))
+    assert has_progress(beat_snapshot(31))
+    assert has_progress(beat_snapshot(4))
+    assert has_progress(beat_snapshot(5))
 
     with tempfile.TemporaryDirectory() as tmp:
         for name, (beat, checks) in scenarios.items():

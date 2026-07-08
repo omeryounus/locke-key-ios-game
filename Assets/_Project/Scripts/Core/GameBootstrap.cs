@@ -44,7 +44,6 @@ public class GameBootstrap : MonoBehaviour
             gameObject.AddComponent<ParticleVFXController>();
         if (GetComponent<EchoTensionController>() == null)
             gameObject.AddComponent<EchoTensionController>();
-
         if (FindFirstObjectByType<HideSpot>() == null)
             CreateHideArch();
 

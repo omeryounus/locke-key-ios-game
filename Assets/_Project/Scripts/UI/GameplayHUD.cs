@@ -47,6 +47,19 @@ public class GameplayHUD : MonoBehaviour
 
         if (!TryLoadAuthoredHud())
             BuildCanvas();
+
+        EnsureSaveDebugMenu();
+    }
+
+    private void EnsureSaveDebugMenu()
+    {
+        if (FindFirstObjectByType<ChapterSaveDebugMenu>() != null)
+            return;
+
+        var canvas = FindFirstObjectByType<Canvas>();
+        if (canvas == null) return;
+
+        canvas.gameObject.AddComponent<ChapterSaveDebugMenu>().BindHud(this);
     }
 
     private void Update()

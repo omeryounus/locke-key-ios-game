@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Persists Chapter 1 progress: keys, puzzles, beat, position, and completion flag.
@@ -30,6 +31,12 @@ public class ChapterSaveManager : MonoBehaviour
 
     public ChapterSaveData Data => data;
     public bool HasSaveFile => File.Exists(GetSavePath());
+
+    public bool HasContinuableSave =>
+        HasSaveFile && HasProgress(data);
+
+    public string SaveSummary =>
+        $"Beat {(ChapterBeatDirector.Beat)data.currentBeat} | House:{data.hasHouseKey} Ghost:{data.hasGhostKey} Head:{data.hasHeadKey}";
 
     private void Awake()
     {
@@ -118,6 +125,42 @@ public class ChapterSaveManager : MonoBehaviour
         data = new ChapterSaveData();
         SeedCheckpointForBeat(0);
         WriteSave();
+    }
+
+    public void StartNewGame()
+    {
+        ResetSave();
+        ReloadChapterScene();
+    }
+
+    public void ContinueGame()
+    {
+        LoadOrCreate();
+        ReloadChapterScene();
+    }
+
+    public void ResetChapterSaveAndReload()
+    {
+        ResetSave();
+        ReloadChapterScene();
+    }
+
+    public static void ReloadChapterScene()
+    {
+        var scene = SceneManager.GetActiveScene();
+        SceneManager.LoadScene(scene.buildIndex);
+    }
+
+    public static bool HasProgress(ChapterSaveData save)
+    {
+        if (save == null) return false;
+        return save.currentBeat > 0
+               || save.hasHouseKey
+               || save.hasGhostKey
+               || save.hasHeadKey
+               || save.chapterComplete
+               || (save.solvedPuzzleIds != null && save.solvedPuzzleIds.Count > 0)
+               || (save.collectedPickupIds != null && save.collectedPickupIds.Count > 0);
     }
 
     public Vector3 GetCheckpointPosition()
