@@ -68,7 +68,7 @@ GUIDS = {
     "Assets/Editor/LockeKey.Editor.asmdef": "a1b2c3d4e5f6789012345678abcdef28",
     "Assets/_Project/Scripts/Environment/ParallaxLayer.cs": "a1b2c3d4e5f6789012345678abcdef30",
     "Assets/_Project/Scripts/UI/UIIconLibrary.cs": "a1b2c3d4e5f6789012345678abcdef31",
-    "Assets/_Project/Resources/Art/UI/UIIconLibrary.asset": "b400000000000010000000000000010",
+    "Assets/_Project/Resources/Art/UI/UIIconLibrary.asset": "b4000000000000100000000000000010",
 }
 
 FOLDERS = [
