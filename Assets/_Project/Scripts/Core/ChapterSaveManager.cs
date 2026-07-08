@@ -154,6 +154,8 @@ public class ChapterSaveManager : MonoBehaviour
     public bool IsPickupCollected(string pickupId) =>
         !string.IsNullOrEmpty(pickupId) && data.collectedPickupIds.Contains(pickupId);
 
+    public bool IsGhostKeyRevealed => data.ghostKeyRevealed;
+
     public void RecordPuzzleSolved(string puzzleId)
     {
         if (string.IsNullOrEmpty(puzzleId) || data.solvedPuzzleIds.Contains(puzzleId))

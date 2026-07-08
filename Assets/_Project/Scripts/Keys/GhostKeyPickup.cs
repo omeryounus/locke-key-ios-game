@@ -49,7 +49,7 @@ public class GhostKeyPickup : MonoBehaviour, IInteractable
             return;
         }
 
-        if (save.IsPuzzleSolved("chapter1_bookshelf") || save.ghostKeyRevealed)
+        if (save.IsPuzzleSolved("chapter1_bookshelf") || save.IsGhostKeyRevealed)
         {
             isAvailable = true;
             SetVisible(true);

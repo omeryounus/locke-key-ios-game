@@ -1,7 +1,10 @@
 {
     "name": "LockeKey.Editor",
     "rootNamespace": "",
-    "references": [],
+    "references": [
+        "LockeKey",
+        "Unity.ugui"
+    ],
     "includePlatforms": [
         "Editor"
     ],
