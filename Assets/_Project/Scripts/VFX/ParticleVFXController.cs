@@ -57,19 +57,19 @@ public class ParticleVFXController : MonoBehaviour
     private void LoadSpritesIfNeeded()
     {
         if (ghostPhaseSprites == null || ghostPhaseSprites.Length == 0)
-            ghostPhaseSprites = LoadSheet("Art/VFX/ghostphase");
+            ghostPhaseSprites = LoadSheet("ghostphase");
         if (memorySprites == null || memorySprites.Length == 0)
-            memorySprites = LoadSheet("Art/VFX/memory");
+            memorySprites = LoadSheet("memory");
         if (echoFogSprites == null || echoFogSprites.Length == 0)
-            echoFogSprites = LoadSheet("Art/VFX/echofog");
+            echoFogSprites = LoadSheet("echofog");
     }
 
-    private static Sprite[] LoadSheet(string prefix)
+    private static Sprite[] LoadSheet(string filePrefix)
     {
         var list = new System.Collections.Generic.List<Sprite>();
         for (var i = 0; i < 6; i++)
         {
-            var sprite = Resources.Load<Sprite>($"Art/VFX/{prefix}_{i:00}");
+            var sprite = Resources.Load<Sprite>($"Art/VFX/{filePrefix}_{i:00}");
             if (sprite != null)
                 list.Add(sprite);
         }

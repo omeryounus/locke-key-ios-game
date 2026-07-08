@@ -72,6 +72,7 @@ GUIDS = {
     "Assets/_Project/Scripts/VFX/InteractGlow.cs": "a1b2c3d4e5f6789012345678abcdef36",
     "Assets/_Project/Scripts/VFX/PickupFeedback.cs": "a1b2c3d4e5f6789012345678abcdef37",
     "Assets/_Project/Scripts/Environment/PassageEscapeZone.cs": "a1b2c3d4e5f6789012345678abcdef38",
+    "Assets/_Project/Scripts/Puzzles/SealedDoorPassageZone.cs": "a1b2c3d4e5f6789012345678abcdef3d",
     "Assets/_Project/Scripts/VFX": "a0000000000000180000000000000018",
     "Assets/Editor/LockeKey.Editor.asmdef": "a1b2c3d4e5f6789012345678abcdef28",
     "Assets/_Project/Scripts/Environment/ParallaxLayer.cs": "a1b2c3d4e5f6789012345678abcdef30",

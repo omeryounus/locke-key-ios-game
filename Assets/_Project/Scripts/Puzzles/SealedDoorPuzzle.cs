@@ -2,6 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// Beat 4 — sealed door opens only while the Ghost Key phase is active (Use Key, not Interact).
+/// Solved only after the player actually crosses the passage trigger.
 /// </summary>
 public class SealedDoorPuzzle : PuzzleBase
 {
@@ -11,7 +12,9 @@ public class SealedDoorPuzzle : PuzzleBase
     [SerializeField] private float useKeyRange = 3f;
 
     private Transform player;
-    private bool passageEnabled;
+    private bool passageOpen;
+    private bool playerCrossed;
+    private Color doorBaseColor = Color.white;
 
     public override bool CanInteract => !isSolved;
 
@@ -27,8 +30,17 @@ public class SealedDoorPuzzle : PuzzleBase
         requiresSpecificKey = false;
         player = FindFirstObjectByType<PlayerController>()?.transform;
 
+        if (doorRenderer != null)
+            doorBaseColor = doorRenderer.color;
+
         if (passageTrigger != null)
+        {
             passageTrigger.SetActive(false);
+            var zone = passageTrigger.GetComponent<SealedDoorPassageZone>();
+            if (zone == null)
+                zone = passageTrigger.AddComponent<SealedDoorPassageZone>();
+            zone.Bind(this);
+        }
     }
 
     private void OnEnable()
@@ -61,12 +73,20 @@ public class SealedDoorPuzzle : PuzzleBase
         return Vector2.Distance(player.position, transform.position) <= useKeyRange;
     }
 
+    public void NotifyPlayerCrossed()
+    {
+        if (!passageOpen || isSolved) return;
+        playerCrossed = true;
+    }
+
     private void HandleGhostPhaseStarted()
     {
         if (isSolved || player == null || !IsPlayerInRange())
             return;
 
-        passageEnabled = true;
+        passageOpen = true;
+        playerCrossed = false;
+
         if (doorCollider != null)
             doorCollider.enabled = false;
 
@@ -81,15 +101,33 @@ public class SealedDoorPuzzle : PuzzleBase
 
     private void HandleGhostPhaseEnded()
     {
-        if (!passageEnabled || isSolved)
+        if (!passageOpen || isSolved)
             return;
 
-        MarkAsSolved();
+        if (playerCrossed)
+        {
+            MarkAsSolved();
+            if (doorRenderer != null)
+                doorRenderer.color = new Color(0.3f, 0.55f, 0.42f, 0.35f);
+            return;
+        }
+
+        ResealDoor();
+        Debug.Log("The sealed door snaps shut — you must phase all the way through.");
+    }
+
+    private void ResealDoor()
+    {
+        passageOpen = false;
+        playerCrossed = false;
 
         if (doorCollider != null)
-            doorCollider.enabled = false;
+            doorCollider.enabled = true;
 
         if (doorRenderer != null)
-            doorRenderer.color = new Color(0.3f, 0.55f, 0.42f, 0.35f);
+            doorRenderer.color = doorBaseColor;
+
+        if (passageTrigger != null)
+            passageTrigger.SetActive(false);
     }
 }
