@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage UX reference mockups under Assets/ArtSource/ux/ (design targets, not Resources)."""
+"""Install hi-fi UX reference mockups into Assets/ArtSource/ux/."""
 
 from __future__ import annotations
 
@@ -8,21 +8,24 @@ import shutil
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+GROK = ROOT / "Assets/GrokWireframes"
 WF = ROOT / "Assets/ArtSource/wireframes"
 UX = ROOT / "Assets/ArtSource/ux"
 
-# wireframe → ux filename (hi-fi targets; wireframes used as placeholders until replaced)
-MAPPING = {
-    "wireframe_main_scene_keyhouse.jpg": "ux_s0_splash.jpg",
-    "wireframe_story_strip.jpg": "ux_s1_story_reel.jpg",
-    "wireframe_chapter_map.jpg": "ux_s2_chapter_map.jpg",
-    "wireframe_foyer_detailed.jpg": "ux_s3_foyer_hud.jpg",
-    "wireframe_key_discovery.jpg": "ux_s4_key_discovery.jpg",
-    "wireframe_lock_3state.jpg": "ux_s5_lock_puzzle.jpg",
-    "wireframe_key_ring.jpg": "ux_s6_key_ring.jpg",
+# Full Grok export filename → canonical UX reference name
+GROK_UX_FILES = {
+    "grok-b5ed4fa4-968c-417e-bc5a-b477d5e17be7.jpg": "ux_s0_splash.jpg",
+    "grok-bd7aee8a-5f73-4dd5-9769-bbd8281ee63b.jpg": "ux_s1_story_reel.jpg",
+    "grok-96927911-50bd-4af0-9235-7920042867d3.jpg": "ux_s2_chapter_map.jpg",
+    "grok-68d49b26-b5c0-477f-820d-a0198138db2e.jpg": "ux_s3_foyer_hud.jpg",
+    "grok-03e3ef1b-0ce3-49d2-9b53-1ed32dd18356.jpg": "ux_s4_key_discovery.jpg",
+    "grok-a2728751-dab6-4218-847e-37abb2cf38b9.jpg": "ux_s5_lock_puzzle.jpg",
+    "grok-691aff9d-e6d1-45c7-a322-bfe6c5b8c9b8.jpg": "ux_s6_key_ring.jpg",
+    "grok-ee6c462b-7745-43e6-aff9-c00a5f62fa85.jpg": "ux_design_system_board.jpg",
+    "grok-5fc5a0fc-9abc-453e-b87a-724bb3f2bc2d.jpg": "ux_landscape_device_frame.jpg",
 }
 
-# Optional hi-fi asset UUID → filename (drop files here when downloaded)
+# Short UUID prefix → filename (for manifest / manual drops)
 UUID_MAP = {
     "b5ed4fa4": "ux_s0_splash.jpg",
     "bd7aee8a": "ux_s1_story_reel.jpg",
@@ -33,6 +36,17 @@ UUID_MAP = {
     "691aff9d": "ux_s6_key_ring.jpg",
     "ee6c462b": "ux_design_system_board.jpg",
     "5fc5a0fc": "ux_landscape_device_frame.jpg",
+}
+
+# Wireframe fallback if Grok hi-fi missing
+WIREFRAME_FALLBACK = {
+    "wireframe_main_scene_keyhouse.jpg": "ux_s0_splash.jpg",
+    "wireframe_story_strip.jpg": "ux_s1_story_reel.jpg",
+    "wireframe_chapter_map.jpg": "ux_s2_chapter_map.jpg",
+    "wireframe_foyer_detailed.jpg": "ux_s3_foyer_hud.jpg",
+    "wireframe_key_discovery.jpg": "ux_s4_key_discovery.jpg",
+    "wireframe_lock_3state.jpg": "ux_s5_lock_puzzle.jpg",
+    "wireframe_key_ring.jpg": "ux_s6_key_ring.jpg",
 }
 
 
@@ -73,32 +87,50 @@ GUIDS = {
 }
 
 
+def install_file(src: Path, dest_name: str, installed: dict[str, str]) -> bool:
+    dest = UX / dest_name
+    shutil.copy2(src, dest)
+    (Path(str(dest) + ".meta")).write_text(jpg_meta(GUIDS[dest_name]))
+    installed[dest_name] = str(src.relative_to(ROOT))
+    print(f"ux/{dest_name} <= {src.relative_to(ROOT)}")
+    return True
+
+
 def main() -> None:
     UX.mkdir(parents=True, exist_ok=True)
     (UX / ".meta").write_text(folder_meta(GUIDS["Assets/ArtSource/ux"]))
 
-    installed = {}
-    extras = [
-        ("wireframe_chapter_map.jpg", "ux_design_system_board.jpg"),
-        ("wireframe_foyer_detailed.jpg", "ux_landscape_device_frame.jpg"),
-    ]
+    installed: dict[str, str] = {}
+    dests_done: set[str] = set()
 
-    for src_name, dest_name in list(MAPPING.items()) + extras:
-        src = WF / src_name
-        dest = UX / dest_name
+    for grok_name, dest_name in GROK_UX_FILES.items():
+        src = GROK / grok_name
         if not src.exists():
-            print(f"skip missing wireframe: {src_name}")
+            print(f"skip missing grok: {grok_name}")
             continue
-        shutil.copy2(src, dest)
-        guid = GUIDS.get(dest_name, "c00000000000002a000000000000002a")
-        (Path(str(dest) + ".meta")).write_text(jpg_meta(guid))
-        installed[dest_name] = src_name
-        print(f"ux/{dest_name} <= wireframes/{src_name}")
+        install_file(src, dest_name, installed)
+        dests_done.add(dest_name)
+
+    for wf_name, dest_name in WIREFRAME_FALLBACK.items():
+        if dest_name in dests_done:
+            continue
+        src = WF / wf_name
+        if not src.exists():
+            print(f"skip missing wireframe fallback: {wf_name}")
+            continue
+        install_file(src, dest_name, installed)
+        dests_done.add(dest_name)
+
+    missing = set(GUIDS) - {"Assets/ArtSource/ux"} - dests_done
+    if missing:
+        print("warning: missing UX files:", ", ".join(sorted(missing)))
 
     manifest = {
         "note": "Reference only — implement UI in code per LockeKeyUITheme / LockeUIComponents",
+        "source": "Assets/GrokWireframes/grok-<uuid>.jpg",
         "uuid_rename_map": UUID_MAP,
-        "wireframe_placeholders": installed,
+        "grok_files": GROK_UX_FILES,
+        "installed": installed,
         "screens": {
             "S0": "Assets/ArtSource/ux/ux_s0_splash.jpg",
             "S1": "Assets/ArtSource/ux/ux_s1_story_reel.jpg",
@@ -107,6 +139,8 @@ def main() -> None:
             "S4": "Assets/ArtSource/ux/ux_s4_key_discovery.jpg",
             "S5": "Assets/ArtSource/ux/ux_s5_lock_puzzle.jpg",
             "S6": "Assets/ArtSource/ux/ux_s6_key_ring.jpg",
+            "kit": "Assets/ArtSource/ux/ux_design_system_board.jpg",
+            "layout": "Assets/ArtSource/ux/ux_landscape_device_frame.jpg",
         },
     }
     out = ROOT / "tools/ux_reference_manifest.json"

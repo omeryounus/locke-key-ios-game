@@ -1,5 +1,6 @@
 {
   "note": "Reference only \u2014 implement UI in code per LockeKeyUITheme / LockeUIComponents",
+  "source": "Assets/GrokWireframes/grok-<uuid>.jpg",
   "uuid_rename_map": {
     "b5ed4fa4": "ux_s0_splash.jpg",
     "bd7aee8a": "ux_s1_story_reel.jpg",
@@ -11,16 +12,27 @@
     "ee6c462b": "ux_design_system_board.jpg",
     "5fc5a0fc": "ux_landscape_device_frame.jpg"
   },
-  "wireframe_placeholders": {
-    "ux_s0_splash.jpg": "wireframe_main_scene_keyhouse.jpg",
-    "ux_s1_story_reel.jpg": "wireframe_story_strip.jpg",
-    "ux_s2_chapter_map.jpg": "wireframe_chapter_map.jpg",
-    "ux_s3_foyer_hud.jpg": "wireframe_foyer_detailed.jpg",
-    "ux_s4_key_discovery.jpg": "wireframe_key_discovery.jpg",
-    "ux_s5_lock_puzzle.jpg": "wireframe_lock_3state.jpg",
-    "ux_s6_key_ring.jpg": "wireframe_key_ring.jpg",
-    "ux_design_system_board.jpg": "wireframe_chapter_map.jpg",
-    "ux_landscape_device_frame.jpg": "wireframe_foyer_detailed.jpg"
+  "grok_files": {
+    "grok-b5ed4fa4-968c-417e-bc5a-b477d5e17be7.jpg": "ux_s0_splash.jpg",
+    "grok-bd7aee8a-5f73-4dd5-9769-bbd8281ee63b.jpg": "ux_s1_story_reel.jpg",
+    "grok-96927911-50bd-4af0-9235-7920042867d3.jpg": "ux_s2_chapter_map.jpg",
+    "grok-68d49b26-b5c0-477f-820d-a0198138db2e.jpg": "ux_s3_foyer_hud.jpg",
+    "grok-03e3ef1b-0ce3-49d2-9b53-1ed32dd18356.jpg": "ux_s4_key_discovery.jpg",
+    "grok-a2728751-dab6-4218-847e-37abb2cf38b9.jpg": "ux_s5_lock_puzzle.jpg",
+    "grok-691aff9d-e6d1-45c7-a322-bfe6c5b8c9b8.jpg": "ux_s6_key_ring.jpg",
+    "grok-ee6c462b-7745-43e6-aff9-c00a5f62fa85.jpg": "ux_design_system_board.jpg",
+    "grok-5fc5a0fc-9abc-453e-b87a-724bb3f2bc2d.jpg": "ux_landscape_device_frame.jpg"
+  },
+  "installed": {
+    "ux_s0_splash.jpg": "Assets/GrokWireframes/grok-b5ed4fa4-968c-417e-bc5a-b477d5e17be7.jpg",
+    "ux_s1_story_reel.jpg": "Assets/GrokWireframes/grok-bd7aee8a-5f73-4dd5-9769-bbd8281ee63b.jpg",
+    "ux_s2_chapter_map.jpg": "Assets/GrokWireframes/grok-96927911-50bd-4af0-9235-7920042867d3.jpg",
+    "ux_s3_foyer_hud.jpg": "Assets/GrokWireframes/grok-68d49b26-b5c0-477f-820d-a0198138db2e.jpg",
+    "ux_s4_key_discovery.jpg": "Assets/GrokWireframes/grok-03e3ef1b-0ce3-49d2-9b53-1ed32dd18356.jpg",
+    "ux_s5_lock_puzzle.jpg": "Assets/GrokWireframes/grok-a2728751-dab6-4218-847e-37abb2cf38b9.jpg",
+    "ux_s6_key_ring.jpg": "Assets/GrokWireframes/grok-691aff9d-e6d1-45c7-a322-bfe6c5b8c9b8.jpg",
+    "ux_design_system_board.jpg": "Assets/GrokWireframes/grok-ee6c462b-7745-43e6-aff9-c00a5f62fa85.jpg",
+    "ux_landscape_device_frame.jpg": "Assets/GrokWireframes/grok-5fc5a0fc-9abc-453e-b87a-724bb3f2bc2d.jpg"
   },
   "screens": {
     "S0": "Assets/ArtSource/ux/ux_s0_splash.jpg",
@@ -29,6 +41,8 @@
     "S3": "Assets/ArtSource/ux/ux_s3_foyer_hud.jpg",
     "S4": "Assets/ArtSource/ux/ux_s4_key_discovery.jpg",
     "S5": "Assets/ArtSource/ux/ux_s5_lock_puzzle.jpg",
-    "S6": "Assets/ArtSource/ux/ux_s6_key_ring.jpg"
+    "S6": "Assets/ArtSource/ux/ux_s6_key_ring.jpg",
+    "kit": "Assets/ArtSource/ux/ux_design_system_board.jpg",
+    "layout": "Assets/ArtSource/ux/ux_landscape_device_frame.jpg"
   }
 }
