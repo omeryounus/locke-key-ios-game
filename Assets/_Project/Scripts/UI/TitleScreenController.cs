@@ -7,6 +7,7 @@ using UnityEngine.UI;
 /// <summary>
 /// S0 Splash + S1 Story Reel — targets ux_s0_splash / ux_s1_story_reel (programmatic uGUI).
 /// </summary>
+[DefaultExecutionOrder(-100)]
 public class TitleScreenController : MonoBehaviour
 {
     private static TitleScreenController activeInstance;
@@ -44,6 +45,7 @@ public class TitleScreenController : MonoBehaviour
         }
 
         activeInstance = this;
+        StartCoroutine(InitializeRoutine());
     }
 
     private void OnDestroy()
@@ -52,12 +54,27 @@ public class TitleScreenController : MonoBehaviour
             activeInstance = null;
     }
 
-    private void Start()
+    private IEnumerator InitializeRoutine()
     {
-        if (!enabled) return;
+        if (!enabled) yield break;
+
+        for (int i = 0; i < 60 && (Screen.width <= 0 || Screen.height <= 0); i++)
+            yield return null;
 
         EnsureEventSystem();
         BuildCanvas();
+
+        if (splashGroup == null || reelGroup == null)
+        {
+            Debug.LogError($"[TitleScreen] Primary UI build failed; using emergency canvas. screen={Screen.width}x{Screen.height}");
+            BuildEmergencyCanvas();
+        }
+
+        if (splashGroup == null)
+            yield break;
+
+        Debug.Log($"[TitleScreen] Ready. screen={Screen.width}x{Screen.height}, font={(font != null)}");
+
         if (SaveData?.hasCompletedOnboarding == true)
             ShowSplashReturnState();
         else
@@ -136,10 +153,11 @@ public class TitleScreenController : MonoBehaviour
         }
 
         var flow = LockeUILayout.CreateFlowCanvas("TitleCanvas", 200);
-        font = flow.Font;
+        font = flow.Font ?? LockeUILayout.GetUIFont();
         var parent = LockeUILayout.GetContentRoot(flow);
         splashGroup = BuildSplash(parent);
         reelGroup = BuildReel(parent);
+        Canvas.ForceUpdateCanvases();
     }
 
     private CanvasGroup BuildSplash(Transform root)
@@ -260,6 +278,37 @@ public class TitleScreenController : MonoBehaviour
         LockeUILayout.Stretch(go.GetComponent<RectTransform>());
         go.GetComponent<Image>().color = bg;
         return go;
+    }
+
+    private void BuildEmergencyCanvas()
+    {
+        if (GameObject.Find("TitleCanvas") != null)
+            GameObject.Destroy(GameObject.Find("TitleCanvas"));
+
+        var go = new GameObject("TitleCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+        var canvas = go.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 500;
+
+        var scaler = go.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(LockeKeyUITheme.RefWidth, LockeKeyUITheme.RefHeight);
+        scaler.matchWidthOrHeight = 0.5f;
+        LockeUILayout.Stretch(go.GetComponent<RectTransform>());
+
+        font = LockeUILayout.GetUIFont();
+        var panel = MakePanel(go.transform, "Splash", LockeKeyUITheme.LKInk);
+        splashGroup = panel.AddComponent<CanvasGroup>();
+
+        LockeUIComponents.AddText(panel.transform, "GameTitle", font, LockeKeyUITheme.DisplaySize + 2,
+            FontStyle.Bold, LockeKeyUITheme.LKGold, new Vector2(0.5f, 0.65f),
+            "LOCKE & KEY", new Vector2(LockeKeyUITheme.RefWidth - 40f, 68f), TextAnchor.MiddleCenter);
+
+        LockeUIComponents.CreatePrimaryButton(panel.transform, font, "Enter Keyhouse",
+            new Vector2(0.5f, 0.35f), HandleEnterKeyhouse);
+
+        reelGroup = splashGroup;
+        Canvas.ForceUpdateCanvases();
     }
 
     private static void EnsureEventSystem()

@@ -3,6 +3,7 @@ using UnityEngine.UI;
 
 /// <summary>
 /// Portrait viewport (393×852) centered in landscape letterbox — matches ux_landscape_device_frame.
+/// Uses a single root overlay canvas (no nested canvases — avoids iOS/URP render failures).
 /// </summary>
 public static class LockeUILayout
 {
@@ -21,11 +22,11 @@ public static class LockeUILayout
         rootCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
         rootCanvas.sortingOrder = sortingOrder;
         rootCanvas.pixelPerfect = false;
+        rootCanvas.vertexColorAlwaysGammaSpace = true;
 
         var rootRect = rootGo.GetComponent<RectTransform>();
         Stretch(rootRect);
 
-        // Letterbox fill
         var letterbox = new GameObject("Letterbox",
             typeof(RectTransform), typeof(Image));
         letterbox.transform.SetParent(rootGo.transform, false);
@@ -33,7 +34,6 @@ public static class LockeUILayout
         letterbox.GetComponent<Image>().color = LockeKeyUITheme.LKInk;
         letterbox.GetComponent<Image>().raycastTarget = false;
 
-        // Centered portrait viewport — sized before any UI is parented (avoids 0×0 on iOS startup).
         var viewportGo = new GameObject("Viewport", typeof(RectTransform));
         viewportGo.transform.SetParent(rootGo.transform, false);
         var viewport = viewportGo.GetComponent<RectTransform>();
@@ -42,30 +42,22 @@ public static class LockeUILayout
         ApplyViewportSize(viewport);
         viewportGo.AddComponent<LockeViewportFitter>();
 
-        var contentGo = new GameObject("Content",
-            typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+        var contentGo = new GameObject("Content", typeof(RectTransform));
         contentGo.transform.SetParent(viewport, false);
-        Stretch(contentGo.GetComponent<RectTransform>());
-
-        var contentCanvas = contentGo.GetComponent<Canvas>();
-        contentCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        contentCanvas.overrideSorting = true;
-        contentCanvas.sortingOrder = sortingOrder;
-        contentCanvas.pixelPerfect = false;
-
-        var scaler = contentGo.GetComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(LockeKeyUITheme.RefWidth, LockeKeyUITheme.RefHeight);
-        scaler.matchWidthOrHeight = 1f;
+        var contentRect = contentGo.GetComponent<RectTransform>();
+        contentRect.anchorMin = contentRect.anchorMax = new Vector2(0.5f, 0.5f);
+        contentRect.pivot = new Vector2(0.5f, 0.5f);
+        contentRect.sizeDelta = new Vector2(LockeKeyUITheme.RefWidth, LockeKeyUITheme.RefHeight);
+        SyncContentScale(viewport, contentRect);
 
         LayoutRebuilder.ForceRebuildLayoutImmediate(viewport);
         Canvas.ForceUpdateCanvases();
 
         return new FlowCanvas
         {
-            Canvas = contentCanvas,
+            Canvas = rootCanvas,
             Viewport = viewport,
-            Font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf")
+            Font = GetUIFont()
         };
     }
 
@@ -103,11 +95,32 @@ public static class LockeUILayout
         viewport.sizeDelta = ComputeViewportSize(Screen.width, Screen.height);
     }
 
+    public static void SyncContentScale(RectTransform viewport, RectTransform content)
+    {
+        if (viewport == null || content == null) return;
+
+        var vpSize = viewport.sizeDelta;
+        if (vpSize.y <= 1f)
+            vpSize = ComputeViewportSize(Screen.width, Screen.height);
+
+        float scale = vpSize.y / LockeKeyUITheme.RefHeight;
+        content.localScale = Vector3.one * Mathf.Max(scale, 0.01f);
+    }
+
     public static Transform GetContentRoot(FlowCanvas flow)
     {
         var content = flow.Viewport != null ? flow.Viewport.Find("Content") : null;
         return content != null ? content : flow.Viewport;
     }
+
+    public static Font GetUIFont()
+    {
+        var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        if (font == null)
+            font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        return font;
+    }
+
 }
 
 /// <summary>
@@ -126,7 +139,7 @@ public class LockeViewportFitter : MonoBehaviour
 
     private void OnEnable() => Apply();
 
-    private void OnRectTransformDimensionsChange() => Apply();
+    private void Start() => Apply();
 
     private void LateUpdate()
     {
@@ -140,6 +153,12 @@ public class LockeViewportFitter : MonoBehaviour
     {
         if (rect == null) return;
         LockeUILayout.ApplyViewportSize(rect);
+
+        var content = rect.Find("Content") as RectTransform;
+        if (content != null)
+            LockeUILayout.SyncContentScale(rect, content);
+
         LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
+        Canvas.ForceUpdateCanvases();
     }
 }
