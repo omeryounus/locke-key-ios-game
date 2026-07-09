@@ -1,0 +1,1984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Locke & Key: Chapter 1 Wireframe Simulator</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #09090e;
+            --panel-bg: #12121a;
+            --panel-border: #1f1f2e;
+            --gold: #d4af37;
+            --gold-glow: rgba(212, 175, 55, 0.2);
+            --ink-text: #e0e0e9;
+            --ink-text-dim: #8b8b9c;
+            --active-blue: #3b82f6;
+            --inactive-control: #303042;
+            --success-green: #10b981;
+            --card-radius: 16px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--ink-text);
+            padding: 24px;
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Outfit', sans-serif;
+            color: #ffffff;
+            font-weight: 700;
+        }
+
+        header {
+            max-width: 1400px;
+            margin: 0 auto 24px auto;
+            border-bottom: 1px solid var(--panel-border);
+            padding-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header .title-area h1 {
+            font-size: 24px;
+            color: var(--gold);
+            text-shadow: 0 0 10px var(--gold-glow);
+            margin-bottom: 4px;
+        }
+
+        header .title-area p {
+            font-size: 14px;
+            color: var(--ink-text-dim);
+        }
+
+        .layout-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 420px;
+            gap: 24px;
+        }
+
+        @media (max-width: 1200px) {
+            .layout-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Simulator Left Panel */
+        .simulator-panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: var(--card-radius);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* View Tabs */
+        .view-tabs {
+            display: flex;
+            background-color: #0c0c14;
+            border-radius: 12px;
+            padding: 4px;
+            gap: 4px;
+            width: fit-content;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--ink-text-dim);
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn:hover {
+            color: #ffffff;
+        }
+
+        .tab-btn.active {
+            background-color: var(--panel-border);
+            color: var(--gold);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Beat Selector Controller */
+        .beat-controller {
+            background-color: #0e0e16;
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .beat-controller-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .beat-title {
+            font-size: 16px;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .beat-nav-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .beat-nav-btn {
+            background-color: var(--panel-border);
+            border: none;
+            color: #ffffff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .beat-nav-btn:hover {
+            background-color: #2b2b3f;
+        }
+
+        .beat-btns {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+        }
+
+        .beat-btn {
+            background-color: #1a1a26;
+            border: 1px solid var(--panel-border);
+            color: var(--ink-text-dim);
+            padding: 10px 6px;
+            font-size: 13px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .beat-btn:hover {
+            border-color: var(--gold);
+            color: #ffffff;
+        }
+
+        .beat-btn.active {
+            background-color: var(--gold-glow);
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
+        /* Views Content */
+        .view-content {
+            display: none;
+            min-height: 520px;
+        }
+
+        .view-content.active {
+            display: block;
+        }
+
+        /* view 1: HUD Mockup (iPhone screen) */
+        .hud-mockup-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px 0;
+        }
+
+        .iphone-frame {
+            width: 375px;
+            height: 700px;
+            background-color: #000000;
+            border: 10px solid #1c1c24;
+            border-radius: 44px;
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            user-select: none;
+        }
+
+        .iphone-notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 25px;
+            background-color: #1c1c24;
+            border-bottom-left-radius: 16px;
+            border-bottom-right-radius: 16px;
+            z-index: 100;
+        }
+
+        .phone-status-bar {
+            height: 40px;
+            padding: 12px 24px 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: #ffffff;
+            z-index: 90;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.4), transparent);
+        }
+
+        .phone-status-right {
+            display: flex;
+            gap: 4px;
+        }
+
+        /* Game Screen inside iPhone */
+        .game-viewport {
+            flex: 1;
+            position: relative;
+            background-color: #181822;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Parallax layers */
+        .parallax-layer-far {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center bottom;
+            transition: background 0.4s ease;
+            z-index: 1;
+        }
+
+        .parallax-layer-mid {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center bottom;
+            transition: background 0.4s ease;
+            z-index: 2;
+        }
+
+        .parallax-layer-near {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center bottom;
+            transition: background 0.4s ease;
+            z-index: 4;
+        }
+
+        /* Player Character overlay */
+        .player-character-mock {
+            position: absolute;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 32px;
+            height: 48px;
+            background-color: var(--success-green);
+            clip-path: polygon(50% 0%, 80% 20%, 80% 80%, 20% 80%, 20% 20%);
+            z-index: 3;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .player-character-mock::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 20%;
+            width: 60%;
+            height: 5px;
+            background-color: rgba(0,0,0,0.5);
+            border-radius: 50%;
+        }
+
+        /* Interactive Hotspot marker */
+        .hotspot-marker {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid var(--gold);
+            background-color: rgba(212, 175, 55, 0.4);
+            z-index: 3;
+            cursor: pointer;
+            box-shadow: 0 0 8px var(--gold);
+            animation: pulse-hotspot 1.5s infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            color: #ffffff;
+            font-weight: bold;
+        }
+
+        @keyframes pulse-hotspot {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 15px var(--gold); }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+
+        /* Game HUD Top Bar */
+        .game-hud-top {
+            position: absolute;
+            top: 40px;
+            left: 0;
+            right: 0;
+            padding: 10px 16px;
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        .hud-status-card {
+            background-color: rgba(18, 18, 26, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 10px;
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .hud-key-slot {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px dashed var(--ink-text-dim);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hud-key-slot.equipped {
+            border: 1px solid var(--gold);
+            background-color: rgba(212, 175, 55, 0.1);
+        }
+
+        .hud-status-details {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .hud-status-line-1 {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: var(--ink-text-dim);
+            font-weight: 600;
+        }
+
+        .hud-status-hint {
+            font-size: 11px;
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        /* Toast HUD popup */
+        .hud-toast {
+            position: absolute;
+            top: 115px;
+            left: 16px;
+            right: 16px;
+            background-color: var(--gold);
+            color: #000000;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            text-align: center;
+            z-index: 60;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transform: translateY(-10px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .hud-toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Memory Overlay Modal (Beat 6) */
+        .memory-modal-overlay {
+            position: absolute;
+            inset: 0;
+            background-color: rgba(9, 9, 14, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 80;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .memory-modal-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .memory-modal {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--gold);
+            border-radius: var(--card-radius);
+            width: 100%;
+            max-width: 320px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(212, 175, 55, 0.15);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .memory-modal-overlay.show .memory-modal {
+            transform: scale(1);
+        }
+
+        .memory-modal-title {
+            color: var(--gold);
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .memory-modal-desc {
+            font-size: 12px;
+            color: var(--ink-text-dim);
+            margin-bottom: 16px;
+        }
+
+        .memory-key-img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 2px solid var(--gold);
+            margin: 0 auto 16px auto;
+            box-shadow: 0 0 15px var(--gold-glow);
+        }
+
+        .memory-modal-close-btn {
+            background-color: var(--gold);
+            color: #000000;
+            border: none;
+            padding: 8px 20px;
+            font-weight: 700;
+            font-size: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .memory-modal-close-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Touch Control Bar (iPhone bottom) */
+        .touch-control-bar {
+            height: 80px;
+            background-color: rgba(18, 18, 26, 0.9);
+            backdrop-filter: blur(12px);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 50;
+        }
+
+        .direction-controls {
+            display: flex;
+            gap: 12px;
+        }
+
+        .action-controls {
+            display: flex;
+            gap: 12px;
+        }
+
+        .control-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background-color: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .control-btn.active {
+            background-color: var(--inactive-control);
+            border-color: var(--gold);
+            color: var(--gold);
+            box-shadow: 0 0 10px var(--gold-glow);
+            cursor: pointer;
+        }
+
+        .control-btn.active:active {
+            transform: scale(0.9);
+        }
+
+        .control-btn.disabled {
+            opacity: 0.25;
+            pointer-events: none;
+        }
+
+        .control-btn-label {
+            position: absolute;
+            bottom: -15px;
+            font-size: 7px;
+            color: var(--ink-text-dim);
+            text-transform: uppercase;
+        }
+
+        .phone-home-indicator {
+            height: 5px;
+            width: 140px;
+            background-color: #ffffff;
+            border-radius: 100px;
+            position: absolute;
+            bottom: 6px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+        }
+
+        /* View 2: Level Map Layout */
+        .level-map-canvas {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            background-color: #0c0c14;
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 24px;
+            overflow-x: auto;
+        }
+
+        .level-map-timeline {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            margin: 40px 0;
+            min-width: 800px;
+        }
+
+        .level-map-timeline::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background-color: var(--panel-border);
+            transform: translateY(-50%);
+            z-index: 1;
+        }
+
+        .level-map-timeline::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 0%; /* Dynamic fill based on player position */
+            height: 4px;
+            background-color: var(--gold);
+            transform: translateY(-50%);
+            z-index: 2;
+            transition: width 0.4s ease;
+            box-shadow: 0 0 10px var(--gold);
+        }
+
+        .room-node {
+            background-color: var(--panel-bg);
+            border: 2px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            width: 150px;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .room-node:hover {
+            border-color: var(--ink-text-dim);
+        }
+
+        .room-node.active {
+            border-color: var(--gold);
+            background-color: var(--gold-glow);
+            box-shadow: 0 0 15px var(--gold-glow);
+        }
+
+        .room-node-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 2px;
+        }
+
+        .room-node-coord {
+            font-size: 10px;
+            color: var(--ink-text-dim);
+            font-family: monospace;
+        }
+
+        .room-node-marker-dot {
+            position: absolute;
+            bottom: -32px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-color: var(--panel-bg);
+            border: 3px solid var(--panel-border);
+            z-index: 12;
+            transition: all 0.3s ease;
+        }
+
+        .room-node.active .room-node-marker-dot {
+            background-color: var(--gold);
+            border-color: #ffffff;
+            box-shadow: 0 0 8px var(--gold);
+        }
+
+        .room-node-player-tag {
+            position: absolute;
+            bottom: -58px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--success-green);
+            color: #ffffff;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+            display: none;
+        }
+
+        .room-node.active .room-node-player-tag {
+            display: block;
+        }
+
+        .level-map-legend {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 30px;
+        }
+
+        .level-map-legend-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+
+        .level-map-legend-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+        }
+
+        .legend-icon-marker {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 1px solid var(--gold);
+            background-color: var(--gold-glow);
+        }
+
+        /* View 3: Beat Flow Layout */
+        .beat-flow-canvas {
+            background-color: #0c0c14;
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .beat-flow-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .beat-flow-card {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 14px;
+            display: grid;
+            grid-template-columns: 40px 1fr auto;
+            align-items: center;
+            gap: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .beat-flow-card:hover {
+            border-color: var(--ink-text-dim);
+        }
+
+        .beat-flow-card.active {
+            border-color: var(--gold);
+            background: linear-gradient(90deg, var(--gold-glow) 0%, transparent 100%);
+        }
+
+        .beat-flow-num {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--panel-border);
+            color: var(--ink-text-dim);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .beat-flow-card.active .beat-flow-num {
+            background-color: var(--gold);
+            color: #000000;
+        }
+
+        .beat-flow-info h4 {
+            font-size: 14px;
+            color: #ffffff;
+            margin-bottom: 2px;
+        }
+
+        .beat-flow-info p {
+            font-size: 11px;
+            color: var(--ink-text-dim);
+        }
+
+        .beat-flow-controls {
+            display: flex;
+            gap: 4px;
+        }
+
+        .beat-flow-control-indicator {
+            font-size: 9px;
+            background-color: #1a1a26;
+            color: var(--ink-text-dim);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .beat-flow-control-indicator.unlocked {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--success-green);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .beat-flow-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            text-align: left;
+            margin-top: 16px;
+        }
+
+        .beat-flow-table th, .beat-flow-table td {
+            padding: 10px;
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        .beat-flow-table th {
+            color: #ffffff;
+            font-weight: 700;
+            background-color: #0e0e16;
+        }
+
+        .beat-flow-table td {
+            color: var(--ink-text);
+        }
+
+        /* Right Panel: Spec Sheet */
+        .spec-panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: var(--card-radius);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .spec-tabs {
+            display: flex;
+            background-color: #0c0c14;
+            border-radius: 10px;
+            padding: 4px;
+            gap: 4px;
+            width: 100%;
+        }
+
+        .spec-tab-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            color: var(--ink-text-dim);
+            padding: 6px 4px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .spec-tab-btn:hover {
+            color: #ffffff;
+        }
+
+        .spec-tab-btn.active {
+            background-color: var(--panel-border);
+            color: var(--gold);
+        }
+
+        .spec-content {
+            display: none;
+        }
+
+        .spec-content.active {
+            display: block;
+        }
+
+        /* Spec View 1: Info Architecture */
+        .info-arch-tree {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .info-arch-node {
+            background-color: #0e0e16;
+            border-left: 3px solid var(--gold);
+            padding: 10px 14px;
+            border-radius: 6px;
+        }
+
+        .info-arch-node-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 2px;
+        }
+
+        .info-arch-node-desc {
+            font-size: 11px;
+            color: var(--ink-text-dim);
+        }
+
+        /* Spec View 2: Key Ring Grid */
+        .key-ring-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .key-ring-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .key-ring-slot {
+            aspect-ratio: 1;
+            background-color: #0e0e16;
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .key-ring-slot:hover {
+            border-color: var(--gold);
+            box-shadow: 0 0 8px var(--gold-glow);
+        }
+
+        .key-ring-slot.active {
+            border-color: var(--gold);
+            box-shadow: 0 0 10px var(--gold-glow);
+        }
+
+        .key-ring-slot img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .key-ring-slot-empty {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: var(--ink-text-dim);
+            border: 1px dashed var(--panel-border);
+            border-radius: 12px;
+        }
+
+        .key-details-card {
+            background-color: #0e0e16;
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .key-details-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--panel-border);
+            padding-bottom: 8px;
+        }
+
+        .key-details-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--gold);
+        }
+
+        .key-details-rarity {
+            font-size: 9px;
+            background-color: #2a200a;
+            color: var(--gold);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .key-details-stat {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--ink-text-dim);
+        }
+
+        .key-details-stat span {
+            color: var(--ink-text);
+            font-weight: 500;
+        }
+
+        .key-details-power {
+            font-size: 11px;
+            background-color: #161622;
+            padding: 8px;
+            border-radius: 6px;
+            border-left: 2px solid var(--gold);
+            margin-top: 4px;
+        }
+
+        /* Spec View 3: Codex / System */
+        .codex-simulation {
+            background-color: #f7e7c4; /* Parchment color */
+            color: #2b1f0d;
+            border-radius: 10px;
+            padding: 16px;
+            font-family: serif;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
+            margin-bottom: 16px;
+        }
+
+        .codex-title {
+            font-family: serif;
+            font-size: 18px;
+            border-bottom: 1px solid #d4c29c;
+            padding-bottom: 4px;
+            margin-bottom: 8px;
+            color: #523f26;
+            font-weight: bold;
+        }
+
+        .codex-body {
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        /* Spec View 4: Design Tokens */
+        .token-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .token-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #0e0e16;
+            padding: 10px 14px;
+            border-radius: 6px;
+        }
+
+        .token-name {
+            font-family: monospace;
+            font-size: 11px;
+            color: var(--ink-text-dim);
+        }
+
+        .token-value {
+            font-size: 12px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .color-bubble {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        /* App Onboarding Mockup */
+        .onboarding-flow-mock {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background-color: #0e0e16;
+            padding: 16px;
+            border-radius: 10px;
+        }
+
+        .story-strip-view {
+            border: 1px solid var(--panel-border);
+            background-color: #000;
+            aspect-ratio: 16/9;
+            width: 100%;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 10px;
+            position: relative;
+        }
+
+        .story-strip-img-placeholder {
+            position: absolute;
+            inset: 0;
+            background-color: #1a1a26;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: var(--ink-text-dim);
+        }
+
+        .story-strip-text {
+            position: relative;
+            z-index: 10;
+            background-color: rgba(0,0,0,0.7);
+            padding: 6px;
+            font-size: 9px;
+            text-align: center;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="title-area">
+            <h1>Locke & Key: Chapter 1 Wireframe & Flow Simulator</h1>
+            <p>Interactive storyboard, coordinate map, and UI layout reference</p>
+        </div>
+        <div class="view-tabs">
+            <button class="tab-btn active" onclick="switchView('hud')">📱 Screen HUD</button>
+            <button class="tab-btn" onclick="switchView('map')">🗺 Level Map</button>
+            <button class="tab-btn" onclick="switchView('flow')">📈 Beat Flow</button>
+        </div>
+    </header>
+
+    <div class="layout-container">
+        <!-- Simulator Area -->
+        <div class="simulator-panel">
+            <!-- Beat Selector -->
+            <div class="beat-controller">
+                <div class="beat-controller-header">
+                    <div class="beat-title" id="active-beat-title">Beat 1: Entrance & Keyhouse Arrival</div>
+                    <div class="beat-nav-btns">
+                        <button class="beat-nav-btn" onclick="prevBeat()">← Prev</button>
+                        <button class="beat-nav-btn" onclick="nextBeat()">Next →</button>
+                    </div>
+                </div>
+                <div class="beat-btns">
+                    <button class="beat-btn active" id="beat-btn-1" onclick="selectBeat(1)">1: Arrival</button>
+                    <button class="beat-btn" id="beat-btn-2" onclick="selectBeat(2)">2: Stuck Door</button>
+                    <button class="beat-btn" id="beat-btn-3" onclick="selectBeat(3)">3: Library</button>
+                    <button class="beat-btn" id="beat-btn-4" onclick="selectBeat(4)">4: Ghost Key</button>
+                    <button class="beat-btn" id="beat-btn-5" onclick="selectBeat(5)">5: Echo</button>
+                    <button class="beat-btn" id="beat-btn-6" onclick="selectBeat(6)">6: Head Key</button>
+                </div>
+            </div>
+
+            <!-- View 1: HUD Mockup -->
+            <div class="view-content active" id="view-hud">
+                <div class="hud-mockup-container">
+                    <div class="iphone-frame">
+                        <div class="iphone-notch"></div>
+                        <div class="phone-status-bar">
+                            <span>9:41</span>
+                            <div class="phone-status-right">
+                                <span>📶</span>
+                                <span>🔋</span>
+                            </div>
+                        </div>
+
+                        <!-- Game Viewport -->
+                        <div class="game-viewport">
+                            <!-- Background layers -->
+                            <div class="parallax-layer-far" id="hud-bg-far"></div>
+                            <div class="parallax-layer-mid" id="hud-bg-mid"></div>
+                            <div class="parallax-layer-near" id="hud-bg-near"></div>
+
+                            <!-- Top HUD details card -->
+                            <div class="game-hud-top">
+                                <div class="hud-status-card">
+                                    <div class="hud-key-slot" id="hud-key-slot-icon">🗝</div>
+                                    <div class="hud-status-details">
+                                        <div class="hud-status-line-1">
+                                            <span id="hud-house-key-collected">House key: no</span>
+                                            <span>Key Ring</span>
+                                        </div>
+                                        <div class="hud-status-hint" id="hud-hint-text">Move toward the glinting house key</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Toast popups -->
+                            <div class="hud-toast" id="hud-toast-msg">Toast message here</div>
+
+                            <!-- Interactive Object marker -->
+                            <div class="hotspot-marker" id="hud-hotspot" style="bottom: 95px; left: 70%;" onclick="triggerHotspot()">!</div>
+
+                            <!-- Player character -->
+                            <div class="player-character-mock" id="hud-player"></div>
+
+                            <!-- Memory Modal Overlay (Beat 6) -->
+                            <div class="memory-modal-overlay" id="hud-memory-overlay">
+                                <div class="memory-modal">
+                                    <h3 class="memory-modal-title">Memory Profile Unlocked</h3>
+                                    <p class="memory-modal-desc">Using the Head Key unlocks the Locke family chronicles.</p>
+                                    <img src="assets/head_key.jpg" class="memory-key-img" alt="Head Key">
+                                    <button class="memory-modal-close-btn" onclick="closeMemoryModal()">Close Codex</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Touch controls bar -->
+                        <div class="touch-control-bar">
+                            <div class="direction-controls">
+                                <button class="control-btn active" id="btn-ctrl-left" label="Left">◀
+                                    <span class="control-btn-label">Left</span>
+                                </button>
+                                <button class="control-btn active" id="btn-ctrl-right" label="Right">▶
+                                    <span class="control-btn-label">Right</span>
+                                </button>
+                            </div>
+                            <div class="action-controls">
+                                <button class="control-btn disabled" id="btn-ctrl-jump" label="Jump">▲
+                                    <span class="control-btn-label">Jump</span>
+                                </button>
+                                <button class="control-btn disabled" id="btn-ctrl-interact" label="Interact">✋
+                                    <span class="control-btn-label">Interact</span>
+                                </button>
+                                <button class="control-btn disabled" id="btn-ctrl-usekey" label="Use Key">🗝
+                                    <span class="control-btn-label">Use Key</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="phone-home-indicator"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View 2: Level Map -->
+            <div class="view-content" id="view-map">
+                <div class="level-map-canvas">
+                    <h3 style="font-size: 15px; margin-bottom: 8px; color: var(--gold);">Room Zones & Coordinates (Chapter1.unity)</h3>
+                    <p style="font-size: 12px; color: var(--ink-text-dim); margin-bottom: 16px;">
+                        Interactive blueprint mapping hotspots and player nodes. Click a node to warp to that beat.
+                    </p>
+                    <div class="level-map-timeline" id="map-timeline">
+                        <div class="room-node active" id="map-node-1" onclick="selectBeat(1)">
+                            <div class="room-node-name">Exterior Entrance</div>
+                            <div class="room-node-coord">X = -6.0f</div>
+                            <div class="room-node-marker-dot"></div>
+                            <div class="room-node-player-tag">Player</div>
+                        </div>
+                        <div class="room-node" id="map-node-2" onclick="selectBeat(2)">
+                            <div class="room-node-name">Keyhouse Foyer</div>
+                            <div class="room-node-coord">X = -1.5f</div>
+                            <div class="room-node-marker-dot"></div>
+                            <div class="room-node-player-tag">Player</div>
+                        </div>
+                        <div class="room-node" id="map-node-3" onclick="selectBeat(3)">
+                            <div class="room-node-name">Manor Library</div>
+                            <div class="room-node-coord">X = 2.5f</div>
+                            <div class="room-node-marker-dot"></div>
+                            <div class="room-node-player-tag">Player</div>
+                        </div>
+                        <div class="room-node" id="map-node-4" onclick="selectBeat(4)">
+                            <div class="room-node-name">Sealed Passage</div>
+                            <div class="room-node-coord">X = 6.5f</div>
+                            <div class="room-node-marker-dot"></div>
+                            <div class="room-node-player-tag">Player</div>
+                        </div>
+                        <div class="room-node" id="map-node-5" onclick="selectBeat(6)">
+                            <div class="room-node-name">Memory Room</div>
+                            <div class="room-node-coord">X = 10.5f</div>
+                            <div class="room-node-marker-dot"></div>
+                            <div class="room-node-player-tag">Player</div>
+                        </div>
+                    </div>
+
+                    <div class="level-map-legend">
+                        <div class="level-map-legend-title">World Hotspot Legend</div>
+                        <div class="level-map-legend-items">
+                            <div class="legend-item">
+                                <div class="legend-icon-marker"></div>
+                                <span><strong>House Key (X = -3.5f)</strong> - Arrival discovery</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-icon-marker"></div>
+                                <span><strong>Stuck Door (X = -0.5f)</strong> - Foyer physical gate</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-icon-marker"></div>
+                                <span><strong>Bookshelf (X = 3.5f)</strong> - Collapsed puzzle</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-icon-marker"></div>
+                                <span><strong>Sealed Door (X = 7.5f)</strong> - Ghost Key phase boundary</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View 3: Beat Flow -->
+            <div class="view-content" id="view-flow">
+                <div class="beat-flow-canvas">
+                    <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--gold);">Chapter 1 Storyboard Progression</h3>
+                    <div class="beat-flow-list">
+                        <div class="beat-flow-card active" id="flow-card-1" onclick="selectBeat(1)">
+                            <div class="beat-flow-num">1</div>
+                            <div class="beat-flow-info">
+                                <h4>Keyhouse Arrival</h4>
+                                <p>Welcome to Keyhouse. Move toward the glinting house key.</p>
+                            </div>
+                            <div class="beat-flow-controls">
+                                <span class="beat-flow-control-indicator unlocked">Move</span>
+                                <span class="beat-flow-control-indicator">Jump</span>
+                            </div>
+                        </div>
+                        <div class="beat-flow-card" id="flow-card-2" onclick="selectBeat(2)">
+                            <div class="beat-flow-num">2</div>
+                            <div class="beat-flow-info">
+                                <h4>Stuck Door Lock</h4>
+                                <p>Physical barrier. Unlock the stuck door with the house key.</p>
+                            </div>
+                            <div class="beat-flow-controls">
+                                <span class="beat-flow-control-indicator unlocked">Move</span>
+                                <span class="beat-flow-control-indicator unlocked">Jump</span>
+                                <span class="beat-flow-control-indicator unlocked">Interact</span>
+                            </div>
+                        </div>
+                        <div class="beat-flow-card" id="flow-card-3" onclick="selectBeat(3)">
+                            <div class="beat-flow-num">3</div>
+                            <div class="beat-flow-info">
+                                <h4>Library & Bookshelf Puzzle</h4>
+                                <p>Push the collapsed bookshelf to reveal the alcove.</p>
+                            </div>
+                            <div class="beat-flow-controls">
+                                <span class="beat-flow-control-indicator unlocked">Move</span>
+                                <span class="beat-flow-control-indicator unlocked">Jump</span>
+                                <span class="beat-flow-control-indicator unlocked">Interact</span>
+                            </div>
+                        </div>
+                        <div class="beat-flow-card" id="flow-card-4" onclick="selectBeat(4)">
+                            <div class="beat-flow-num">4</div>
+                            <div class="beat-flow-info">
+                                <h4>Ghost Key Phase</h4>
+                                <p>Sealed door. Use Ghost Key ability to phase through walls.</p>
+                            </div>
+                            <div class="beat-flow-controls">
+                                <span class="beat-flow-control-indicator unlocked">Move</span>
+                                <span class="beat-flow-control-indicator unlocked">Jump</span>
+                                <span class="beat-flow-control-indicator unlocked">Interact</span>
+                                <span class="beat-flow-control-indicator unlocked">Use Key</span>
+                            </div>
+                        </div>
+                        <div class="beat-flow-card" id="flow-card-5" onclick="selectBeat(5)">
+                            <div class="beat-flow-num">5</div>
+                            <div class="beat-flow-info">
+                                <h4>Echo Wellhouse Encounter</h4>
+                                <p>The Echo is drawn to you. Run or hide behind the columns.</p>
+                            </div>
+                            <div class="beat-flow-controls">
+                                <span class="beat-flow-control-indicator unlocked">Move</span>
+                                <span class="beat-flow-control-indicator unlocked">Jump</span>
+                                <span class="beat-flow-control-indicator unlocked">Interact</span>
+                                <span class="beat-flow-control-indicator unlocked">Use Key</span>
+                            </div>
+                        </div>
+                        <div class="beat-flow-card" id="flow-card-6" onclick="selectBeat(6)">
+                            <div class="beat-flow-num">6</div>
+                            <div class="beat-flow-info">
+                                <h4>Head Key Memory Chronicles</h4>
+                                <p>Teleport into the portrait memory and claim the archive details.</p>
+                            </div>
+                            <div class="beat-flow-controls">
+                                <span class="beat-flow-control-indicator unlocked">Move</span>
+                                <span class="beat-flow-control-indicator unlocked">Jump</span>
+                                <span class="beat-flow-control-indicator unlocked">Interact</span>
+                                <span class="beat-flow-control-indicator unlocked">Use Key</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <table class="beat-flow-table">
+                        <thead>
+                            <tr>
+                                <th>Beat</th>
+                                <th>Puzzle ID</th>
+                                <th>Save Index</th>
+                                <th>Ambience Set</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1: Arrival</td>
+                                <td>None (Tutorial)</td>
+                                <td>Index 0</td>
+                                <td>Foyer (Quiet)</td>
+                            </tr>
+                            <tr>
+                                <td>2: Stuck Door</td>
+                                <td>chapter1_stuck_door</td>
+                                <td>Index 1</td>
+                                <td>Foyer (Tense)</td>
+                            </tr>
+                            <tr>
+                                <td>3: Library</td>
+                                <td>chapter1_bookshelf</td>
+                                <td>Index 2</td>
+                                <td>Library (Quiet)</td>
+                            </tr>
+                            <tr>
+                                <td>4: Ghost Key</td>
+                                <td>chapter1_sealed_door</td>
+                                <td>Index 3</td>
+                                <td>Sealed Passage</td>
+                            </tr>
+                            <tr>
+                                <td>5: Echo</td>
+                                <td>chapter1_echo_avoid</td>
+                                <td>Index 4</td>
+                                <td>Tension Ambience</td>
+                            </tr>
+                            <tr>
+                                <td>6: Head Key</td>
+                                <td>chapter1_portrait</td>
+                                <td>Index 5</td>
+                                <td>Memory Ambient</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Spec Right Panel -->
+        <div class="spec-panel">
+            <h3 style="font-size: 16px; color: var(--gold); display: flex; align-items: center; gap: 8px;">
+                <span>🗝</span> Locke & Key Layout Specification
+            </h3>
+            
+            <div class="spec-tabs">
+                <button class="spec-tab-btn active" onclick="switchSpec('keyring')">🎒 Key Ring</button>
+                <button class="spec-tab-btn" onclick="switchSpec('arch')">📂 Info Arch</button>
+                <button class="spec-tab-btn" onclick="switchSpec('codex')">📖 Codex/System</button>
+                <button class="spec-tab-btn" onclick="switchSpec('tokens')">⚙ Tokens</button>
+            </div>
+
+            <!-- Spec 1: Key Ring Grid -->
+            <div class="spec-content active" id="spec-keyring">
+                <div class="key-ring-container">
+                    <p style="font-size: 11px; color: var(--ink-text-dim);">
+                        Click on a collected key to inspect its properties and lore details.
+                    </p>
+                    <div class="key-ring-grid">
+                        <div class="key-ring-slot active" onclick="showKeyDetails('house')">
+                            <img src="assets/key_ring_ui.jpg" alt="House Key" style="filter: hue-rotate(180deg) brightness(1.2);">
+                        </div>
+                        <div class="key-ring-slot" onclick="showKeyDetails('ghost')">
+                            <img src="assets/mirror_key.jpg" alt="Ghost Key" style="filter: sepia(0.8) hue-rotate(90deg);">
+                        </div>
+                        <div class="key-ring-slot" onclick="showKeyDetails('head')">
+                            <img src="assets/head_key.jpg" alt="Head Key">
+                        </div>
+                        <div class="key-ring-slot" onclick="showKeyDetails('gender')">
+                            <img src="assets/gender_key.jpg" alt="Gender Key">
+                        </div>
+                        <div class="key-ring-slot" onclick="showKeyDetails('omega')">
+                            <img src="assets/omega_key.jpg" alt="Omega Key">
+                        </div>
+                        <div class="key-ring-slot">
+                            <div class="key-ring-slot-empty">🔒</div>
+                        </div>
+                    </div>
+
+                    <!-- Key Details Card -->
+                    <div class="key-details-card" id="key-details-display">
+                        <div class="key-details-header">
+                            <span class="key-details-name" id="key-name">House Key</span>
+                            <span class="key-details-rarity" id="key-rarity">Common</span>
+                        </div>
+                        <div class="key-details-stat">
+                            Type: <span id="key-type">Story Unlocking</span>
+                        </div>
+                        <div class="key-details-stat">
+                            Location: <span id="key-location">Keyhouse Grounds</span>
+                        </div>
+                        <div class="key-details-power" id="key-power">
+                            Unlocks the basic physical entryways of the Keyhouse manor.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Spec 2: Info Architecture -->
+            <div class="spec-content" id="spec-arch">
+                <div class="info-arch-tree">
+                    <div class="info-arch-node">
+                        <div class="info-arch-node-name">1. Splash Screen</div>
+                        <div class="info-arch-node-desc">Logo, ink black layout, spin spinner, and loadingSpinner exit.</div>
+                    </div>
+                    <div class="info-arch-node">
+                        <div class="info-arch-node-name">2. Story Reel Panels</div>
+                        <div class="info-arch-node-desc">Skippable 4-panel lore layout introducing Keyhouse history.</div>
+                    </div>
+                    <div class="info-arch-node">
+                        <div class="info-arch-node-name">3. Map / Chapter Hub</div>
+                        <div class="info-arch-node-desc">Grid selector showing rooms (Foyer, Wellhouse, Black Door).</div>
+                    </div>
+                    <div class="info-arch-node">
+                        <div class="info-arch-node-name">4. Room Scene Layout</div>
+                        <div class="info-arch-node-desc">Full screen parallax backgrounds with interactive hotspot layers.</div>
+                    </div>
+                    <div class="info-arch-node">
+                        <div class="info-arch-node-name">5. Puzzle Lock Sheet</div>
+                        <div class="info-arch-node-desc">Bottom drawer layout featuring 3 blank key slots.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Spec 3: Codex & System -->
+            <div class="spec-content" id="spec-codex">
+                <div class="codex-simulation">
+                    <div class="codex-title">manor_chronicles: Wellhouse</div>
+                    <div class="codex-body">
+                        "The Wellhouse, built on the grounds of Keyhouse manor in 1820, houses the Echo of Lady Wellhouse, a guardian or demon seeking the Omega key..."
+                    </div>
+                </div>
+
+                <div class="onboarding-flow-mock">
+                    <div style="font-size: 12px; font-weight: 700; margin-bottom: 6px;">Story Reel Preview:</div>
+                    <div class="story-strip-view">
+                        <div class="story-strip-img-placeholder" id="story-reel-img">Panel 1: The Return</div>
+                        <div class="story-strip-text" id="story-reel-caption">The Locke family returns to Keyhouse manor after tragedy.</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+                        <button class="beat-nav-btn" style="padding: 4px 8px; font-size: 10px;" onclick="stepStoryReel(-1)">← Panel</button>
+                        <span style="font-size: 10px; color: var(--ink-text-dim);" id="story-reel-indicator">1 / 4</span>
+                        <button class="beat-nav-btn" style="padding: 4px 8px; font-size: 10px;" onclick="stepStoryReel(1)">Next →</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Spec 4: Design Tokens -->
+            <div class="spec-content" id="spec-tokens">
+                <div class="token-list">
+                    <div class="token-card">
+                        <span class="token-name">LKInk (Primary Background)</span>
+                        <span class="token-value"><span class="color-bubble" style="background-color: #121218;"></span>#121218</span>
+                    </div>
+                    <div class="token-card">
+                        <span class="token-name">LKGold (Stroke & Accents)</span>
+                        <span class="token-value"><span class="color-bubble" style="background-color: #d4af37;"></span>#d4af37</span>
+                    </div>
+                    <div class="token-card">
+                        <span class="token-name">Min Tap Target</span>
+                        <span class="token-value">44 × 44 pt</span>
+                    </div>
+                    <div class="token-card">
+                        <span class="token-name">Tab Bar Height</span>
+                        <span class="token-value">56 pt</span>
+                    </div>
+                    <div class="token-card">
+                        <span class="token-name">Modal Corner Radius</span>
+                        <span class="token-value">16 pt</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Active beat state
+        let activeBeat = 1;
+        let storyReelPanel = 1;
+
+        // Beat data mapping
+        const beatData = {
+            1: {
+                title: "Beat 1: Entrance & Keyhouse Arrival",
+                houseKey: "House key: no",
+                hint: "Move toward the glinting house key",
+                room: "ExteriorEntrance",
+                toast: "Keyhouse — move toward the glinting key.",
+                bgFar: "foyer_far",
+                bgMid: "foyer_mid",
+                bgNear: "foyer_near",
+                playerPos: "25%",
+                hotspotPos: { bottom: "95px", left: "70%", display: "flex", text: "🔑" },
+                controls: { left: true, right: true, jump: false, interact: false, usekey: false }
+            },
+            2: {
+                title: "Beat 2: Stuck Door Lock",
+                houseKey: "House key: YES",
+                hint: "Unlock the stuck door with the house key",
+                room: "Foyer",
+                toast: "Unlock the stuck door with the house key.",
+                bgFar: "foyer_far",
+                bgMid: "foyer_mid",
+                bgNear: "foyer_near",
+                playerPos: "40%",
+                hotspotPos: { bottom: "110px", left: "80%", display: "flex", text: "🚪" },
+                controls: { left: true, right: true, jump: true, interact: true, usekey: false }
+            },
+            3: {
+                title: "Beat 3: Library & Bookshelf Puzzle",
+                houseKey: "House key: YES",
+                hint: "Push the collapsed bookshelf to reveal the alcove",
+                room: "Library",
+                toast: "Push the collapsed bookshelf to reveal the alcove.",
+                bgFar: "library_far",
+                bgMid: "library_mid",
+                bgNear: "library_near",
+                playerPos: "45%",
+                hotspotPos: { bottom: "120px", left: "65%", display: "flex", text: "📚" },
+                controls: { left: true, right: true, jump: true, interact: true, usekey: false }
+            },
+            4: {
+                title: "Beat 4: Ghost Key Phase",
+                houseKey: "House key: YES",
+                hint: "Sealed door ahead — tap Use Key to phase through",
+                room: "SealedPassage",
+                toast: "Sealed door ahead — tap Use Key to phase through.",
+                bgFar: "library_far",
+                bgMid: "library_mid",
+                bgNear: "library_near",
+                playerPos: "35%",
+                hotspotPos: { bottom: "115px", left: "85%", display: "flex", text: "💀" },
+                controls: { left: true, right: true, jump: true, interact: true, usekey: true }
+            },
+            5: {
+                title: "Beat 5: Echo Wellhouse Encounter",
+                houseKey: "House key: YES",
+                hint: "The Echo is drawn to you — hide or run!",
+                room: "SealedPassage",
+                toast: "The Echo is drawn to you — hide behind the arch or run.",
+                bgFar: "library_far",
+                bgMid: "library_mid",
+                bgNear: "library_near",
+                playerPos: "65%",
+                hotspotPos: { bottom: "120px", left: "20%", display: "flex", text: "👻" },
+                controls: { left: true, right: true, jump: true, interact: true, usekey: true }
+            },
+            6: {
+                title: "Beat 6: Head Key Memory Chronicles",
+                houseKey: "House key: YES",
+                hint: "Teleport into the portrait memory",
+                room: "MemoryPortrait",
+                toast: "Memory portrait — the Head Key may answer.",
+                bgFar: "sealed_passage",
+                bgMid: "library_mid",
+                bgNear: "library_near",
+                playerPos: "50%",
+                hotspotPos: { bottom: "120px", left: "50%", display: "none", text: "" },
+                controls: { left: true, right: true, jump: true, interact: true, usekey: true }
+            }
+        };
+
+        // Key descriptions mapping
+        const keysData = {
+            house: {
+                name: "House Key",
+                rarity: "Common",
+                type: "Story Unlocking",
+                location: "Keyhouse Grounds",
+                power: "Unlocks the basic physical entryways of the Keyhouse manor."
+            },
+            ghost: {
+                name: "Ghost Key",
+                rarity: "Rare",
+                type: "Phasing Ability",
+                location: "Library Alcove",
+                power: "Allows the user to separate their spirit from their body and phase through solid boundaries."
+            },
+            head: {
+                name: "Head Key",
+                rarity: "Epic",
+                type: "Memory Transition",
+                location: "Foyer Clock",
+                power: "Inserts into the base of the neck to reveal, manipulate, and explore the wearer's thoughts and memories."
+            },
+            gender: {
+                name: "Gender Key",
+                rarity: "Rare",
+                type: "Identity Shift",
+                location: "Wellhouse Chest",
+                power: "Allows the wearer to instantly alter their gender expression, appearance, and voice characteristics."
+            },
+            omega: {
+                name: "Omega Key",
+                rarity: "Legendary",
+                type: "Void Boundary",
+                location: "Black Door Lock",
+                power: "Forged in whispering iron; the key that unlocks the Black Door inside the Drowning Cave."
+            }
+        };
+
+        // Story Reel data
+        const storyReelData = {
+            1: { title: "Panel 1: The Return", caption: "The Locke family returns to Keyhouse manor after tragedy." },
+            2: { title: "Panel 2: Call of the Key", caption: "A mysterious key answers the calling of the old mansion." },
+            3: { title: "Panel 3: The Wellhouse", caption: "The ancient Wellhouse remembers dark secrets of the past." },
+            4: { title: "Panel 4: The Black Door", caption: "Deep in the caves, the sinister Black Door remains locked." }
+        };
+
+        // Select specific beat
+        function selectBeat(beatNum) {
+            activeBeat = beatNum;
+            updateUI();
+        }
+
+        function prevBeat() {
+            if (activeBeat > 1) {
+                activeBeat--;
+                updateUI();
+            }
+        }
+
+        function nextBeat() {
+            if (activeBeat < 6) {
+                activeBeat--;
+                activeBeat = activeBeat + 2; // work around decrement
+                activeBeat--;
+                updateUI();
+            }
+        }
+
+        // Update the simulator layout based on the active beat
+        function updateUI() {
+            const data = beatData[activeBeat];
+
+            // 1. Update selector buttons
+            for (let i = 1; i <= 6; i++) {
+                const btn = document.getElementById(`beat-btn-${i}`);
+                if (i === activeBeat) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            }
+
+            // 2. Update header and HUD text
+            document.getElementById('active-beat-title').innerText = data.title;
+            document.getElementById('hud-house-key-collected').innerText = data.houseKey;
+            document.getElementById('hud-hint-text').innerText = data.hint;
+
+            // 3. Update active room backgrounds
+            const farEl = document.getElementById('hud-bg-far');
+            const midEl = document.getElementById('hud-bg-mid');
+            const nearEl = document.getElementById('hud-bg-near');
+
+            // Apply different parallax assets
+            if (data.bgFar === "foyer_far") {
+                farEl.style.backgroundColor = "#1b1b22";
+                midEl.style.backgroundColor = "transparent";
+                nearEl.style.backgroundColor = "transparent";
+                farEl.style.backgroundImage = "url('assets/key_ring_ui.jpg')"; // representative foyer representation
+                farEl.style.filter = "brightness(0.3) blur(2px) grayscale(0.5)";
+            } else if (data.bgFar === "library_far") {
+                farEl.style.backgroundColor = "#101016";
+                farEl.style.backgroundImage = "url('assets/mirror_key.jpg')";
+                farEl.style.filter = "brightness(0.4) blur(1px)";
+            } else {
+                farEl.style.backgroundColor = "#08080c";
+                farEl.style.backgroundImage = "url('assets/head_key.jpg')";
+                farEl.style.filter = "brightness(0.2) contrast(1.2)";
+            }
+
+            // 4. Update player position and controls unlock states
+            const playerEl = document.getElementById('hud-player');
+            playerEl.style.left = data.playerPos;
+
+            const controls = data.controls;
+            updateControl('left', controls.left);
+            updateControl('right', controls.right);
+            updateControl('jump', controls.jump);
+            updateControl('interact', controls.interact);
+            updateControl('usekey', controls.usekey);
+
+            // Equipped key indicator
+            const slotIcon = document.getElementById('hud-key-slot-icon');
+            if (controls.usekey) {
+                slotIcon.classList.add('equipped');
+                slotIcon.innerText = "🔑";
+            } else {
+                slotIcon.classList.remove('equipped');
+                slotIcon.innerText = "🗝";
+            }
+
+            // 5. Update active hotspot marker
+            const hotspotEl = document.getElementById('hud-hotspot');
+            hotspotEl.style.bottom = data.hotspotPos.bottom;
+            hotspotEl.style.left = data.hotspotPos.left;
+            hotspotEl.style.display = data.hotspotPos.display;
+            hotspotEl.innerText = data.hotspotPos.text;
+
+            // 6. Show active beat toast
+            const toastEl = document.getElementById('hud-toast-msg');
+            toastEl.innerText = data.toast;
+            toastEl.classList.add('show');
+            setTimeout(() => {
+                toastEl.classList.remove('show');
+            }, 3000);
+
+            // 7. Memory Overlay modal (Beat 6)
+            const memoryOverlay = document.getElementById('hud-memory-overlay');
+            if (activeBeat === 6) {
+                memoryOverlay.classList.add('show');
+            } else {
+                memoryOverlay.classList.remove('show');
+            }
+
+            // 8. Update Level Map active states
+            const activeRoomIndex = {
+                "ExteriorEntrance": 1,
+                "Foyer": 2,
+                "Library": 3,
+                "SealedPassage": 4,
+                "MemoryPortrait": 5
+            }[data.room];
+
+            for (let i = 1; i <= 5; i++) {
+                const node = document.getElementById(`map-node-${i}`);
+                if (i === activeRoomIndex) {
+                    node.classList.add('active');
+                } else {
+                    node.classList.remove('active');
+                }
+            }
+
+            // Update timeline fill
+            const timelinePercent = (activeRoomIndex - 1) * 25;
+            document.getElementById('map-timeline').style.setProperty('--timeline-width', `${timelinePercent}%`);
+
+            // Apply timeline width injection
+            const timelineStyleEl = document.getElementById('timeline-width-injector') || (() => {
+                const el = document.createElement('style');
+                el.id = 'timeline-width-injector';
+                document.head.appendChild(el);
+                return el;
+            })();
+            timelineStyleEl.innerHTML = `.level-map-timeline::after { width: ${timelinePercent}%; }`;
+
+            // 9. Update Beat Flow active states
+            for (let i = 1; i <= 6; i++) {
+                const card = document.getElementById(`flow-card-${i}`);
+                if (i === activeBeat) {
+                    card.classList.add('active');
+                } else {
+                    card.classList.remove('active');
+                }
+            }
+        }
+
+        function updateControl(id, active) {
+            const el = document.getElementById(`btn-ctrl-${id}`);
+            if (active) {
+                el.classList.remove('disabled');
+                el.classList.add('active');
+            } else {
+                el.classList.add('disabled');
+                el.classList.remove('active');
+            }
+        }
+
+        // Trigger hotspot click simulation
+        function triggerHotspot() {
+            const data = beatData[activeBeat];
+            alert(`Hotspot triggered: ${data.toast}`);
+            if (activeBeat < 6) {
+                selectBeat(activeBeat + 1);
+            }
+        }
+
+        // Close memory portrait modal overlay
+        function closeMemoryModal() {
+            document.getElementById('hud-memory-overlay').classList.remove('show');
+        }
+
+        // Switch View Tab
+        function switchView(viewName) {
+            const views = ['hud', 'map', 'flow'];
+            views.forEach(v => {
+                const el = document.getElementById(`view-${v}`);
+                const tab = document.querySelector(`.view-tabs .tab-btn[onclick="switchView('${v}')"]`);
+                if (v === viewName) {
+                    el.classList.add('active');
+                    tab.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                    tab.classList.remove('active');
+                }
+            });
+        }
+
+        // Switch Spec Tab
+        function switchSpec(specName) {
+            const specs = ['keyring', 'arch', 'codex', 'tokens'];
+            specs.forEach(s => {
+                const el = document.getElementById(`spec-${s}`);
+                const tab = document.querySelector(`.spec-tabs .spec-tab-btn[onclick="switchSpec('${s}')"]`);
+                if (s === specName) {
+                    el.classList.add('active');
+                    tab.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                    tab.classList.remove('active');
+                }
+            });
+        }
+
+        // Show selected key details
+        function showKeyDetails(keyId) {
+            const slots = document.querySelectorAll('.key-ring-grid .key-ring-slot');
+            slots.forEach(slot => slot.classList.remove('active'));
+            
+            // Find clicked slot
+            event.currentTarget.classList.add('active');
+
+            const info = keysData[keyId];
+            document.getElementById('key-name').innerText = info.name;
+            document.getElementById('key-rarity').innerText = info.rarity;
+            document.getElementById('key-type').innerText = info.type;
+            document.getElementById('key-location').innerText = info.location;
+            document.getElementById('key-power').innerText = info.power;
+
+            // Update details rarity styling
+            const rarityEl = document.getElementById('key-rarity');
+            rarityEl.style.backgroundColor = {
+                "Common": "#2a200a",
+                "Rare": "#112e2e",
+                "Epic": "#3c1144",
+                "Legendary": "#4a1212"
+            }[info.rarity];
+            rarityEl.style.color = {
+                "Common": "#d4af37",
+                "Rare": "#20b2aa",
+                "Epic": "#da70d6",
+                "Legendary": "#ff6347"
+            }[info.rarity];
+        }
+
+        // Step through onboarding story reel
+        function stepStoryReel(direction) {
+            storyReelPanel += direction;
+            if (storyReelPanel < 1) storyReelPanel = 4;
+            if (storyReelPanel > 4) storyReelPanel = 1;
+
+            const panel = storyReelData[storyReelPanel];
+            document.getElementById('story-reel-img').innerText = panel.title;
+            document.getElementById('story-reel-caption').innerText = panel.caption;
+            document.getElementById('story-reel-indicator').innerText = `${storyReelPanel} / 4`;
+        }
+
+        // Initialize UI on load
+        window.onload = function() {
+            updateUI();
+        }
+    </script>
+</body>
+</html>
