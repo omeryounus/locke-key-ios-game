@@ -19,9 +19,15 @@ BUILTIN_GUIDS = {
 PROJECT_GUID_PREFIXES = ("a1b2c3d4", "b1", "b2", "b3", "b4", "e1f2a3b4")
 
 
+def is_ignored(path: Path) -> bool:
+    return any(part in path.parts for part in ("Library", "Temp", "Logs", "Builds", ".git"))
+
+
 def check_meta_yaml() -> list[str]:
     errors: list[str] = []
     for meta in ROOT.rglob("*.meta"):
+        if is_ignored(meta):
+            continue
         text = meta.read_text(encoding="utf-8", errors="replace")
         if "assetBundleVariant:\n" in text or text.rstrip("\n").endswith("assetBundleVariant:"):
             errors.append(
@@ -33,6 +39,8 @@ def check_meta_yaml() -> list[str]:
 def check_meta_guids() -> list[str]:
     errors: list[str] = []
     for meta in ROOT.rglob("*.meta"):
+        if is_ignored(meta):
+            continue
         for line in meta.read_text(encoding="utf-8", errors="replace").splitlines():
             if not line.startswith("guid: "):
                 continue
@@ -59,6 +67,8 @@ def check_preset_manager() -> list[str]:
 def check_duplicate_guids() -> list[str]:
     by_guid: dict[str, list[str]] = {}
     for meta in ROOT.rglob("*.meta"):
+        if is_ignored(meta):
+            continue
         for line in meta.read_text(encoding="utf-8", errors="replace").splitlines():
             if not line.startswith("guid: "):
                 continue
@@ -77,6 +87,8 @@ def check_duplicate_guids() -> list[str]:
 def build_guid_index() -> dict[str, Path]:
     index: dict[str, Path] = {}
     for meta in ROOT.rglob("*.meta"):
+        if is_ignored(meta):
+            continue
         for line in meta.read_text(encoding="utf-8", errors="replace").splitlines():
             if not line.startswith("guid: "):
                 continue

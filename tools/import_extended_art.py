@@ -404,12 +404,29 @@ def slice_row(src: Path, count: int, out_specs: list[tuple[str, str]]) -> None:
     img = Image.open(src).convert("RGBA")
     w, h = img.size
     cell_w = w // count
+    cell_h = min(h, cell_w)
+    y_offset = (h - cell_h) // 2
+
     for i, (name, guid) in enumerate(out_specs):
-        box = (i * cell_w, 0, (i + 1) * cell_w if i < count - 1 else w, h)
-        crop = img.crop(box)
+        x0 = i * cell_w
+        x1 = (i + 1) * cell_w if i < count - 1 else w
+        crop = img.crop((x0, y_offset, x1, y_offset + cell_h))
+
+        # Key out the solid background color
+        pixels = crop.load()
+        bg_r, bg_g, bg_b, bg_a = pixels[0, 0]
+        cw, ch = crop.size
+        for y in range(ch):
+            for x in range(cw):
+                r, g, b, a = pixels[x, y]
+                dist = ((r - bg_r)**2 + (g - bg_g)**2 + (b - bg_b)**2)**0.5
+                if dist < 45.0:
+                    pixels[x, y] = (0, 0, 0, 0)
+
         bbox = crop.getbbox()
         if bbox:
             crop = crop.crop(bbox)
+
         dest = RES_UI / name
         crop.save(dest, format="PNG", optimize=True)
         (Path(str(dest) + ".meta")).write_text(sprite_meta(guid, ppu=100))
