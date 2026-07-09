@@ -73,8 +73,6 @@ public static class ScenePatcher
         var flowHost = FindOrCreateGO(scene, "GrokUIFlowManager");
         dirty |= EnsureComponent<GrokUIFlowManager>(flowHost);
 
-        dirty |= EnsureGameplayCamera(scene);
-
         if (dirty)
         {
             EditorSceneManager.MarkSceneDirty(scene);
@@ -119,21 +117,6 @@ public static class ScenePatcher
         }
 
         return dirty;
-    }
-
-    private static bool EnsureGameplayCamera(Scene scene)
-    {
-        foreach (var root in scene.GetRootGameObjects())
-        {
-            var cam = root.GetComponentInChildren<Camera>();
-            if (cam == null) continue;
-            if (cam.GetComponent<GameplayViewportCamera>() != null) return false;
-            cam.gameObject.AddComponent<GameplayViewportCamera>();
-            Debug.Log("[ScenePatcher] Added GameplayViewportCamera to Main Camera");
-            return true;
-        }
-
-        return false;
     }
 
     private static Camera EnsureCamera(Scene scene)
