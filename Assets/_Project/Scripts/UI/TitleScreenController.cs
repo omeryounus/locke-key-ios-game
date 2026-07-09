@@ -279,23 +279,28 @@ public class TitleScreenController : MonoBehaviour
             dotButtons[i] = dBtn;
         }
 
-        // Skip (top-right)
+        // Skip (top-right) — Image+Button on parent, Text in child
         var skipGo = new GameObject("SkipBtn",
-            typeof(RectTransform), typeof(Image), typeof(Button), typeof(Text));
+            typeof(RectTransform), typeof(Image), typeof(Button));
         skipGo.transform.SetParent(panel.transform, false);
         var skipRect = skipGo.GetComponent<RectTransform>();
         skipRect.anchorMin = new Vector2(0.72f, 0.91f);
         skipRect.anchorMax = new Vector2(0.98f, 0.98f);
         skipRect.offsetMin = skipRect.offsetMax = Vector2.zero;
-        var skipImg = skipGo.GetComponent<Image>();
-        skipImg.color = new Color(1f, 1f, 1f, 0.08f);
-        var skipText = skipGo.GetComponent<Text>();
+        skipGo.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.08f);
+        skipGo.GetComponent<Button>().onClick.AddListener(HandleSkip);
+        // Label child
+        var skipLabelGo = new GameObject("Label", typeof(RectTransform), typeof(Text));
+        skipLabelGo.transform.SetParent(skipGo.transform, false);
+        var slRect = skipLabelGo.GetComponent<RectTransform>();
+        slRect.anchorMin = Vector2.zero; slRect.anchorMax = Vector2.one;
+        slRect.offsetMin = slRect.offsetMax = Vector2.zero;
+        var skipText = skipLabelGo.GetComponent<Text>();
         skipText.font = font;
         skipText.text = "Skip";
         skipText.fontSize = 18;
         skipText.color = new Color(0.7f, 0.7f, 0.7f);
         skipText.alignment = TextAnchor.MiddleCenter;
-        skipGo.GetComponent<Button>().onClick.AddListener(HandleSkip);
 
         // Next button (bottom)
         AddButton(panel.transform, "Next →", font,
