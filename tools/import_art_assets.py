@@ -177,26 +177,40 @@ def remove_dark_background(img: Image.Image, threshold: int = 32) -> Image.Image
     pixels = img.load()
     width, height = img.size
 
-    corners = [
-        pixels[0, 0],
-        pixels[width - 1, 0],
-        pixels[0, height - 1],
-        pixels[width - 1, height - 1],
-    ]
-    bg = (
-        sum(c[0] for c in corners) // 4,
-        sum(c[1] for c in corners) // 4,
-        sum(c[2] for c in corners) // 4,
-    )
+    visited = set()
+    to_visit = [(0, 0), (width - 1, 0), (0, height - 1), (width - 1, height - 1)]
+    bg_colors = {
+        (0, 0): pixels[0, 0][:3],
+        (width - 1, 0): pixels[width - 1, 0][:3],
+        (0, height - 1): pixels[0, height - 1][:3],
+        (width - 1, height - 1): pixels[width - 1, height - 1][:3],
+    }
 
-    for y in range(height):
-        for x in range(width):
-            r, g, b, a = pixels[x, y]
-            dist = abs(r - bg[0]) + abs(g - bg[1]) + abs(b - bg[2])
-            if dist < threshold:
-                pixels[x, y] = (r, g, b, 0)
-            elif r + g + b < 24:
-                pixels[x, y] = (r, g, b, 0)
+    queue = list(bg_colors.keys())
+    for q in queue:
+        visited.add(q)
+
+    while queue:
+        x, y = queue.pop(0)
+        r, g, b, a = pixels[x, y]
+        pixels[x, y] = (r, g, b, 0)
+
+        for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            nx, ny = x + dx, y + dy
+            if 0 <= nx < width and 0 <= ny < height and (nx, ny) not in visited:
+                nr, ng, nb, na = pixels[nx, ny]
+                is_bg = False
+                for start_pos, start_color in bg_colors.items():
+                    dist = abs(nr - start_color[0]) + abs(ng - start_color[1]) + abs(nb - start_color[2])
+                    if dist < threshold:
+                        is_bg = True
+                        break
+                if not is_bg and (nr + ng + nb < 24):
+                    is_bg = True
+
+                if is_bg:
+                    visited.add((nx, ny))
+                    queue.append((nx, ny))
 
     bbox = img.getbbox()
     if bbox:
