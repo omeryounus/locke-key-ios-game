@@ -170,49 +170,57 @@ TextureImporter:
 """
 
 
-def remove_dark_background(img: Image.Image, threshold: int = 32) -> Image.Image:
+def remove_dark_background(img: Image.Image, threshold: int = 32, crop: bool = True, flood_fill: bool = True) -> Image.Image:
     img = img.convert("RGBA")
     pixels = img.load()
     width, height = img.size
 
-    visited = set()
-    to_visit = [(0, 0), (width - 1, 0), (0, height - 1), (width - 1, height - 1)]
-    bg_colors = {
-        (0, 0): pixels[0, 0][:3],
-        (width - 1, 0): pixels[width - 1, 0][:3],
-        (0, height - 1): pixels[0, height - 1][:3],
-        (width - 1, height - 1): pixels[width - 1, height - 1][:3],
-    }
+    if flood_fill:
+        visited = set()
+        to_visit = [(0, 0), (width - 1, 0), (0, height - 1), (width - 1, height - 1)]
+        bg_colors = {
+            (0, 0): pixels[0, 0][:3],
+            (width - 1, 0): pixels[width - 1, 0][:3],
+            (0, height - 1): pixels[0, height - 1][:3],
+            (width - 1, height - 1): pixels[width - 1, height - 1][:3],
+        }
 
-    queue = list(bg_colors.keys())
-    for q in queue:
-        visited.add(q)
+        queue = list(bg_colors.keys())
+        for q in queue:
+            visited.add(q)
 
-    while queue:
-        x, y = queue.pop(0)
-        r, g, b, a = pixels[x, y]
-        pixels[x, y] = (r, g, b, 0)
+        while queue:
+            x, y = queue.pop(0)
+            r, g, b, a = pixels[x, y]
+            pixels[x, y] = (r, g, b, 0)
 
-        for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            nx, ny = x + dx, y + dy
-            if 0 <= nx < width and 0 <= ny < height and (nx, ny) not in visited:
-                nr, ng, nb, na = pixels[nx, ny]
-                is_bg = False
-                for start_pos, start_color in bg_colors.items():
-                    dist = abs(nr - start_color[0]) + abs(ng - start_color[1]) + abs(nb - start_color[2])
-                    if dist < threshold:
+            for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < width and 0 <= ny < height and (nx, ny) not in visited:
+                    nr, ng, nb, na = pixels[nx, ny]
+                    is_bg = False
+                    for start_pos, start_color in bg_colors.items():
+                        dist = abs(nr - start_color[0]) + abs(ng - start_color[1]) + abs(nb - start_color[2])
+                        if dist < threshold:
+                            is_bg = True
+                            break
+                    if not is_bg and (nr + ng + nb < 24):
                         is_bg = True
-                        break
-                if not is_bg and (nr + ng + nb < 24):
-                    is_bg = True
 
-                if is_bg:
-                    visited.add((nx, ny))
-                    queue.append((nx, ny))
+                    if is_bg:
+                        visited.add((nx, ny))
+                        queue.append((nx, ny))
+    else:
+        for y in range(height):
+            for x in range(width):
+                r, g, b, a = pixels[x, y]
+                if r + g + b < threshold:
+                    pixels[x, y] = (r, g, b, 0)
 
-    bbox = img.getbbox()
-    if bbox:
-        img = img.crop(bbox)
+    if crop:
+        bbox = img.getbbox()
+        if bbox:
+            img = img.crop(bbox)
     return img
 
 
@@ -276,7 +284,7 @@ def main() -> None:
         img = Image.open(src_dir / src_name)
         img = fit_long_edge(img, long_edge)
         if "_mid" in out_name or "_near" in out_name:
-            img = remove_dark_background(img, threshold=32)
+            img = remove_dark_background(img, threshold=45, crop=False, flood_fill=False)
         parallax_path = PARALLAX / out_name
         res_path = RES / "Parallax" / out_name
         write_sprite(parallax_path, img, art_guid, ppu=100)

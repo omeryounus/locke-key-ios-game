@@ -49,9 +49,17 @@ public class ChapterRoomBackgrounds : MonoBehaviour
         ApplySet(foyer);
     }
 
+    private ChapterRoomZone.RoomId lastRoomLog = (ChapterRoomZone.RoomId)(-1);
+
     private void Update()
     {
         if (roomDirector == null) return;
+
+        if (roomDirector.CurrentRoom != lastRoomLog)
+        {
+            Debug.Log($"[Backgrounds] Current Room changed to: {roomDirector.CurrentRoom}");
+            lastRoomLog = roomDirector.CurrentRoom;
+        }
 
         switch (roomDirector.CurrentRoom)
         {
@@ -115,18 +123,21 @@ public class ChapterRoomBackgrounds : MonoBehaviour
 
     private void ApplySet(LayerSet set)
     {
-        if (farRenderer != null)
+        if (farRenderer != null && farRenderer.sprite != set.far)
         {
+            Debug.Log($"[Backgrounds] Applying far sprite: {(set.far != null ? set.far.name : "null")}");
             farRenderer.sprite = set.far;
             AdjustScaleToAspect(farRenderer.transform, set.far, 28f, -4.5f);
         }
-        if (midRenderer != null)
+        if (midRenderer != null && midRenderer.sprite != set.mid)
         {
+            Debug.Log($"[Backgrounds] Applying mid sprite: {(set.mid != null ? set.mid.name : "null")}");
             midRenderer.sprite = set.mid;
             AdjustScaleToAspect(midRenderer.transform, set.mid, 30f, -4.5f);
         }
-        if (nearRenderer != null)
+        if (nearRenderer != null && nearRenderer.sprite != set.near)
         {
+            Debug.Log($"[Backgrounds] Applying near sprite: {(set.near != null ? set.near.name : "null")}");
             nearRenderer.sprite = set.near;
             AdjustScaleToAspect(nearRenderer.transform, set.near, 32f, -4.5f);
         }
