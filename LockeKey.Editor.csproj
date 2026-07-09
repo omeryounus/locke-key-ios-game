@@ -53,7 +53,9 @@
   <ItemGroup>
     <Compile Include="Assets/Editor/ProjectVerifyMenu.cs" />
     <Compile Include="Assets/Editor/IOSBuildMenu.cs" />
+    <Compile Include="Assets/Editor/MacOSBuilder.cs" />
     <Compile Include="Assets/Editor/MacBuildMenu.cs" />
+    <Compile Include="Assets/Editor/ScenePatcher.cs" />
     <Compile Include="Assets/Editor/GameplayHUDPrefabBuilder.cs" />
   </ItemGroup>
   <ItemGroup>

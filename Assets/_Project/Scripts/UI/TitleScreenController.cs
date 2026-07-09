@@ -169,8 +169,8 @@ public class TitleScreenController : MonoBehaviour
         var panel = MakePanel(root, "Splash", Color.black);
         var cg = panel.AddComponent<CanvasGroup>();
 
-        // Background
-        var bgImg = panel.AddComponent<Image>();
+        // Background — Image already added by MakePanel, just configure it
+        var bgImg = panel.GetComponent<Image>();
         var bgSprite = Resources.Load<Sprite>(ArtPaths.BgFoyerPortrait);
         if (bgSprite != null) { bgImg.sprite = bgSprite; bgImg.type = Image.Type.Simple; }
         else bgImg.color = new Color(0.03f, 0.04f, 0.08f);

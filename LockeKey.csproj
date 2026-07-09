@@ -66,10 +66,12 @@
     <Compile Include="Assets/_Project/Scripts/Core/SaveablePickup.cs" />
     <Compile Include="Assets/_Project/Scripts/Environment/PassageEscapeZone.cs" />
     <Compile Include="Assets/_Project/Scripts/Core/ChapterSaveManager.cs" />
+    <Compile Include="Assets/_Project/Scripts/Core/LockDefinition.cs" />
     <Compile Include="Assets/_Project/Scripts/Player/PlayerController.cs" />
     <Compile Include="Assets/_Project/Scripts/Keys/GhostKey.cs" />
     <Compile Include="Assets/_Project/Scripts/UI/SafeAreaFitter.cs" />
     <Compile Include="Assets/_Project/Scripts/UI/MemoryPanelLibrary.cs" />
+    <Compile Include="Assets/_Project/Scripts/UI/GrokUIFlowManager.cs" />
     <Compile Include="Assets/_Project/Scripts/UI/KeySlotLibrary.cs" />
     <Compile Include="Assets/_Project/Scripts/Environment/ChapterRoomDirector.cs" />
     <Compile Include="Assets/_Project/Scripts/Player/TouchGameplayController.cs" />
@@ -91,6 +93,7 @@
     <Compile Include="Assets/_Project/Scripts/Environment/ChapterRoomZone.cs" />
     <Compile Include="Assets/_Project/Scripts/Narrative/EchoRecoveryController.cs" />
     <Compile Include="Assets/_Project/Scripts/Narrative/EchoEntity.cs" />
+    <Compile Include="Assets/_Project/Scripts/Core/GameBootContext.cs" />
     <Compile Include="Assets/_Project/Scripts/Puzzles/MemoryFragmentPuzzle.cs" />
     <Compile Include="Assets/_Project/Scripts/Core/IKeyAbility.cs" />
     <Compile Include="Assets/_Project/Scripts/Environment/ChapterRoomBackgrounds.cs" />
@@ -100,6 +103,7 @@
     <Compile Include="Assets/_Project/Scripts/Keys/KeyManager.cs" />
     <Compile Include="Assets/_Project/Scripts/VFX/GhostPhaseMomentController.cs" />
     <Compile Include="Assets/_Project/Scripts/VFX/PickupFeedback.cs" />
+    <Compile Include="Assets/_Project/Scripts/Core/ArtPaths.cs" />
     <Compile Include="Assets/_Project/Scripts/Narrative/EchoTensionController.cs" />
     <Compile Include="Assets/_Project/Scripts/VFX/GhostPhaseVFX.cs" />
     <Compile Include="Assets/_Project/Scripts/Environment/HideSpot.cs" />

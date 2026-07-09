@@ -14,6 +14,11 @@ public static class MacOSBuilder
 {
     public static void Build()
     {
+        // Step 0: ensure TitleScreenController and GrokUIFlowManager are in their scenes
+        Debug.Log("[MacOSBuilder] Patching scenes...");
+        ScenePatcher.PatchTitleScene();
+        ScenePatcher.PatchChapter1Scene();
+
         // Output path: can be overridden by -buildOutput arg
         string outputPath = GetArg("-buildOutput") ?? "Builds/macOS/LockeKey.app";
 
