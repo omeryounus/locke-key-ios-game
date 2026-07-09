@@ -25,14 +25,67 @@ public class ChapterRoomDirector : MonoBehaviour
         if (room == currentRoom) return;
 
         currentRoom = room;
-        ChapterSaveManager.Instance?.RecordRoom((int)room);
+        var save = ChapterSaveManager.Instance;
+        save?.RecordMapDestination(ChapterMapDestination.Foyer);
+        save?.RecordRoom((int)room);
         ApplyRoomAmbience(room);
+        RefreshHudRoomTitle();
 
         var index = (int)room;
         if (index < 0 || index >= visited.Length || visited[index]) return;
 
         visited[index] = true;
         ShowFirstVisitToast(room);
+    }
+
+    /// <summary>S2 card → load foyer or wellhouse gameplay view.</summary>
+    public void LoadMapDestination(string destinationId)
+    {
+        var save = ChapterSaveManager.Instance;
+        save?.RecordMapDestination(destinationId);
+
+        switch (destinationId)
+        {
+            case ChapterMapDestination.Foyer:
+                TeleportPlayer(-1.5f);
+                currentRoom = ChapterRoomZone.RoomId.Foyer;
+                save?.RecordRoom((int)currentRoom);
+                ApplyRoomAmbience(currentRoom);
+                RefreshHudRoomTitle();
+                break;
+
+            case ChapterMapDestination.Wellhouse:
+                if (save != null && !save.IsHotspotSolved("foyer_stair_door"))
+                {
+                    GrokUIFlowManager.Instance?.ShowToast("Wellhouse is locked. Solve the foyer stair door first.");
+                    return;
+                }
+
+                TeleportPlayer(0f);
+                RefreshHudRoomTitle();
+                break;
+        }
+    }
+
+    private void RefreshHudRoomTitle()
+    {
+        if (hud == null) return;
+
+        var save = ChapterSaveManager.Instance;
+        if (save != null && save.ActiveMapDestination == ChapterMapDestination.Wellhouse)
+            hud.SetRoomTitle(ChapterRoomLabels.ForMapDestination(ChapterMapDestination.Wellhouse));
+        else
+            hud.SetRoomTitle(ChapterRoomLabels.ForRoomId(currentRoom));
+    }
+
+    private static void TeleportPlayer(float x)
+    {
+        var player = FindFirstObjectByType<PlayerController>();
+        if (player == null) return;
+
+        var pos = player.transform.position;
+        player.transform.position = new Vector3(x, pos.y, pos.z);
+        ChapterSaveManager.Instance?.RecordCheckpoint(player.transform.position);
     }
 
     private void ApplyRoomAmbience(ChapterRoomZone.RoomId room)

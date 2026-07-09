@@ -30,4 +30,7 @@ public class ChapterSaveData
     public List<string> unlockedRoomIds = new() { "foyer" };
     public List<string> solvedHotspotIds = new();
     public List<string> codexUnlockedKeyIds = new();
+
+    /// <summary>S2 map selection — foyer gameplay vs wellhouse backdrop.</summary>
+    public string activeMapDestination = ChapterMapDestination.Foyer;
 }

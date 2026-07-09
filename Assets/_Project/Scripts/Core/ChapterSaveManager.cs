@@ -520,6 +520,18 @@ public class ChapterSaveManager : MonoBehaviour
     public bool HasKeyDiscovered(string keyId) =>
         data.discoveredKeyIds.Contains(keyId);
 
+    public string ActiveMapDestination =>
+        string.IsNullOrEmpty(data.activeMapDestination)
+            ? ChapterMapDestination.Foyer
+            : data.activeMapDestination;
+
+    public void RecordMapDestination(string destinationId)
+    {
+        if (string.IsNullOrEmpty(destinationId)) return;
+        data.activeMapDestination = destinationId;
+        WriteSave();
+    }
+
     /// <summary>
     /// Keep legacy solvedPuzzleIds and new solvedHotspotIds in sync.
     /// Both lists are maintained so old scene scripts (PuzzleBase) keep working.

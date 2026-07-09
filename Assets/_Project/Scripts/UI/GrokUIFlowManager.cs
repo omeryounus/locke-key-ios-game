@@ -34,6 +34,10 @@ public class GrokUIFlowManager : MonoBehaviour
     private Button wellhouseBtn;
     private GameObject wellhouseLock;
     private Text keyCountLabel;
+    private RectTransform mapProgressFill;
+
+    // ── S5 lock ↔ S6 ring return ──────────────────────────────────────────
+    private bool ringOpenedFromLock;
 
     // ── S4 discovery live refs ────────────────────────────────────────────
     private Image discoveryKeyImage;
@@ -122,12 +126,14 @@ public class GrokUIFlowManager : MonoBehaviour
     {
         activeLockDef    = def;
         activeLockSuccess = onSuccess;
+        ringOpenedFromLock = false;
         RefreshLockState();
         SetOverlay(lockGroup, true);
     }
 
-    public void ShowKeyRing()
+    public void ShowKeyRing(bool fromLock = false)
     {
+        ringOpenedFromLock = fromLock;
         RefreshRing();
         SetOverlay(ringGroup, true);
     }
@@ -166,10 +172,16 @@ public class GrokUIFlowManager : MonoBehaviour
         if (wellhouseLock != null)
             wellhouseLock.SetActive(!wellhouseUnlocked);
 
-        // Key count label
+        // Key count + progression bar
         int discovered = save.Data.discoveredKeyIds?.Count ?? 0;
         if (keyCountLabel != null)
             keyCountLabel.text = $"{discovered} / {KeyCatalog.Count} keys";
+
+        if (mapProgressFill != null)
+        {
+            float pct = KeyCatalog.Count > 0 ? (float)discovered / KeyCatalog.Count : 0f;
+            mapProgressFill.anchorMax = new Vector2(Mathf.Clamp01(pct), 1f);
+        }
     }
 
     private void RefreshLockState()
@@ -257,7 +269,7 @@ public class GrokUIFlowManager : MonoBehaviour
 
         var foyer = LockeUIComponents.CreateChapterCard(panel.transform, font, "Foyer",
             new Vector2(0.5f, 0.72f), true, ArtPaths.BgFoyerPortrait,
-            () => HideChapterMap());
+            () => LoadMapDestination(ChapterMapDestination.Foyer));
         foyerCheckmark = LockeUIComponents.AddText(foyer.cardBtn.transform, "Checkmark", font, 22,
             FontStyle.Bold, LockeKeyUITheme.Success, new Vector2(0.92f, 0.72f), "✓",
             new Vector2(28f, 28f), TextAnchor.MiddleCenter).gameObject;
@@ -265,7 +277,7 @@ public class GrokUIFlowManager : MonoBehaviour
 
         var well = LockeUIComponents.CreateChapterCard(panel.transform, font, "Wellhouse",
             new Vector2(0.5f, 0.52f), false, ArtPaths.BgWellhouse,
-            () => { HideChapterMap(); ShowToast("Wellhouse — coming next."); });
+            () => LoadMapDestination(ChapterMapDestination.Wellhouse));
         wellhouseBtn = well.cardBtn;
         wellhouseLock = well.lockIcon;
 
@@ -273,9 +285,15 @@ public class GrokUIFlowManager : MonoBehaviour
             new Vector2(0.5f, 0.32f), false, ArtPaths.BgBlackDoor,
             () => ShowToast("This door has no keyhole."));
 
-        keyCountLabel = LockeUIComponents.AddText(panel.transform, "KeyCount", font, LockeKeyUITheme.BodySize,
-            FontStyle.Normal, LockeKeyUITheme.CaptionText, new Vector2(0.5f, 0.12f),
-            $"0 / {KeyCatalog.Count} keys", new Vector2(300f, 32f), TextAnchor.MiddleCenter);
+        LockeUIComponents.AddText(panel.transform, "ProgressLabel", font, LockeKeyUITheme.CaptionSize,
+            FontStyle.Normal, LockeKeyUITheme.CaptionText, new Vector2(0.12f, 0.16f),
+            "Progression", new Vector2(120f, 24f), TextAnchor.MiddleLeft);
+
+        keyCountLabel = LockeUIComponents.AddText(panel.transform, "KeyCount", font, LockeKeyUITheme.CaptionSize,
+            FontStyle.Normal, LockeKeyUITheme.CaptionText, new Vector2(0.88f, 0.16f),
+            $"0 / {KeyCatalog.Count} keys", new Vector2(140f, 24f), TextAnchor.MiddleRight);
+
+        mapProgressFill = BuildMapProgressBar(panel.transform);
 
         LockeUIComponents.CreateSecondaryButton(panel.transform, font, "Close Map",
             new Vector2(0.5f, 0.04f), HideChapterMap, 240f);
@@ -378,7 +396,7 @@ public class GrokUIFlowManager : MonoBehaviour
             new Vector2(0.5f, 0.09f), () =>
             {
                 SetOverlay(lockGroup, false);
-                ShowKeyRing();
+                ShowKeyRing(fromLock: true);
             }, 220f);
 
         return cg;
@@ -410,8 +428,7 @@ public class GrokUIFlowManager : MonoBehaviour
         scrimGo.transform.SetParent(root, false);
         StretchFull(scrimGo.GetComponent<RectTransform>());
         scrimGo.GetComponent<Image>().color = LockeKeyUITheme.OverlayScrim;
-        scrimGo.GetComponent<Button>().onClick.AddListener(() =>
-            SetOverlay(ringGroup, false));
+        scrimGo.GetComponent<Button>().onClick.AddListener(CloseKeyRing);
         var cg = scrimGo.AddComponent<CanvasGroup>();
 
         // Sheet: bottom 72%
@@ -504,7 +521,7 @@ public class GrokUIFlowManager : MonoBehaviour
         ringEquipBtn.interactable = false;
 
         LockeUIComponents.CreateSecondaryButton(sheet.transform, font, "Close",
-            new Vector2(0.94f, 0.96f), () => SetOverlay(ringGroup, false), 72f);
+            new Vector2(0.94f, 0.96f), CloseKeyRing, 72f);
 
         return cg;
     }
@@ -552,6 +569,53 @@ public class GrokUIFlowManager : MonoBehaviour
     }
 
     // ── Utility ───────────────────────────────────────────────────────────
+
+    private void LoadMapDestination(string destinationId)
+    {
+        if (destinationId == ChapterMapDestination.Wellhouse)
+        {
+            var save = ChapterSaveManager.Instance;
+            if (save == null || !save.IsHotspotSolved("foyer_stair_door"))
+            {
+                ShowToast("Wellhouse is locked.");
+                return;
+            }
+        }
+
+        HideChapterMap();
+        FindFirstObjectByType<ChapterRoomDirector>()?.LoadMapDestination(destinationId);
+    }
+
+    private void CloseKeyRing()
+    {
+        SetOverlay(ringGroup, false);
+        if (!ringOpenedFromLock || activeLockDef == null) return;
+
+        ringOpenedFromLock = false;
+        RefreshLockState();
+        SetOverlay(lockGroup, true);
+    }
+
+    private static RectTransform BuildMapProgressBar(Transform parent)
+    {
+        var trackGo = new GameObject("ProgressTrack", typeof(RectTransform), typeof(Image));
+        trackGo.transform.SetParent(parent, false);
+        var trackRect = trackGo.GetComponent<RectTransform>();
+        trackRect.anchorMin = new Vector2(0.08f, 0.125f);
+        trackRect.anchorMax = new Vector2(0.92f, 0.125f);
+        trackRect.pivot = new Vector2(0.5f, 0.5f);
+        trackRect.sizeDelta = new Vector2(0f, 6f);
+        trackGo.GetComponent<Image>().color = new Color(0.18f, 0.19f, 0.24f, 1f);
+
+        var fillGo = new GameObject("ProgressFill", typeof(RectTransform), typeof(Image));
+        fillGo.transform.SetParent(trackGo.transform, false);
+        var fillRect = fillGo.GetComponent<RectTransform>();
+        fillRect.anchorMin = Vector2.zero;
+        fillRect.anchorMax = new Vector2(0.08f, 1f);
+        fillRect.offsetMin = fillRect.offsetMax = Vector2.zero;
+        fillGo.GetComponent<Image>().color = LockeKeyUITheme.LKGold;
+        return fillRect;
+    }
 
     private static void SetOverlay(CanvasGroup cg, bool visible)
     {

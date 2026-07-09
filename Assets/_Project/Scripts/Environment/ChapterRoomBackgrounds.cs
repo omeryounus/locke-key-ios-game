@@ -55,6 +55,13 @@ public class ChapterRoomBackgrounds : MonoBehaviour
     {
         if (roomDirector == null) return;
 
+        var mapDest = ChapterSaveManager.Instance?.ActiveMapDestination ?? ChapterMapDestination.Foyer;
+        if (mapDest == ChapterMapDestination.Wellhouse)
+        {
+            ApplyWellhouseBackdrop();
+            return;
+        }
+
         if (roomDirector.CurrentRoom != lastRoomLog)
         {
             Debug.Log($"[Backgrounds] Current Room changed to: {roomDirector.CurrentRoom}");
@@ -120,6 +127,23 @@ public class ChapterRoomBackgrounds : MonoBehaviour
 
         parallax.Configure(scroll);
         return renderer;
+    }
+
+    private void ApplyWellhouseBackdrop()
+    {
+        var wellhouse = Resources.Load<Sprite>(ArtPaths.BgWellhouse);
+        if (wellhouse == null) return;
+
+        var set = new LayerSet
+        {
+            far = wellhouse,
+            mid = null,
+            near = null,
+            farScroll = 0f,
+            midScroll = 0f,
+            nearScroll = 0f
+        };
+        ApplySet(set);
     }
 
     private void ApplySet(LayerSet set)

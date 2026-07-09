@@ -30,6 +30,7 @@ public class GameplayHUD : MonoBehaviour
     private GameObject jumpButton;
     private GameObject interactButton;
     private GameObject useKeyButton;
+    private Text roomTitleText;
 
     private void Awake()
     {
@@ -48,7 +49,27 @@ public class GameplayHUD : MonoBehaviour
         if (!TryLoadAuthoredHud())
             BuildCanvas();
 
+        EnsureS3Header();
+        SyncRoomTitleFromScene();
         EnsureSaveDebugMenu();
+    }
+
+    public void SetRoomTitle(string title)
+    {
+        if (roomTitleText != null)
+            roomTitleText.text = title;
+    }
+
+    private void SyncRoomTitleFromScene()
+    {
+        var director = FindFirstObjectByType<ChapterRoomDirector>();
+        if (director == null) return;
+
+        var save = ChapterSaveManager.Instance;
+        if (save != null && save.ActiveMapDestination == ChapterMapDestination.Wellhouse)
+            SetRoomTitle(ChapterRoomLabels.ForMapDestination(ChapterMapDestination.Wellhouse));
+        else
+            SetRoomTitle(ChapterRoomLabels.ForRoomId(director.CurrentRoom));
     }
 
     private void EnsureSaveDebugMenu()
@@ -214,6 +235,24 @@ public class GameplayHUD : MonoBehaviour
         return true;
     }
 
+    private void EnsureS3Header()
+    {
+        if (roomTitleText != null) return;
+
+        var hudRoot = GameObject.Find("GameplayCanvas");
+        if (hudRoot == null) return;
+
+        var content = hudRoot.transform.Find("Viewport/Content");
+        var parent = content != null ? content : hudRoot.transform;
+
+        var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        var bar = LockeUIComponents.CreateHudBar(parent, font,
+            ChapterRoomLabels.ForRoomId(ChapterRoomZone.RoomId.Foyer),
+            () => GrokUIFlowManager.Instance?.ShowChapterMap(),
+            () => GrokUIFlowManager.Instance?.ShowKeyRing());
+        roomTitleText = bar.transform.Find("Title")?.GetComponent<Text>();
+    }
+
     private void WirePrefabButtons()
     {
         if (leftButton != null)
@@ -261,35 +300,29 @@ public class GameplayHUD : MonoBehaviour
 
     private void BuildCanvas()
     {
-        if (FindFirstObjectByType<Canvas>() != null)
+        if (GameObject.Find("GameplayCanvas") != null)
             return;
 
         EnsureEventSystem();
 
-        var canvasGo = new GameObject("GameplayCanvas");
-        var canvas = canvasGo.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 100;
-        canvasGo.AddComponent<CanvasScaler>();
-        canvasGo.AddComponent<GraphicRaycaster>();
-
-        var scaler = canvasGo.GetComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
-        scaler.matchWidthOrHeight = 0.5f;
-
-        var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        var flow = LockeUILayout.CreateFlowCanvas("GameplayCanvas", 100);
+        var canvasRoot = flow.Canvas.transform;
+        var font = flow.Font;
         var panelColor = new Color(0.05f, 0.06f, 0.1f, 0.72f);
         var buttonColor = new Color(0.14f, 0.16f, 0.24f, 0.92f);
         var accentColor = new Color(0.55f, 0.75f, 0.95f, 1f);
 
-        BuildS3Header(canvasGo.transform, font);
+        var bar = LockeUIComponents.CreateHudBar(canvasRoot, font,
+            ChapterRoomLabels.ForRoomId(ChapterRoomZone.RoomId.Foyer),
+            () => GrokUIFlowManager.Instance?.ShowChapterMap(),
+            () => GrokUIFlowManager.Instance?.ShowKeyRing());
+        roomTitleText = bar.transform.Find("Title")?.GetComponent<Text>();
 
-        keyStatusIcon = CreateStatusIcon(canvasGo.transform, "KeyStatusIcon",
+        keyStatusIcon = CreateStatusIcon(canvasRoot, "KeyStatusIcon",
             new Vector2(24f, -20f), 40f);
 
         var keySlotGo = new GameObject("KeySlot", typeof(RectTransform), typeof(Image), typeof(KeySlotHUD));
-        keySlotGo.transform.SetParent(canvasGo.transform, false);
+        keySlotGo.transform.SetParent(canvasRoot, false);
         var keySlotRect = keySlotGo.GetComponent<RectTransform>();
         keySlotRect.anchorMin = new Vector2(0f, 1f);
         keySlotRect.anchorMax = new Vector2(0f, 1f);
@@ -300,24 +333,24 @@ public class GameplayHUD : MonoBehaviour
         keySlotImage.preserveAspect = true;
         keySlotHud = keySlotGo.GetComponent<KeySlotHUD>();
 
-        keyStatusText = CreateText(canvasGo.transform, "KeyStatus", font, 24, TextAnchor.UpperLeft,
+        keyStatusText = CreateText(canvasRoot, "KeyStatus", font, 24, TextAnchor.UpperLeft,
             new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(260f, -24f), new Vector2(860f, 36f), accentColor);
 
-        houseKeyIcon = CreateStatusIcon(canvasGo.transform, "HouseKeyIcon",
+        houseKeyIcon = CreateStatusIcon(canvasRoot, "HouseKeyIcon",
             new Vector2(24f, -60f), 32f);
-        houseKeyText = CreateText(canvasGo.transform, "HouseKeyStatus", font, 20, TextAnchor.UpperLeft,
+        houseKeyText = CreateText(canvasRoot, "HouseKeyStatus", font, 20, TextAnchor.UpperLeft,
             new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(64f, -64f), new Vector2(860f, 32f), Color.white);
 
-        hintText = CreateText(canvasGo.transform, "Hint", font, 22, TextAnchor.UpperLeft,
+        hintText = CreateText(canvasRoot, "Hint", font, 22, TextAnchor.UpperLeft,
             new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -104f), new Vector2(1200f, 72f),
             new Color(0.85f, 0.82f, 0.75f, 1f));
 
-        toastText = CreateText(canvasGo.transform, "Toast", font, 24, TextAnchor.UpperCenter,
+        toastText = CreateText(canvasRoot, "Toast", font, 24, TextAnchor.UpperCenter,
             new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -160f), new Vector2(1100f, 48f),
             new Color(1f, 0.85f, 0.55f, 1f));
         toastText.gameObject.SetActive(false);
 
-        var controlBar = CreatePanel(canvasGo.transform, "ControlBar", panelColor,
+        var controlBar = CreatePanel(canvasRoot, "ControlBar", panelColor,
             new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 0f), new Vector2(0f, 140f));
 
         leftButton = CreateHoldButton(controlBar.transform, "Left", iconLibrary?.moveLeft, font, buttonColor, accentColor,
@@ -342,7 +375,7 @@ public class GameplayHUD : MonoBehaviour
 
         SetControlVisibility(interact: false, jump: false, useKey: false);
 
-        memoryOverlay = BuildMemoryOverlay(canvasGo.transform, font, panelColor, accentColor);
+        memoryOverlay = BuildMemoryOverlay(canvasRoot, font, panelColor, accentColor);
         memoryOverlay.SetActive(false);
     }
 
@@ -540,20 +573,6 @@ public class GameplayHUD : MonoBehaviour
         }
 
         return go;
-    }
-
-    // ── S3 Room Scene Header ─────────────────────────────────────────────
-
-    /// <summary>
-    /// Builds the S3 top toolbar: [Map]  "Keyhouse Foyer"  [Key]
-    /// Sits at the top of the gameplay canvas (sort 100) so GrokOverlayCanvas
-    /// (sort 300) always renders on top.
-    /// </summary>
-    private static void BuildS3Header(Transform canvasRoot, Font font)
-    {
-        LockeUIComponents.CreateHudBar(canvasRoot, font, "Keyhouse Foyer",
-            () => GrokUIFlowManager.Instance?.ShowChapterMap(),
-            () => GrokUIFlowManager.Instance?.ShowKeyRing());
     }
 
     private static void SetStretch(RectTransform r)

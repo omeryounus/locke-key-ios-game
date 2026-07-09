@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 /// <summary>
 /// Hi-fi UX mockup paths under Assets/ArtSource/ux/ — editor/design reference only.
 /// Do not Resources.Load these; build UI programmatically to match layout.
@@ -16,3 +17,4 @@ public static class UxReferencePaths
     public const string DesignSystem = Root + "/ux_design_system_board.jpg";
     public const string LandscapeFrame = Root + "/ux_landscape_device_frame.jpg";
 }
+#endif
