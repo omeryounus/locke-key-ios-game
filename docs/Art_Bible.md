@@ -108,4 +108,106 @@
 
 ---
 
+## 8. Character Concept & Turnaround Guidelines
+
+To ensure the animation team has consistent model sheets, all character assets must be designed or generated with multi-angle reference guides (front, side, and back views).
+
+### A. Core Cast Visual Descriptions
+
+* **Bode Locke (The Explorer)**:
+  * **Age**: 6 years old.
+  * **Aesthetic**: Energetic, naive, adventurous.
+  * **Wardrobe**: Bright yellow hooded rain jacket, dark blue denim jeans, small red sneakers.
+  * **Visual Traits**: Messy, light-brown hair; large, wide eyes expressing curiosity and wonder.
+  * **Posture**: Leaning forward, hand in pockets or pointing, ready to run.
+
+* **Kinsey Locke (The Protectors/Creative)**:
+  * **Age**: 15 years old.
+  * **Aesthetic**: Expressive, guarded, slightly alternative.
+  * **Wardrobe**: Muted grey knit sweater over a dark collared shirt, black trousers, combat boots.
+  * **Visual Traits**: Dark braided hair tied back; cautious and alert facial expression.
+  * **Posture**: Folded arms or hands held near chest, defensively alert.
+
+* **Tyler Locke (The Eldest)**:
+  * **Age**: 17 years old.
+  * **Aesthetic**: Athletic, weary, protective.
+  * **Wardrobe**: Red-and-black checkered flannel jacket, classic blue jeans, leather work boots.
+  * **Visual Traits**: Short, dark, structured hair; worried brows, stern jawline.
+  * **Posture**: Tall, broad-shouldered, protective stance.
+
+* **Dodge / The Echo (The Antagonist)**:
+  * **Aesthetic**: Sinister, alluring, otherworldly.
+  * **Wardrobe**: Long, flowing dark velvet coat with high collar, dark trousers.
+  * **Visual Traits**: Sleek pitch-black hair; pale skin; eyes that reflect a faint purple light from within.
+  * **Posture**: Tall, upright, fluid posture with shadow-like visual artifacts bleeding from the edges of the silhouette.
+
+### B. Turnaround Prompt Template (Midjourney / Flux)
+When generating character model reference sheets, use the following layout parameters:
+```
+model sheet, character turnaround, front view, side view, back view, orthographic projection, [Character Description from above], Gabriel Rodriguez comic illustration style, clean white background, dark fantasy lighting accents, high contrast --stylize 120 --v 6
+```
+
+---
+
+## 9. Technical Sprite & Resolution Standards
+
+To maintain sharp rendering without causing high memory pressure on mobile devices, all assets must conform to these standard constraints:
+
+### A. Target Resolutions & Aspect Ratios
+
+| Asset Type | Dimension (WxH in Pixels) | Aspect Ratio | Use Case |
+| :--- | :--- | :--- | :--- |
+| **Parallax Backgrounds** | $2732 \times 2048$ | $4:3$ (Native iPad Pro) | Distant scenery layers |
+| **Midground Environments**| $2436 \times 1125$ | $19.5:9$ (iPhone Screen) | Playable room bounds |
+| **Character Sprites** | $512 \times 768$ | $2:3$ | Standing idle and movement sheets |
+| **Major Interactables** | $512 \times 512$ | $1:1$ | Bookshelves, fireplaces, cabinets |
+| **Key & UI Icons** | $256 \times 256$ | $1:1$ | HUD icons, key wheel assets |
+
+### B. Unity Sprite Import Configuration Rules
+
+For every graphic asset imported into the project, apply the following properties in the Inspector:
+* **Texture Type**: `Sprite (2D and UI)`
+* **Sprite Mode**: `Single` (for environment/props) or `Multiple` (for character/UI sheets)
+* **Pixels Per Unit (PPU)**: Standardized to exactly **`100`** (ensures physics colliders and lighting scale linearly)
+* **Mesh Type**: `Tight` (optimizes GPU transparent pixel rendering)
+* **Filter Mode**: `Bilinear` (preserves the hand-painted, soft brush look)
+* **Compression**: `ASTC 6x6` (or `ASTC 8x8` for background elements) to optimize iOS memory bandwidth
+
+---
+
+## 10. Mobile Touch UI Layouts & Safe Area Specs
+
+Designing for modern iOS devices requires respecting physical constraints like the camera notch, Dynamic Island, and home indicator.
+
+### A. Screen Margins & Safe Areas
+* **Safe Zone Padding**: A minimum margin of **`44 pt`** (132 pixels on Retina @3x) must be kept clear of any interactive controls on all screen borders.
+* **Anchor Points**: Use Unity Canvas Anchors to bind panels:
+  * Left/Right movement controls: Anchored to **Bottom-Left**.
+  * Action controls (Jump/Interact/Use): Anchored to **Bottom-Right**.
+  * Inventory/Key Selection: Anchored to **Top-Right**.
+  * Dialogue/Subtitle boxes: Anchored to **Bottom-Center** (floating above the home indicator safe zone).
+
+### B. Mobile Layout Diagram
+
+```
++-------------------------------------------------------------+
+| [Back Menu]                                    [Key Selection] |
+|                                                (Active Key)  |
+|                                                              |
+|                                                              |
+|                        [Gameplay Area]                       |
+|                                                              |
+|                                                              |
+|   < [Left]  [Right] >                     (Use Key)          |
+|                                         (Interact) (Jump)    |
+|                       [Dialogue Box]                         |
++-------------------------------------------------------------+
+```
+
+### C. Touch target sizes
+* All buttons must have a minimum physical screen size of **`48 x 48 dp`** to prevent accidental touches.
+* Buttons should fade out to $30\%$ opacity during movement to maintain high gameplay visibility, returning to $100\%$ when touched.
+
+---
+
 *This Art Bible must be followed strictly to maintain visual consistency.*
