@@ -23,6 +23,9 @@ mkdir -p "${ROOT}/Builds/iOS"
 
 LOG="${ROOT}/Builds/iOS/unity-build.log"
 
+# Input System is not used (legacy touch input). Drop stale cache if present.
+rm -rf "${ROOT}/Library/PackageCache/com.unity.inputsystem@"* 2>/dev/null || true
+
 "${UNITY_PATH}" \
   -batchmode \
   -nographics \
