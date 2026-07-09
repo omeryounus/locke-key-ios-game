@@ -26,6 +26,7 @@
     {"file": "22_memory_panel_2.jpg", "prompt": "Wide memory panel UI overlay 16:9, aged parchment with faint library bookshelf memory scene, moody atmospheric horror, painterly 2D game UI, decorative borders, no readable text"},
     {"file": "23_memory_panel_3.jpg", "prompt": "Wide memory panel UI overlay 16:9, aged parchment with faint glowing head key memory revelation scene, warm orange light, painterly 2D game UI, decorative borders, no readable text"},
     {"file": "24_foyer_bg_far.jpg", "prompt": "Wide Keyhouse foyer background 16:9, grand entrance hall with sweeping staircase and tall windows, dramatic god rays, deep teal and brown palette, painterly 2D atmospheric horror parallax far layer, no characters, no text"},
-    {"file": "25_library_bg_far.jpg", "prompt": "Wide Keyhouse library background 16:9, towering bookshelves and reading ladders, dust motes in blue-green window light, painterly 2D atmospheric horror parallax far layer, no characters, no text"}
+    {"file": "25_library_bg_far.jpg", "prompt": "Wide Keyhouse library background 16:9, towering bookshelves and reading ladders, dust motes in blue-green window light, painterly 2D atmospheric horror parallax far layer, no characters, no text"},
+    {"file": "26_title_background.jpg", "prompt": "Wide cinematic title screen background 16:9, moody Keyhouse mansion exterior at twilight, dramatic window glows, faint purple magical light at ornate front door, painterly 2D atmospheric horror, darker lower third for UI overlay, no characters, no text"}
   ]
 }

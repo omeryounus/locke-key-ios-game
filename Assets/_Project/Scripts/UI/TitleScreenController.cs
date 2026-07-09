@@ -9,6 +9,8 @@ public class TitleScreenController : MonoBehaviour
 {
     [SerializeField] private string chapterBlurb =
         "Return to Keyhouse. Find the keys. Some doors were never meant to open.";
+    [SerializeField] private string backgroundResourcePath = "Art/UI/title_background";
+    [SerializeField] private Color overlayColor = new(0.02f, 0.04f, 0.09f, 0.58f);
 
     private Button continueButton;
 
@@ -52,27 +54,54 @@ public class TitleScreenController : MonoBehaviour
         scaler.matchWidthOrHeight = 0.5f;
 
         var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        var bg = CreatePanel(canvasGo.transform, "Background", new Color(0.03f, 0.05f, 0.1f, 1f),
+        var bg = CreateBackgroundPanel(canvasGo.transform);
+        var overlay = CreatePanel(bg.transform, "Overlay", overlayColor,
             Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
 
-        CreateLabel(bg.transform, "Title", font, 56, new Color(0.88f, 0.9f, 0.96f, 1f),
+        CreateLabel(overlay.transform, "Title", font, 56, new Color(0.88f, 0.9f, 0.96f, 1f),
             new Vector2(0.5f, 0.72f), "Locke & Key", 900f, 72f);
-        CreateLabel(bg.transform, "Subtitle", font, 30, new Color(0.55f, 0.75f, 0.95f, 1f),
+        CreateLabel(overlay.transform, "Subtitle", font, 30, new Color(0.55f, 0.75f, 0.95f, 1f),
             new Vector2(0.5f, 0.62f), "Keyhouse — Chapter 1", 900f, 44f);
-        CreateLabel(bg.transform, "Blurb", font, 22, new Color(0.78f, 0.76f, 0.72f, 1f),
+        CreateLabel(overlay.transform, "Blurb", font, 22, new Color(0.78f, 0.76f, 0.72f, 1f),
             new Vector2(0.5f, 0.5f), chapterBlurb, 820f, 90f);
 
-        continueButton = CreateButton(bg.transform, "Continue", font,
+        continueButton = CreateButton(overlay.transform, "Continue", font,
             new Vector2(0.5f, 0.34f), HandleContinue);
-        CreateButton(bg.transform, "New Game", font,
+        CreateButton(overlay.transform, "New Game", font,
             new Vector2(0.5f, 0.24f), HandleNewGame);
 
         var progress = ChapterSaveManager.ReadSaveSummaryFromDisk();
         if (!string.IsNullOrEmpty(progress))
         {
-            CreateLabel(bg.transform, "Progress", font, 18, new Color(0.65f, 0.68f, 0.74f, 1f),
+            CreateLabel(overlay.transform, "Progress", font, 18, new Color(0.65f, 0.68f, 0.74f, 1f),
                 new Vector2(0.5f, 0.16f), progress, 760f, 36f);
         }
+    }
+
+    private GameObject CreateBackgroundPanel(Transform parent)
+    {
+        var go = new GameObject("Background", typeof(RectTransform), typeof(Image));
+        go.transform.SetParent(parent, false);
+        var image = go.GetComponent<Image>();
+        var sprite = Resources.Load<Sprite>(backgroundResourcePath);
+        if (sprite != null)
+        {
+            image.sprite = sprite;
+            image.type = Image.Type.Simple;
+            image.preserveAspect = false;
+            image.color = Color.white;
+        }
+        else
+        {
+            image.color = new Color(0.03f, 0.05f, 0.1f, 1f);
+        }
+
+        var rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+        return go;
     }
 
     private static void EnsureEventSystem()
