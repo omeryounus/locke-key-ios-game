@@ -1140,6 +1140,605 @@
             text-align: center;
             border-radius: 4px;
         }
+
+        /* --- S0-S8 Screen Catalog Styles --- */
+        .game-viewport {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .viewport-screen {
+            position: absolute;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            background-color: var(--bg-dark);
+            z-index: 5;
+        }
+
+        .viewport-screen.active {
+            display: flex;
+        }
+
+        /* S0: Splash Screen */
+        .screen-splash-bg {
+            position: absolute;
+            inset: 0;
+            background-image: url('assets/key_ring_ui.jpg');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.15;
+            filter: blur(4px);
+            z-index: 1;
+        }
+
+        .splash-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .splash-title-wrap {
+            margin-bottom: 24px;
+        }
+
+        .splash-logo {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--gold);
+            letter-spacing: 2px;
+            text-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+            font-family: 'Outfit', sans-serif;
+            margin-bottom: 4px;
+        }
+
+        .splash-subtitle {
+            font-size: 11px;
+            color: var(--ink-text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .splash-desc {
+            font-size: 13px;
+            color: var(--ink-text);
+            max-width: 240px;
+            margin-bottom: 40px;
+            line-height: 1.4;
+        }
+
+        .btn-gold-action {
+            background: linear-gradient(135deg, var(--gold), #b39025);
+            color: #000000;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 24px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .btn-gold-action:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
+        }
+
+        .btn-gold-action:active {
+            transform: scale(0.95);
+        }
+
+        /* S1: Story Reel */
+        .story-reel-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            padding: 20px;
+            justify-content: space-between;
+            position: relative;
+            z-index: 2;
+        }
+
+        .story-reel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
+            color: var(--ink-text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .story-reel-skip {
+            cursor: pointer;
+            color: var(--gold);
+        }
+
+        .story-reel-slide {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 16px 0;
+            gap: 16px;
+        }
+
+        .story-reel-img-frame {
+            width: 100%;
+            height: 140px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--panel-border);
+            background-color: #0d0d16;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+        }
+
+        .story-reel-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .story-reel-text-box {
+            text-align: center;
+            padding: 0 10px;
+        }
+
+        .story-reel-slide-title {
+            font-size: 15px;
+            color: #ffffff;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .story-reel-slide-desc {
+            font-size: 12px;
+            color: var(--ink-text-dim);
+            line-height: 1.4;
+        }
+
+        .story-reel-footer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .story-reel-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .story-reel-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: var(--inactive-control);
+            transition: all 0.3s ease;
+        }
+
+        .story-reel-dot.active {
+            background-color: var(--gold);
+            transform: scale(1.3);
+        }
+
+        /* S2: Chapter Map */
+        .screen-chaptermap-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            padding: 16px;
+            justify-content: space-between;
+            background: radial-gradient(circle at center, #0f0f1b, #06060c);
+        }
+
+        .map-header {
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .map-title {
+            font-size: 14px;
+            color: var(--gold);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .map-subtitle {
+            font-size: 10px;
+            color: var(--ink-text-dim);
+        }
+
+        .map-blueprint-area {
+            flex-grow: 1;
+            position: relative;
+            background: linear-gradient(rgba(26,26,45,0.05) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(26,26,45,0.05) 1px, transparent 1px);
+            background-size: 15px 15px;
+            border: 1px dashed rgba(212, 175, 55, 0.15);
+            border-radius: 12px;
+            margin: 8px 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 12px;
+            gap: 10px;
+        }
+
+        .map-node-card {
+            background-color: rgba(18, 18, 28, 0.75);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 10px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .map-node-card:hover {
+            border-color: var(--gold);
+            background-color: rgba(212, 175, 55, 0.05);
+            transform: translateX(3px);
+        }
+
+        .map-node-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .map-node-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .map-node-coord {
+            font-size: 9px;
+            color: var(--ink-text-dim);
+        }
+
+        .map-node-badge {
+            font-size: 9px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .map-node-badge.unlocked {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: var(--success-green);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .map-node-badge.locked {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .map-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* S4-S7 Bottom Sheets */
+        .bottom-sheet {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(18, 18, 28, 0.96);
+            backdrop-filter: blur(16px);
+            border-top: 2px solid var(--gold);
+            border-radius: 20px 20px 0 0;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 100;
+            padding: 16px 20px 24px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: 0 -8px 32px rgba(0,0,0,0.6);
+        }
+
+        .bottom-sheet.show {
+            transform: translateY(0);
+        }
+
+        .sheet-drag-notch {
+            width: 36px;
+            height: 4px;
+            background-color: var(--inactive-control);
+            border-radius: 2px;
+            align-self: center;
+            margin-bottom: 4px;
+        }
+
+        .sheet-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sheet-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--gold);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .sheet-close-btn {
+            font-size: 16px;
+            color: var(--ink-text-dim);
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+
+        .sheet-close-btn:hover {
+            color: #ffffff;
+        }
+
+        /* Key Discovery Sheet Details */
+        .discovery-key-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            text-align: center;
+        }
+
+        .discovery-img-wrap {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 2px solid var(--gold);
+            overflow: hidden;
+            box-shadow: 0 0 20px var(--gold-glow);
+            background-color: #000;
+        }
+
+        .discovery-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .discovery-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .discovery-lore {
+            font-size: 11px;
+            color: var(--ink-text-dim);
+            line-height: 1.4;
+            max-width: 280px;
+        }
+
+        /* Lock Puzzle Sheet Details */
+        .puzzle-lock-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            text-align: center;
+        }
+
+        .lock-animation-box {
+            font-size: 40px;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 1px solid var(--panel-border);
+            background-color: rgba(255,255,255,0.02);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: float-lock 2s ease-in-out infinite;
+        }
+
+        @keyframes float-lock {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0); }
+        }
+
+        .puzzle-keys-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 6px;
+            width: 100%;
+        }
+
+        .puzzle-key-btn {
+            background-color: rgba(255,255,255,0.03);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .puzzle-key-btn:hover:not(.locked) {
+            border-color: var(--gold);
+            background-color: rgba(212, 175, 55, 0.05);
+        }
+
+        .puzzle-key-btn.locked {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .puzzle-key-icon {
+            font-size: 18px;
+        }
+
+        .puzzle-key-name {
+            font-size: 9px;
+            color: var(--ink-text-dim);
+            text-align: center;
+        }
+
+        /* Key Ring Sheet Details */
+        .ring-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            width: 100%;
+        }
+
+        .ring-slot-card {
+            background-color: rgba(255,255,255,0.02);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .ring-slot-card.unlocked {
+            border-color: rgba(212,175,55,0.3);
+            background-color: rgba(212,175,55,0.02);
+        }
+
+        .ring-slot-card.unlocked:hover {
+            border-color: var(--gold);
+            background-color: rgba(212,175,55,0.08);
+        }
+
+        .ring-slot-card.locked {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .ring-slot-icon-wrap {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid var(--panel-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            background-color: rgba(0,0,0,0.2);
+        }
+
+        .ring-slot-card.unlocked .ring-slot-icon-wrap {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
+        .ring-slot-info {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            text-align: left;
+        }
+
+        .ring-slot-name {
+            font-size: 11px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .ring-slot-status {
+            font-size: 9px;
+            color: var(--ink-text-dim);
+        }
+
+        /* Codex Sheet Details */
+        .codex-tab-content {
+            max-height: 220px;
+            overflow-y: auto;
+            padding-right: 4px;
+            width: 100%;
+        }
+
+        .codex-tab-content::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .codex-tab-content::-webkit-scrollbar-thumb {
+            background-color: var(--inactive-control);
+            border-radius: 2px;
+        }
+
+        .codex-card {
+            background-color: rgba(255,255,255,0.02);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+
+        .codex-card-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--gold);
+            margin-bottom: 4px;
+        }
+
+        .codex-card-body {
+            font-size: 10px;
+            color: var(--ink-text-dim);
+            line-height: 1.4;
+        }
+
+        /* Back to Map HUD button */
+        .hud-map-btn {
+            background-color: rgba(212, 175, 55, 0.15);
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            border-radius: 12px;
+            padding: 4px 10px;
+            font-size: 9px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            pointer-events: auto;
+            text-transform: uppercase;
+            font-family: 'Outfit', sans-serif;
+            height: 32px;
+        }
+
+        .hud-map-btn:hover {
+            background-color: var(--gold);
+            color: #000;
+        }
     </style>
 </head>
 <body>
@@ -1193,43 +1792,152 @@
 
                         <!-- Game Viewport -->
                         <div class="game-viewport">
-                            <!-- Background layers -->
-                            <div class="parallax-layer-far" id="hud-bg-far"></div>
-                            <div class="parallax-layer-mid" id="hud-bg-mid"></div>
-                            <div class="parallax-layer-near" id="hud-bg-near"></div>
+                            
+                            <!-- S0: Splash Screen -->
+                            <div class="viewport-screen active" id="screen-splash">
+                                <div class="screen-splash-bg"></div>
+                                <div class="splash-content">
+                                    <div class="splash-title-wrap">
+                                        <div class="splash-logo">LOCKE & KEY</div>
+                                        <div class="splash-subtitle">Keyhouse Chronicles</div>
+                                    </div>
+                                    <p class="splash-desc">Return to Keyhouse. Hear the whispers. Reveal the keys. Some doors were never meant to open.</p>
+                                    <button class="btn-gold-action" onclick="transitionSplashToReel()">Enter Keyhouse</button>
+                                </div>
+                            </div>
 
-                            <!-- Top HUD details card -->
-                            <div class="game-hud-top">
-                                <div class="hud-status-card">
-                                    <div class="hud-key-slot" id="hud-key-slot-icon">🗝</div>
-                                    <div class="hud-status-details">
-                                        <div class="hud-status-line-1">
-                                            <span id="hud-house-key-collected">House key: no</span>
-                                            <span>Key Ring</span>
+                            <!-- S1: Story Reel -->
+                            <div class="viewport-screen" id="screen-storyreel">
+                                <div class="story-reel-container">
+                                    <div class="story-reel-header">
+                                        <span>Story Reel</span>
+                                        <span class="story-reel-skip" onclick="skipStoryReel()">Skip</span>
+                                    </div>
+                                    <div class="story-reel-slide" id="storyreel-slide-content">
+                                        <!-- Will be dynamically populated by JS -->
+                                    </div>
+                                    <div class="story-reel-footer">
+                                        <div class="story-reel-dots" id="storyreel-dots-wrap">
+                                            <!-- Dynamically populated -->
                                         </div>
-                                        <div class="hud-status-hint" id="hud-hint-text">Move toward the glinting house key</div>
+                                        <button class="btn-gold-action" id="btn-storyreel-next" onclick="nextStoryReelPage()">Continue</button>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Toast popups -->
-                            <div class="hud-toast" id="hud-toast-msg">Toast message here</div>
-
-                            <!-- Interactive Object marker -->
-                            <div class="hotspot-marker" id="hud-hotspot" style="bottom: 95px; left: 70%;" onclick="triggerHotspot()">!</div>
-
-                            <!-- Player character -->
-                            <div class="player-character-mock" id="hud-player"></div>
-
-                            <!-- Memory Modal Overlay (Beat 6) -->
-                            <div class="memory-modal-overlay" id="hud-memory-overlay">
-                                <div class="memory-modal">
-                                    <h3 class="memory-modal-title">Memory Profile Unlocked</h3>
-                                    <p class="memory-modal-desc">Using the Head Key unlocks the Locke family chronicles.</p>
-                                    <img src="assets/head_key.jpg" class="memory-key-img" alt="Head Key">
-                                    <button class="memory-modal-close-btn" onclick="closeMemoryModal()">Close Codex</button>
+                            <!-- S2: Chapter Map -->
+                            <div class="viewport-screen" id="screen-chaptermap">
+                                <div class="screen-chaptermap-container">
+                                    <div class="map-header">
+                                        <div class="map-title">Keyhouse Mansion Map</div>
+                                        <div class="map-subtitle">Tap a room node to explore the grounds</div>
+                                    </div>
+                                    <div class="map-blueprint-area" id="map-nodes-container">
+                                        <!-- Dynamically generated by JS -->
+                                    </div>
+                                    <div class="map-footer">
+                                        <span style="font-size: 10px; color: var(--ink-text-dim);">Chapter 1 Map</span>
+                                        <button class="btn-gold-action" style="font-size: 9px; padding: 6px 14px;" onclick="openKeyRingSheet()">Key Ring</button>
+                                    </div>
                                 </div>
                             </div>
+
+                            <!-- S3: Room Scene -->
+                            <div class="viewport-screen" id="screen-roomscene">
+                                <!-- Background layers -->
+                                <div class="parallax-layer-far" id="hud-bg-far"></div>
+                                <div class="parallax-layer-mid" id="hud-bg-mid"></div>
+                                <div class="parallax-layer-near" id="hud-bg-near"></div>
+
+                                <!-- Top HUD details card -->
+                                <div class="game-hud-top" style="display: flex; gap: 8px; align-items: center; pointer-events: none;">
+                                    <button class="hud-map-btn" onclick="returnToMapScreen()">🗺️ Map</button>
+                                    <div class="hud-status-card" style="flex-grow: 1; pointer-events: auto;">
+                                        <div class="hud-key-slot" id="hud-key-slot-icon">🗝</div>
+                                        <div class="hud-status-details">
+                                            <div class="hud-status-line-1">
+                                                <span id="hud-house-key-collected">House key: no</span>
+                                                <span style="color: var(--gold); cursor: pointer;" onclick="openKeyRingSheet()">Key Ring</span>
+                                            </div>
+                                            <div class="hud-status-hint" id="hud-hint-text">Move toward the glinting house key</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Interactive Object marker -->
+                                <div class="hotspot-marker" id="hud-hotspot" style="bottom: 95px; left: 70%;" onclick="triggerHotspot()">!</div>
+
+                                <!-- Player character -->
+                                <div class="player-character-mock" id="hud-player"></div>
+                            </div>
+
+                            <!-- S4: Key Discovery Sheet -->
+                            <div class="bottom-sheet" id="sheet-keydiscovery">
+                                <div class="sheet-drag-notch"></div>
+                                <div class="sheet-header">
+                                    <div class="sheet-title" id="discovery-title">Key Discovered!</div>
+                                    <button class="sheet-close-btn" onclick="closeSheet('keydiscovery')">✕</button>
+                                </div>
+                                <div class="discovery-key-card">
+                                    <div class="discovery-img-wrap">
+                                        <img src="" id="discovery-key-img" class="discovery-img" alt="Key Image">
+                                    </div>
+                                    <div class="discovery-name" id="discovery-key-name">Key Name</div>
+                                    <div class="discovery-lore" id="discovery-key-lore">Key Lore description goes here...</div>
+                                    <button class="btn-gold-action" id="btn-claim-key" onclick="claimDiscoveredKey()">Add to Key Ring</button>
+                                </div>
+                            </div>
+
+                            <!-- S5: Lock Puzzle Sheet -->
+                            <div class="bottom-sheet" id="sheet-lockpuzzle">
+                                <div class="sheet-drag-notch"></div>
+                                <div class="sheet-header">
+                                    <div class="sheet-title" id="puzzle-title">Stuck Door Lock</div>
+                                    <button class="sheet-close-btn" onclick="closeSheet('lockpuzzle')">✕</button>
+                                </div>
+                                <div class="puzzle-lock-display">
+                                    <div class="lock-animation-box" id="puzzle-lock-icon">🔒</div>
+                                    <div style="font-size: 11px; color: var(--ink-text-dim); margin-bottom: 8px;" id="puzzle-prompt">Use a key to unlock.</div>
+                                    <div class="puzzle-keys-grid" id="puzzle-keys-options">
+                                        <!-- Populated dynamically based on player's inventory -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- S6: Key Ring Sheet -->
+                            <div class="bottom-sheet" id="sheet-keyring">
+                                <div class="sheet-drag-notch"></div>
+                                <div class="sheet-header">
+                                    <div class="sheet-title">Key Ring Inventory</div>
+                                    <button class="sheet-close-btn" onclick="closeSheet('keyring')">✕</button>
+                                </div>
+                                <div class="ring-grid" id="keyring-grid-slots">
+                                    <!-- Dynamic slots -->
+                                </div>
+                            </div>
+
+                            <!-- S7: Codex Sheet -->
+                            <div class="bottom-sheet" id="sheet-codex">
+                                <div class="sheet-drag-notch"></div>
+                                <div class="sheet-header">
+                                    <div class="sheet-title">Keyhouse Codex</div>
+                                    <button class="sheet-close-btn" onclick="closeSheet('codex')">✕</button>
+                                </div>
+                                <div class="codex-tab-content">
+                                    <div class="codex-card">
+                                        <div class="codex-card-title">Locke Ancestry</div>
+                                        <div class="codex-card-body">The Locke family has inhabited Keyhouse manor since the Revolutionary War, forging keys from whispering iron to seal the demon void.</div>
+                                    </div>
+                                    <div class="codex-card">
+                                        <div class="codex-card-title">The Wellhouse Echo</div>
+                                        <div class="codex-card-body">A creature mimicking Dodge trapped inside the well. It craves the Omega Key to open the portal and unleash the leviathans.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- S8: Toast Overlay -->
+                            <div class="hud-toast" id="hud-toast-msg" style="top: 110px;">Toast message here</div>
+
                         </div>
 
                         <!-- Touch controls bar -->
@@ -1581,8 +2289,6 @@
                     </div>
                     <div class="token-card">
                         <span class="token-name">Tab Bar Height</span>
-                        <span class="token-value">56 pt</span>
-                    </div>
                     <div class="token-card">
                         <span class="token-name">Modal Corner Radius</span>
                         <span class="token-value">16 pt</span>
@@ -1593,31 +2299,35 @@
     </div>
 
     <script>
-        // Active beat state
+        // Active gameplay state
         let activeBeat = 1;
-        let storyReelPanel = 1;
+        let activeScreen = 'splash'; // splash | storyreel | chaptermap | roomscene
+        let storyReelIndex = 0;
+        let inventoryKeys = []; // 'house', 'ghost', 'head'
+        let discoveredKeyToClaim = null; // temporary key reference during S4
+        let activePuzzle = null; // 'door' | 'bookshelf' | 'sealed' | 'echo'
 
         // Beat data mapping
         const beatData = {
             1: {
                 title: "Beat 1: Entrance & Keyhouse Arrival",
                 houseKey: "House key: no",
-                hint: "Move toward the glinting house key",
+                hint: "Tap the glinting key in the grounds",
                 room: "ExteriorEntrance",
-                toast: "Keyhouse — move toward the glinting key.",
+                toast: "Welcome to Keyhouse. Tap the glinting house key.",
                 bgFar: "foyer_far",
                 bgMid: "foyer_mid",
                 bgNear: "foyer_near",
                 playerPos: "25%",
                 hotspotPos: { bottom: "95px", left: "70%", display: "flex", text: "🔑" },
-                controls: { left: true, right: true, jump: false, interact: false, usekey: false }
+                controls: { left: true, right: true, jump: false, interact: true, usekey: false }
             },
             2: {
                 title: "Beat 2: Stuck Door Lock",
                 houseKey: "House key: YES",
-                hint: "Unlock the stuck door with the house key",
+                hint: "Interact with the Foyer door lock",
                 room: "Foyer",
-                toast: "Unlock the stuck door with the house key.",
+                toast: "Use the House Key on the stuck door.",
                 bgFar: "foyer_far",
                 bgMid: "foyer_mid",
                 bgNear: "foyer_near",
@@ -1628,9 +2338,9 @@
             3: {
                 title: "Beat 3: Library & Bookshelf Puzzle",
                 houseKey: "House key: YES",
-                hint: "Push the collapsed bookshelf to reveal the alcove",
+                hint: "Inspect the collapsed library bookcase",
                 room: "Library",
-                toast: "Push the collapsed bookshelf to reveal the alcove.",
+                toast: "Push the collapsed bookshelf to search for the Ghost Key.",
                 bgFar: "library_far",
                 bgMid: "library_mid",
                 bgNear: "library_near",
@@ -1641,9 +2351,9 @@
             4: {
                 title: "Beat 4: Ghost Key Phase",
                 houseKey: "House key: YES",
-                hint: "Sealed door ahead — tap Use Key to phase through",
+                hint: "Use the Ghost Key on the Sealed Door",
                 room: "SealedPassage",
-                toast: "Sealed door ahead — tap Use Key to phase through.",
+                toast: "Phase through the Sealed Door using the Ghost Key.",
                 bgFar: "library_far",
                 bgMid: "library_mid",
                 bgNear: "library_near",
@@ -1654,9 +2364,9 @@
             5: {
                 title: "Beat 5: Echo Wellhouse Encounter",
                 houseKey: "House key: YES",
-                hint: "The Echo is drawn to you — hide or run!",
+                hint: "Evade the Wellhouse Echo!",
                 room: "SealedPassage",
-                toast: "The Echo is drawn to you — hide behind the arch or run.",
+                toast: "Dodge the Echo. Find the hidden Head Key.",
                 bgFar: "library_far",
                 bgMid: "library_mid",
                 bgNear: "library_near",
@@ -1669,7 +2379,7 @@
                 houseKey: "House key: YES",
                 hint: "Teleport into the portrait memory",
                 room: "MemoryPortrait",
-                toast: "Memory portrait — the Head Key may answer.",
+                toast: "Climax reached. The memory portal is active.",
                 bgFar: "sealed_passage",
                 bgMid: "library_mid",
                 bgNear: "library_near",
@@ -1685,6 +2395,8 @@
                 name: "House Key",
                 rarity: "Common",
                 type: "Story Unlocking",
+                icon: "🔑",
+                img: "assets/key_ring_ui.jpg",
                 location: "Keyhouse Grounds",
                 power: "Unlocks the basic physical entryways of the Keyhouse manor."
             },
@@ -1692,6 +2404,8 @@
                 name: "Ghost Key",
                 rarity: "Rare",
                 type: "Phasing Ability",
+                icon: "💀",
+                img: "assets/head_key.jpg",
                 location: "Library Alcove",
                 power: "Allows the user to separate their spirit from their body and phase through solid boundaries."
             },
@@ -1699,163 +2413,405 @@
                 name: "Head Key",
                 rarity: "Epic",
                 type: "Memory Transition",
+                icon: "🧠",
+                img: "assets/gender_key.jpg",
                 location: "Foyer Clock",
                 power: "Inserts into the base of the neck to reveal, manipulate, and explore the wearer's thoughts and memories."
-            },
-            gender: {
-                name: "Gender Key",
-                rarity: "Rare",
-                type: "Identity Shift",
-                location: "Wellhouse Chest",
-                power: "Allows the wearer to instantly alter their gender expression, appearance, and voice characteristics."
             },
             omega: {
                 name: "Omega Key",
                 rarity: "Legendary",
                 type: "Void Boundary",
+                icon: "Ω",
+                img: "assets/omega_key.jpg",
                 location: "Black Door Lock",
                 power: "Forged in whispering iron; the key that unlocks the Black Door inside the Drowning Cave."
             }
         };
 
-        // Story Reel data
-        const storyReelData = {
-            1: { title: "Panel 1: The Return", caption: "The Locke family returns to Keyhouse manor after tragedy." },
-            2: { title: "Panel 2: Call of the Key", caption: "A mysterious key answers the calling of the old mansion." },
-            3: { title: "Panel 3: The Wellhouse", caption: "The ancient Wellhouse remembers dark secrets of the past." },
-            4: { title: "Panel 4: The Black Door", caption: "Deep in the caves, the sinister Black Door remains locked." }
-        };
+        // Story Reel Slides (S1)
+        const storySlides = [
+            {
+                title: "Chapter 1: The Return",
+                desc: "Following tragic events, the Locke siblings move back to their ancestral estate. Keyhouse is quiet, but it remembers everything.",
+                img: "assets/key_ring_ui.jpg"
+            },
+            {
+                title: "Whispers in the Dark",
+                desc: "Hidden within the floorboards and behind walls lie keys forged from magical whispering iron, calling to those who can hear them.",
+                img: "assets/head_key.jpg"
+            },
+            {
+                title: "Dangers Below",
+                desc: "An echo mimics in the depths of the Wellhouse, plotting to get the Omega Key and unlock the portal to the void.",
+                img: "assets/omega_key.jpg"
+            }
+        ];
 
-        // Select specific beat
-        function selectBeat(beatNum) {
-            activeBeat = beatNum;
+        // Screen Routing
+        function showScreen(screenId) {
+            activeScreen = screenId;
+            const screens = ['splash', 'storyreel', 'chaptermap', 'roomscene'];
+            screens.forEach(s => {
+                const el = document.getElementById(`screen-${s}`);
+                if (s === screenId) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                }
+            });
+
+            // Toggle touch control panel visibility (only for Room Scene gameplay S3)
+            const controlBar = document.querySelector('.touch-control-bar');
+            if (screenId === 'roomscene') {
+                controlBar.style.opacity = '1';
+                controlBar.style.pointerEvents = 'auto';
+            } else {
+                controlBar.style.opacity = '0.15';
+                controlBar.style.pointerEvents = 'none';
+            }
+
+            // Close sheets on screen transition
+            closeAllSheets();
+
+            if (screenId === 'chaptermap') {
+                renderChapterMap();
+            }
+        }
+
+        // S0 Splash Transitions
+        function transitionSplashToReel() {
+            showScreen('storyreel');
+            storyReelIndex = 0;
+            renderStoryReel();
+        }
+
+        // S1 Story Reel Rendering
+        function renderStoryReel() {
+            const slide = storySlides[storyReelIndex];
+            const slideContainer = document.getElementById('storyreel-slide-content');
+            slideContainer.innerHTML = `
+                <div class="story-reel-img-frame">
+                    <img src="${slide.img}" class="story-reel-img" alt="Story reel illustration">
+                </div>
+                <div class="story-reel-text-box">
+                    <h4 class="story-reel-slide-title">${slide.title}</h4>
+                    <p class="story-reel-slide-desc">${slide.desc}</p>
+                </div>
+            `;
+
+            // Render pagination dots
+            const dotsContainer = document.getElementById('storyreel-dots-wrap');
+            dotsContainer.innerHTML = storySlides.map((_, i) => `
+                <div class="story-reel-dot ${i === storyReelIndex ? 'active' : ''}"></div>
+            `).join('');
+
+            // Update button text on final slide
+            const nextBtn = document.getElementById('btn-storyreel-next');
+            if (storyReelIndex === storySlides.length - 1) {
+                nextBtn.innerText = "Begin Journey";
+            } else {
+                nextBtn.innerText = "Continue";
+            }
+        }
+
+        function nextStoryReelPage() {
+            if (storyReelIndex < storySlides.length - 1) {
+                storyReelIndex++;
+                renderStoryReel();
+            } else {
+                skipStoryReel();
+            }
+        }
+
+        function skipStoryReel() {
+            showScreen('chaptermap');
+            showToast("Welcome to Keyhouse Mansion", 3000);
+        }
+
+        // S2 Chapter Map Rendering
+        const roomMetadata = [
+            { id: "ExteriorEntrance", name: "1. Grounds & Exterior", coord: "X = -6.0f", minBeat: 1 },
+            { id: "Foyer", name: "2. Foyer Clock", coord: "X = -1.5f", minBeat: 2 },
+            { id: "Library", name: "3. Library Alcove", coord: "X = 2.5f", minBeat: 3 },
+            { id: "SealedPassage", name: "4. Drowning Cave", coord: "X = 6.5f", minBeat: 4 },
+            { id: "MemoryPortrait", name: "5. Memory Portrait", coord: "X = 10.5f", minBeat: 6 }
+        ];
+
+        function renderChapterMap() {
+            const container = document.getElementById('map-nodes-container');
+            container.innerHTML = roomMetadata.map(room => {
+                const isUnlocked = activeBeat >= room.minBeat;
+                const statusLabel = isUnlocked ? "Unlocked" : "Locked";
+                const badgeClass = isUnlocked ? "unlocked" : "locked";
+
+                return `
+                    <div class="map-node-card" onclick="selectRoom('${room.id}', ${isUnlocked})">
+                        <div class="map-node-left">
+                            <div class="map-node-name">${room.name}</div>
+                            <div class="map-node-coord">${room.coord}</div>
+                        </div>
+                        <span class="map-node-badge ${badgeClass}">${statusLabel}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function selectRoom(roomId, isUnlocked) {
+            if (!isUnlocked) {
+                showToast("🔒 Room is locked! Complete preceding story beats.", 2000);
+                return;
+            }
+
+            // Find matching beat for room entry
+            let targetBeat = activeBeat;
+            if (roomId === "ExteriorEntrance" && activeBeat > 1) targetBeat = 1;
+            if (roomId === "Foyer" && activeBeat > 2) targetBeat = 2;
+            if (roomId === "Library" && activeBeat > 3) targetBeat = 3;
+            if (roomId === "SealedPassage" && activeBeat > 5) targetBeat = 4;
+
+            activeBeat = targetBeat;
+            showScreen('roomscene');
             updateUI();
         }
 
-        function prevBeat() {
-            if (activeBeat > 1) {
-                activeBeat--;
-                updateUI();
+        function returnToMapScreen() {
+            showScreen('chaptermap');
+        }
+
+        // Sheet Controller
+        function openSheet(sheetId) {
+            closeAllSheets();
+            document.getElementById(`sheet-${sheetId}`).classList.add('show');
+        }
+
+        function closeSheet(sheetId) {
+            document.getElementById(`sheet-${sheetId}`).classList.remove('show');
+        }
+
+        function closeAllSheets() {
+            const sheets = ['keydiscovery', 'lockpuzzle', 'keyring', 'codex'];
+            sheets.forEach(s => {
+                const el = document.getElementById(`sheet-${s}`);
+                if (el) el.classList.remove('show');
+            });
+        }
+
+        // S4: Key Discovery Logic
+        function triggerKeyDiscovery(keyId) {
+            discoveredKeyToClaim = keyId;
+            const keyInfo = keysData[keyId];
+            
+            document.getElementById('discovery-key-img').src = keyInfo.img;
+            document.getElementById('discovery-key-name').innerText = keyInfo.name;
+            document.getElementById('discovery-key-lore').innerText = keyInfo.power;
+
+            openSheet('keydiscovery');
+        }
+
+        function claimDiscoveredKey() {
+            if (discoveredKeyToClaim) {
+                const keyId = discoveredKeyToClaim;
+                if (!inventoryKeys.includes(keyId)) {
+                    inventoryKeys.push(keyId);
+                }
+                showToast(`🔑 Obtained ${keysData[keyId].name}!`, 3000);
+                closeSheet('keydiscovery');
+                
+                // Advance the beat after obtaining key
+                if (activeBeat === 1 && keyId === 'house') {
+                    activeBeat = 2;
+                } else if (activeBeat === 3 && keyId === 'ghost') {
+                    activeBeat = 4;
+                }
+                
+                showScreen('chaptermap');
             }
         }
 
-        function nextBeat() {
-            if (activeBeat < 6) {
-                activeBeat--;
-                activeBeat = activeBeat + 2; // work around decrement
-                activeBeat--;
-                updateUI();
+        // S5: Lock Puzzle Logic
+        function triggerLockPuzzle(puzzleType) {
+            activePuzzle = puzzleType;
+            const optionsContainer = document.getElementById('puzzle-keys-options');
+            
+            let title = "Door Lock";
+            let prompt = "Select a key to insert:";
+            
+            if (puzzleType === 'door') {
+                title = "Foyer Stuck Door";
+                prompt = "Unlock the Foyer entrance door lock.";
+            } else if (puzzleType === 'bookshelf') {
+                title = "Library Bookcase";
+                prompt = "Search the bookcase using a key.";
+            } else if (puzzleType === 'sealed') {
+                title = "Drowning Cave Gate";
+                prompt = "Phase through the gateway boundary.";
+            }
+
+            document.getElementById('puzzle-title').innerText = title;
+            document.getElementById('puzzle-prompt').innerText = prompt;
+
+            // Generate options based on inventory
+            if (inventoryKeys.length === 0) {
+                optionsContainer.innerHTML = `<div style="grid-column: span 3; font-size: 10px; color: var(--ink-text-dim);">No keys on your Key Ring. Find a key first!</div>`;
+            } else {
+                optionsContainer.innerHTML = inventoryKeys.map(keyId => {
+                    const info = keysData[keyId];
+                    return `
+                        <div class="puzzle-key-btn" onclick="attemptUnlock('${keyId}')">
+                            <span class="puzzle-key-icon">${info.icon}</span>
+                            <span class="puzzle-key-name">${info.name}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            openSheet('lockpuzzle');
+        }
+
+        function attemptUnlock(keyId) {
+            if (activePuzzle === 'door' && keyId === 'house') {
+                showToast("🔓 Foyer Door Unlocked!", 3000);
+                activeBeat = 3;
+                closeSheet('lockpuzzle');
+                showScreen('chaptermap');
+            } else if (activePuzzle === 'sealed' && keyId === 'ghost') {
+                showToast("💀 Spirit Separated! Phased through cave gate.", 3000);
+                activeBeat = 5;
+                closeSheet('lockpuzzle');
+                showScreen('chaptermap');
+            } else {
+                // Shake lock display as feedback
+                const lockIcon = document.getElementById('puzzle-lock-icon');
+                lockIcon.style.animation = 'none';
+                lockIcon.offsetHeight; // trigger reflow
+                lockIcon.style.animation = 'shake-error 0.4s ease';
+                showToast("❌ The key doesn't fit the lock!", 2000);
             }
         }
 
-        // Update the simulator layout based on the active beat
+        // Add shake keyframe dynamically if not present
+        if (!document.getElementById('shake-style-injector')) {
+            const style = document.createElement('style');
+            style.id = 'shake-style-injector';
+            style.innerHTML = `
+                @keyframes shake-error {
+                    0%, 100% { transform: translateX(0); }
+                    25% { transform: translateX(-8px); }
+                    75% { transform: translateX(8px); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // S6: Key Ring Inventory Sheet
+        function openKeyRingSheet() {
+            const container = document.getElementById('keyring-grid-slots');
+            const keysList = ['house', 'ghost', 'head', 'omega'];
+
+            container.innerHTML = keysList.map(keyId => {
+                const isUnlocked = inventoryKeys.includes(keyId);
+                const info = keysData[keyId];
+                const cardClass = isUnlocked ? "unlocked" : "locked";
+                const statusText = isUnlocked ? info.rarity : "Undiscovered";
+                const icon = isUnlocked ? info.icon : "🔒";
+
+                return `
+                    <div class="ring-slot-card ${cardClass}" onclick="${isUnlocked ? `showRingKeyDetails('${keyId}')` : ''}">
+                        <div class="ring-slot-icon-wrap">${icon}</div>
+                        <div class="ring-slot-info">
+                            <span class="ring-slot-name">${info.name}</span>
+                            <span class="ring-slot-status">${statusText}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            openSheet('keyring');
+        }
+
+        function showRingKeyDetails(keyId) {
+            closeSheet('keyring');
+            switchSpec('keyring');
+            showKeyDetails(keyId);
+            showToast(`Inspecting ${keysData[keyId].name} specifications`, 2000);
+        }
+
+        // S8: Toast popups
+        let toastTimeout = null;
+        function showToast(message, duration = 2000) {
+            const toast = document.getElementById('hud-toast-msg');
+            toast.innerText = message;
+            toast.classList.add('show');
+
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
+        }
+
+        // Update active viewport UI
         function updateUI() {
             const data = beatData[activeBeat];
+            if (!data) return;
 
-            // 1. Update selector buttons
-            for (let i = 1; i <= 6; i++) {
-                const btn = document.getElementById(`beat-btn-${i}`);
-                if (i === activeBeat) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            }
-
-            // 2. Update header and HUD text
-            document.getElementById('active-beat-title').innerText = data.title;
-            document.getElementById('hud-house-key-collected').innerText = data.houseKey;
+            // 1. Update timeline labels
+            document.getElementById('beat-title').innerText = data.title;
+            document.getElementById('beat-hint').innerText = data.hint;
             document.getElementById('hud-hint-text').innerText = data.hint;
-
-            // 3. Update active room backgrounds
-            const farEl = document.getElementById('hud-bg-far');
-            const midEl = document.getElementById('hud-bg-mid');
-            const nearEl = document.getElementById('hud-bg-near');
-
-            // Apply different parallax assets
-            if (data.bgFar === "foyer_far") {
-                farEl.style.backgroundColor = "#1b1b22";
-                midEl.style.backgroundColor = "transparent";
-                nearEl.style.backgroundColor = "transparent";
-                farEl.style.backgroundImage = "url('assets/key_ring_ui.jpg')"; // representative foyer representation
-                farEl.style.filter = "brightness(0.3) blur(2px) grayscale(0.5)";
-            } else if (data.bgFar === "library_far") {
-                farEl.style.backgroundColor = "#101016";
-                farEl.style.backgroundImage = "url('assets/mirror_key.jpg')";
-                farEl.style.filter = "brightness(0.4) blur(1px)";
+            
+            // Sync inventory state label
+            const hasHouse = inventoryKeys.includes('house');
+            document.getElementById('hud-house-key-collected').innerText = hasHouse ? "House key: YES" : "House key: no";
+            
+            const keySlotIcon = document.getElementById('hud-key-slot-icon');
+            if (hasHouse) {
+                keySlotIcon.innerText = "🔑";
+                keySlotIcon.classList.add('equipped');
             } else {
-                farEl.style.backgroundColor = "#08080c";
-                farEl.style.backgroundImage = "url('assets/head_key.jpg')";
-                farEl.style.filter = "brightness(0.2) contrast(1.2)";
+                keySlotIcon.innerText = "🗝";
+                keySlotIcon.classList.remove('equipped');
             }
 
-            // 4. Update player position and controls unlock states
-            const playerEl = document.getElementById('hud-player');
-            playerEl.style.left = data.playerPos;
+            // 2. Load background parallax assets
+            document.getElementById('hud-bg-far').style.backgroundImage = `url('assets/${data.bgFar}.png')`;
+            document.getElementById('hud-bg-mid').style.backgroundImage = `url('assets/${data.bgMid}.png')`;
+            document.getElementById('hud-bg-near').style.backgroundImage = `url('assets/${data.bgNear}.png')`;
 
-            const controls = data.controls;
-            updateControl('left', controls.left);
-            updateControl('right', controls.right);
-            updateControl('jump', controls.jump);
-            updateControl('interact', controls.interact);
-            updateControl('usekey', controls.usekey);
+            // 3. Position player character
+            document.getElementById('hud-player').style.left = data.playerPos;
 
-            // Equipped key indicator
-            const slotIcon = document.getElementById('hud-key-slot-icon');
-            if (controls.usekey) {
-                slotIcon.classList.add('equipped');
-                slotIcon.innerText = "🔑";
-            } else {
-                slotIcon.classList.remove('equipped');
-                slotIcon.innerText = "🗝";
-            }
+            // 4. Update Hotspot display
+            const hotspot = document.getElementById('hud-hotspot');
+            hotspot.style.bottom = data.hotspotPos.bottom;
+            hotspot.style.left = data.hotspotPos.left;
+            hotspot.style.display = data.hotspotPos.display;
+            hotspot.innerText = data.hotspotPos.text;
 
-            // 5. Update active hotspot marker
-            const hotspotEl = document.getElementById('hud-hotspot');
-            hotspotEl.style.bottom = data.hotspotPos.bottom;
-            hotspotEl.style.left = data.hotspotPos.left;
-            hotspotEl.style.display = data.hotspotPos.display;
-            hotspotEl.innerText = data.hotspotPos.text;
+            // 5. Update controls
+            updateControl('left', data.controls.left);
+            updateControl('right', data.controls.right);
+            updateControl('jump', data.controls.jump);
+            updateControl('interact', data.controls.interact);
+            updateControl('usekey', data.controls.usekey);
 
-            // 6. Show active beat toast
-            const toastEl = document.getElementById('hud-toast-msg');
-            toastEl.innerText = data.toast;
-            toastEl.classList.add('show');
-            setTimeout(() => {
-                toastEl.classList.remove('show');
-            }, 3000);
-
-            // 7. Memory Overlay modal (Beat 6)
-            const memoryOverlay = document.getElementById('hud-memory-overlay');
-            if (activeBeat === 6) {
-                memoryOverlay.classList.add('show');
-            } else {
-                memoryOverlay.classList.remove('show');
-            }
-
-            // 8. Update Level Map active states
-            const activeRoomIndex = {
-                "ExteriorEntrance": 1,
-                "Foyer": 2,
-                "Library": 3,
-                "SealedPassage": 4,
-                "MemoryPortrait": 5
-            }[data.room];
+            // 6. Update Timeline Nodes
+            const roomIndices = { "ExteriorEntrance": 1, "Foyer": 2, "Library": 3, "SealedPassage": 4, "MemoryPortrait": 5 };
+            const activeRoomIndex = roomIndices[data.room] || 1;
 
             for (let i = 1; i <= 5; i++) {
                 const node = document.getElementById(`map-node-${i}`);
-                if (i === activeRoomIndex) {
-                    node.classList.add('active');
+                if (i < activeRoomIndex) {
+                    node.className = 'map-node completed';
+                } else if (i === activeRoomIndex) {
+                    node.className = 'map-node active';
                 } else {
-                    node.classList.remove('active');
+                    node.className = 'map-node';
                 }
             }
 
-            // Update timeline fill
+            // Update timeline fill bar
             const timelinePercent = (activeRoomIndex - 1) * 25;
-            document.getElementById('map-timeline').style.setProperty('--timeline-width', `${timelinePercent}%`);
-
-            // Apply timeline width injection
             const timelineStyleEl = document.getElementById('timeline-width-injector') || (() => {
                 const el = document.createElement('style');
                 el.id = 'timeline-width-injector';
@@ -1864,7 +2820,7 @@
             })();
             timelineStyleEl.innerHTML = `.level-map-timeline::after { width: ${timelinePercent}%; }`;
 
-            // 9. Update Beat Flow active states
+            // 7. Update Beat Flow list
             for (let i = 1; i <= 6; i++) {
                 const card = document.getElementById(`flow-card-${i}`);
                 if (i === activeBeat) {
@@ -1873,6 +2829,21 @@
                     card.classList.remove('active');
                 }
             }
+        }
+
+        // Sidebar Timeline Beat Warp (backwards compatibility wrapper)
+        function selectBeat(beatNum) {
+            activeBeat = beatNum;
+            
+            // Sync inventory automatically for testing warp state
+            inventoryKeys = [];
+            if (beatNum >= 2) inventoryKeys.push('house');
+            if (beatNum >= 4) inventoryKeys.push('ghost');
+            if (beatNum >= 6) inventoryKeys.push('head');
+
+            showScreen('roomscene');
+            updateUI();
+            showToast(`Warped to ${beatData[beatNum].title}`, 2500);
         }
 
         function updateControl(id, active) {
@@ -1886,34 +2857,35 @@
             }
         }
 
-        // Trigger hotspot click simulation
+        // Trigger hotspot interactions based on beat
         function triggerHotspot() {
-            const data = beatData[activeBeat];
-            alert(`Hotspot triggered: ${data.toast}`);
-            if (activeBeat < 6) {
-                selectBeat(activeBeat + 1);
+            if (activeScreen !== 'roomscene') return;
+
+            if (activeBeat === 1) {
+                // Exterior -> discover house key
+                triggerKeyDiscovery('house');
+            } else if (activeBeat === 2) {
+                // Foyer Stuck Door -> lock puzzle
+                triggerLockPuzzle('door');
+            } else if (activeBeat === 3) {
+                // Library bookshelf -> push, discover ghost key
+                showToast("Pushing bookshelf alcove...", 1500);
+                setTimeout(() => {
+                    triggerKeyDiscovery('ghost');
+                }, 1000);
+            } else if (activeBeat === 4) {
+                // Sealed door -> lock puzzle
+                triggerLockPuzzle('sealed');
+            } else if (activeBeat === 5) {
+                // Wellhouse encounter -> recover head key
+                showToast("Evading Echo! Echo recovery successful.", 2000);
+                setTimeout(() => {
+                    triggerKeyDiscovery('head');
+                }, 1500);
+            } else if (activeBeat === 6) {
+                // Climax Memory -> display Codex history
+                openSheet('codex');
             }
-        }
-
-        // Close memory portrait modal overlay
-        function closeMemoryModal() {
-            document.getElementById('hud-memory-overlay').classList.remove('show');
-        }
-
-        // Switch View Tab
-        function switchView(viewName) {
-            const views = ['hud', 'map', 'flow'];
-            views.forEach(v => {
-                const el = document.getElementById(`view-${v}`);
-                const tab = document.querySelector(`.view-tabs .tab-btn[onclick="switchView('${v}')"]`);
-                if (v === viewName) {
-                    el.classList.add('active');
-                    tab.classList.add('active');
-                } else {
-                    el.classList.remove('active');
-                    tab.classList.remove('active');
-                }
-            });
         }
 
         // Switch Spec Tab
@@ -1937,9 +2909,6 @@
             const slots = document.querySelectorAll('.key-ring-grid .key-ring-slot');
             slots.forEach(slot => slot.classList.remove('active'));
             
-            // Find clicked slot
-            event.currentTarget.classList.add('active');
-
             const info = keysData[keyId];
             document.getElementById('key-name').innerText = info.name;
             document.getElementById('key-rarity').innerText = info.rarity;
@@ -1947,7 +2916,6 @@
             document.getElementById('key-location').innerText = info.location;
             document.getElementById('key-power').innerText = info.power;
 
-            // Update details rarity styling
             const rarityEl = document.getElementById('key-rarity');
             rarityEl.style.backgroundColor = {
                 "Common": "#2a200a",
@@ -1963,21 +2931,9 @@
             }[info.rarity];
         }
 
-        // Step through onboarding story reel
-        function stepStoryReel(direction) {
-            storyReelPanel += direction;
-            if (storyReelPanel < 1) storyReelPanel = 4;
-            if (storyReelPanel > 4) storyReelPanel = 1;
-
-            const panel = storyReelData[storyReelPanel];
-            document.getElementById('story-reel-img').innerText = panel.title;
-            document.getElementById('story-reel-caption').innerText = panel.caption;
-            document.getElementById('story-reel-indicator').innerText = `${storyReelPanel} / 4`;
-        }
-
         // Initialize UI on load
         window.onload = function() {
-            updateUI();
+            showScreen('splash');
         }
     </script>
 </body>
