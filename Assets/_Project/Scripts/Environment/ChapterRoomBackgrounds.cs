@@ -84,19 +84,31 @@ public class ChapterRoomBackgrounds : MonoBehaviour
 
     private void CreateLayers()
     {
-        farRenderer = CreateLayer("RoomFar", -40, 0.08f, 1f, out farParallax);
-        midRenderer = CreateLayer("RoomMid", -25, 0.18f, 0.5f, out midParallax);
-        nearRenderer = CreateLayer("RoomNear", -8, 0.32f, -0.25f, out nearParallax);
+        farRenderer = CreateLayer("ParallaxFar", -40, 0.08f, 1f, out farParallax);
+        midRenderer = CreateLayer("ParallaxMid", -25, 0.18f, 0.5f, out midParallax);
+        nearRenderer = CreateLayer("ParallaxNear", -8, 0.32f, -0.25f, out nearParallax);
     }
 
     private static SpriteRenderer CreateLayer(string name, int sortOrder, float scroll, float z, out ParallaxLayer parallax)
     {
-        var go = new GameObject(name);
-        var renderer = go.AddComponent<SpriteRenderer>();
+        var go = GameObject.Find(name);
+        if (go == null)
+            go = new GameObject(name);
+
+        var renderer = go.GetComponent<SpriteRenderer>();
+        if (renderer == null)
+            renderer = go.AddComponent<SpriteRenderer>();
+
         renderer.sortingOrder = sortOrder;
         renderer.color = Color.white;
-        go.transform.position = new Vector3(0f, 0f, z);
-        parallax = go.AddComponent<ParallaxLayer>();
+
+        var pos = go.transform.position;
+        go.transform.position = new Vector3(pos.x, pos.y, z);
+
+        parallax = go.GetComponent<ParallaxLayer>();
+        if (parallax == null)
+            parallax = go.AddComponent<ParallaxLayer>();
+
         parallax.Configure(scroll);
         return renderer;
     }
