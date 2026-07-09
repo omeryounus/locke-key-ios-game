@@ -10,6 +10,8 @@ public static class GameHaptics
     public static void PhaseStart() => PlayMedium();
     public static void EchoContact() => PlayHeavy();
     public static void ColdPhase() => PlayMedium();
+    public static void TriggerHapticLight() => PlayLight();
+    public static void TriggerHapticStall() => PlayHeavy();
 
     private static void PlayLight()
     {
