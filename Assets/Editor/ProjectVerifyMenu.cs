@@ -10,6 +10,7 @@ using UnityEngine;
 public static class ProjectVerifyMenu
 {
     private const string IconLibraryPath = "Assets/_Project/Resources/Art/UI/UIIconLibrary.asset";
+    private const string TitleScenePath = "Assets/_Project/Scenes/TitleScreen/TitleScreen.unity";
     private const string Chapter1ScenePath = "Assets/_Project/Scenes/Chapter1/Chapter1.unity";
 
     [MenuItem("LockeKey/Verify/Project")]
@@ -61,6 +62,12 @@ public static class ProjectVerifyMenu
             return false;
         }
 
+        if (!File.Exists(TitleScenePath))
+        {
+            Debug.LogError($"Project verification failed: missing {TitleScenePath}");
+            return false;
+        }
+
         if (!File.Exists(Chapter1ScenePath))
         {
             Debug.LogError($"Project verification failed: missing {Chapter1ScenePath}");
@@ -68,14 +75,20 @@ public static class ProjectVerifyMenu
         }
 
         var enabledScenes = EditorBuildSettings.scenes.Where(scene => scene.enabled).Select(scene => scene.path).ToArray();
-        if (enabledScenes.Length == 0 || !enabledScenes.Contains(Chapter1ScenePath))
+        if (enabledScenes.Length == 0 || enabledScenes[0] != TitleScenePath)
+        {
+            Debug.LogError("Project verification failed: TitleScreen must be the first enabled scene in Build Settings.");
+            return false;
+        }
+
+        if (!enabledScenes.Contains(Chapter1ScenePath))
         {
             Debug.LogError("Project verification failed: Chapter1 scene is not enabled in Build Settings.");
             return false;
         }
 
         if (logSuccess)
-            Debug.Log("Project verification passed: compile OK, UIIconLibrary loaded, Chapter1 in build settings.");
+            Debug.Log("Project verification passed: compile OK, UIIconLibrary loaded, Title + Chapter1 in build settings.");
         return true;
     }
 

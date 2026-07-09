@@ -151,6 +151,101 @@ public class ChapterSaveManager : MonoBehaviour
         SceneManager.LoadScene(scene.buildIndex);
     }
 
+    public static bool HasContinuableSaveOnDisk()
+    {
+        var save = TryLoadFromDisk();
+        return save != null && HasProgress(save);
+    }
+
+    public static string ReadSaveSummaryFromDisk()
+    {
+        var save = TryLoadFromDisk();
+        if (save == null || !HasProgress(save))
+            return string.Empty;
+
+        return $"Beat {(ChapterBeatDirector.Beat)save.currentBeat} | House:{save.hasHouseKey} Ghost:{save.hasGhostKey} Head:{save.hasHeadKey}";
+    }
+
+    public static void StartNewGameFromTitle()
+    {
+        ResetSaveOnDisk();
+        SceneManager.LoadScene(SceneNames.Chapter1);
+    }
+
+    public static void ContinueFromTitle()
+    {
+        SceneManager.LoadScene(SceneNames.Chapter1);
+    }
+
+    public static void ReturnToTitle()
+    {
+        if (Instance != null)
+            Instance.SaveNow();
+
+        SceneManager.LoadScene(SceneNames.Title);
+    }
+
+    public static void ReplayChapterFromEnd()
+    {
+        if (Instance != null)
+            Instance.ResetSave();
+        else
+            ResetSaveOnDisk();
+
+        SceneManager.LoadScene(SceneNames.Chapter1);
+    }
+
+    private static ChapterSaveData TryLoadFromDisk()
+    {
+        var path = GetSavePath();
+        if (!File.Exists(path))
+            return null;
+
+        try
+        {
+            var json = File.ReadAllText(path);
+            var save = JsonUtility.FromJson<ChapterSaveData>(json);
+            if (save == null)
+                return null;
+
+            save.solvedPuzzleIds ??= new List<string>();
+            save.collectedPickupIds ??= new List<string>();
+            return save;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static void ResetSaveOnDisk()
+    {
+        var save = new ChapterSaveData();
+        if (BeatCheckpoints.TryGetValue(0, out var checkpoint))
+        {
+            save.checkpointX = checkpoint.x;
+            save.checkpointY = checkpoint.y;
+        }
+
+        WriteSaveDataToDisk(save);
+    }
+
+    private static void WriteSaveDataToDisk(ChapterSaveData save)
+    {
+        try
+        {
+            var path = GetSavePath();
+            var dir = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(dir))
+                Directory.CreateDirectory(dir);
+            File.WriteAllText(path, JsonUtility.ToJson(save, prettyPrint: true));
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogWarning($"Chapter save failed: {ex.Message}");
+        }
+    }
+
     public static bool HasProgress(ChapterSaveData save)
     {
         if (save == null) return false;

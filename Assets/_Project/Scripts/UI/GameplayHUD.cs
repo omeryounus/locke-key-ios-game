@@ -53,6 +53,9 @@ public class GameplayHUD : MonoBehaviour
 
     private void EnsureSaveDebugMenu()
     {
+#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
+        return;
+#endif
         if (FindFirstObjectByType<ChapterSaveDebugMenu>() != null)
             return;
 

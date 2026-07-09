@@ -132,6 +132,7 @@ def check_required_assets() -> list[str]:
     required = [
         "Assets/_Project/Resources/Art/UI/UIIconLibrary.asset",
         "Assets/_Project/Resources/Art/UI/UIIconLibrary.asset.meta",
+        "Assets/_Project/Scenes/TitleScreen/TitleScreen.unity",
         "Assets/_Project/Scenes/Chapter1/Chapter1.unity",
         "Assets/Editor/IOSBuildMenu.cs",
         "Assets/Editor/ProjectVerifyMenu.cs",
