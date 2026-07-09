@@ -120,7 +120,7 @@ public class UxReferenceComparerWindow : EditorWindow
     private static Texture2D LoadTexture(string path) =>
         File.Exists(path) ? AssetDatabase.LoadAssetAtPath<Texture2D>(path) : null;
 
-    private static void DrawTexturePanel(Texture2D texture, string label)
+    private void DrawTexturePanel(Texture2D texture, string label)
     {
         EditorGUILayout.BeginVertical(GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
         EditorGUILayout.LabelField(label, EditorStyles.miniBoldLabel);
