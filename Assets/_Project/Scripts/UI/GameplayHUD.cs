@@ -283,6 +283,8 @@ public class GameplayHUD : MonoBehaviour
         var buttonColor = new Color(0.14f, 0.16f, 0.24f, 0.92f);
         var accentColor = new Color(0.55f, 0.75f, 0.95f, 1f);
 
+        BuildS3Header(canvasGo.transform, font);
+
         keyStatusIcon = CreateStatusIcon(canvasGo.transform, "KeyStatusIcon",
             new Vector2(24f, -20f), 40f);
 
@@ -538,5 +540,91 @@ public class GameplayHUD : MonoBehaviour
         }
 
         return go;
+    }
+
+    // ── S3 Room Scene Header ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Builds the S3 top toolbar: [Map]  "Keyhouse Foyer"  [Key]
+    /// Sits at the top of the gameplay canvas (sort 100) so GrokOverlayCanvas
+    /// (sort 300) always renders on top.
+    /// </summary>
+    private static void BuildS3Header(Transform canvasRoot, Font font)
+    {
+        const float barH = 52f;
+        const float btnW = 72f;
+
+        // Bar background
+        var barGo = new GameObject("S3Header",
+            typeof(RectTransform), typeof(Image));
+        barGo.transform.SetParent(canvasRoot, false);
+        var barRect = barGo.GetComponent<RectTransform>();
+        barRect.anchorMin = new Vector2(0f, 1f);
+        barRect.anchorMax = new Vector2(1f, 1f);
+        barRect.pivot     = new Vector2(0.5f, 1f);
+        barRect.sizeDelta = new Vector2(0f, barH);
+        barGo.GetComponent<Image>().color = new Color(0.04f, 0.05f, 0.09f, 0.88f);
+
+        // [Map] — left
+        var mapGo = new GameObject("MapBtn",
+            typeof(RectTransform), typeof(Image), typeof(Button));
+        mapGo.transform.SetParent(barGo.transform, false);
+        var mRect = mapGo.GetComponent<RectTransform>();
+        mRect.anchorMin = new Vector2(0f, 0f);
+        mRect.anchorMax = new Vector2(0f, 1f);
+        mRect.pivot     = new Vector2(0f, 0.5f);
+        mRect.offsetMin = new Vector2(8f, 6f);
+        mRect.offsetMax = new Vector2(btnW + 8f, -6f);
+        mapGo.GetComponent<Image>().color = new Color(0.14f, 0.16f, 0.24f, 0.9f);
+        mapGo.GetComponent<Button>().onClick.AddListener(() =>
+            GrokUIFlowManager.Instance?.ShowChapterMap());
+
+        var mapLabel = new GameObject("Label", typeof(RectTransform), typeof(Text));
+        mapLabel.transform.SetParent(mapGo.transform, false);
+        SetStretch(mapLabel.GetComponent<RectTransform>());
+        var mT = mapLabel.GetComponent<Text>();
+        mT.font = font; mT.fontSize = 15; mT.fontStyle = FontStyle.Bold;
+        mT.color = new Color(0.72f, 0.80f, 0.95f);
+        mT.text = "Map"; mT.alignment = TextAnchor.MiddleCenter;
+
+        // Room title — centre
+        var titleGo = new GameObject("RoomTitle", typeof(RectTransform), typeof(Text));
+        titleGo.transform.SetParent(barGo.transform, false);
+        var tRect = titleGo.GetComponent<RectTransform>();
+        tRect.anchorMin = new Vector2(0.22f, 0f);
+        tRect.anchorMax = new Vector2(0.78f, 1f);
+        tRect.offsetMin = tRect.offsetMax = Vector2.zero;
+        var titleT = titleGo.GetComponent<Text>();
+        titleT.font = font; titleT.fontSize = 18; titleT.fontStyle = FontStyle.Bold;
+        titleT.color = new Color(0.88f, 0.84f, 0.76f);
+        titleT.text = "Keyhouse Foyer"; titleT.alignment = TextAnchor.MiddleCenter;
+
+        // [Key] — right
+        var keyGo = new GameObject("KeyRingBtn",
+            typeof(RectTransform), typeof(Image), typeof(Button));
+        keyGo.transform.SetParent(barGo.transform, false);
+        var kRect = keyGo.GetComponent<RectTransform>();
+        kRect.anchorMin = new Vector2(1f, 0f);
+        kRect.anchorMax = new Vector2(1f, 1f);
+        kRect.pivot     = new Vector2(1f, 0.5f);
+        kRect.offsetMin = new Vector2(-(btnW + 8f), 6f);
+        kRect.offsetMax = new Vector2(-8f, -6f);
+        keyGo.GetComponent<Image>().color = new Color(0.14f, 0.16f, 0.24f, 0.9f);
+        keyGo.GetComponent<Button>().onClick.AddListener(() =>
+            GrokUIFlowManager.Instance?.ShowKeyRing());
+
+        var keyLabel = new GameObject("Label", typeof(RectTransform), typeof(Text));
+        keyLabel.transform.SetParent(keyGo.transform, false);
+        SetStretch(keyLabel.GetComponent<RectTransform>());
+        var kT = keyLabel.GetComponent<Text>();
+        kT.font = font; kT.fontSize = 15; kT.fontStyle = FontStyle.Bold;
+        kT.color = new Color(0.88f, 0.74f, 0.28f);
+        kT.text = "🗝 Key"; kT.alignment = TextAnchor.MiddleCenter;
+    }
+
+    private static void SetStretch(RectTransform r)
+    {
+        r.anchorMin = Vector2.zero; r.anchorMax = Vector2.one;
+        r.offsetMin = r.offsetMax = Vector2.zero;
     }
 }

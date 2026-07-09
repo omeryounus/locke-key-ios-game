@@ -53,13 +53,50 @@ public class HouseKeyPickup : SaveablePickup, IInteractable
 
     public void Interact()
     {
-        if (Collected || playerInventory == null) return;
+        if (Collected) return;
+
+        // Guard: already discovered (e.g. save restore) — don't show sheet again.
+        if (ChapterSaveManager.Instance?.HasKeyDiscovered("anywhere") == true)
+        {
+            MarkCollected();
+            return;
+        }
+
+        // S4 Key Discovery sheet — player confirms before key is added.
+        if (GrokUIFlowManager.Instance != null)
+        {
+            GrokUIFlowManager.Instance.ShowDiscovery(
+                keyId: "anywhere",
+                onAdded: () =>
+                {
+                    AddKeyToInventory(equipIt: false);
+                },
+                onAddedAndEquipped: () =>
+                {
+                    AddKeyToInventory(equipIt: true);
+                });
+        }
+        else
+        {
+            // Fallback if FlowManager not present (e.g. unit test scene).
+            AddKeyToInventory(equipIt: true);
+        }
+    }
+
+    private void AddKeyToInventory(bool equipIt)
+    {
+        if (playerInventory == null) return;
 
         playerInventory.PickupHouseKey();
         MarkCollected();
         beatDirector?.NotifyHouseKeyCollected();
-        PickupFeedback.PlayKeyPickup("House key collected — return to the entrance.");
-        ChapterSaveManager.Instance?.SaveNow();
+
+        var save = ChapterSaveManager.Instance;
+        save?.RecordKeyDiscovered("anywhere");
+        if (equipIt) save?.RecordEquippedKey("anywhere");
+        save?.SaveNow();
+
+        PickupFeedback.PlayKeyPickup("Anywhere Key added to key ring.");
     }
 
     protected override void ApplyCollectedVisuals()

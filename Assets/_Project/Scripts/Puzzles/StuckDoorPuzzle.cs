@@ -49,11 +49,21 @@ public class StuckDoorPuzzle : PuzzleBase
     {
         if (isSolved || animating) return;
 
+        // If FlowManager present: always open the S5 lock sheet.
+        // The sheet handles State A (no/wrong key) and State B (correct key) internally.
+        if (GrokUIFlowManager.Instance != null)
+        {
+            GrokUIFlowManager.Instance.ShowLock(
+                def: LockDefinition.FoyerStairDoor,
+                onSuccess: () => StartCoroutine(UnlockSequence()));
+            return;
+        }
+
+        // Fallback: legacy behaviour (no FlowManager, e.g. unit tests).
         if (playerInventory == null || !playerInventory.HasHouseKey)
         {
             StartCoroutine(RattleDoor());
             FindFirstObjectByType<GameAudioController>()?.PlayDoorRattle();
-            Debug.Log("The handle rattles — you need the house key.");
             return;
         }
 

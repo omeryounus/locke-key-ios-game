@@ -22,4 +22,12 @@ public class ChapterSaveData
     public bool echoEncounterActive;
     public List<string> solvedPuzzleIds = new();
     public List<string> collectedPickupIds = new();
+
+    // S0-S6 UI and flow persistence
+    public bool hasCompletedOnboarding;
+    public List<string> discoveredKeyIds = new();
+    public string equippedKeyId = string.Empty;
+    public List<string> unlockedRoomIds = new() { "foyer" };
+    public List<string> solvedHotspotIds = new();
+    public List<string> codexUnlockedKeyIds = new();
 }

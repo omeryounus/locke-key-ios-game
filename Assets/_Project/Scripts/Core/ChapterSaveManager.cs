@@ -101,9 +101,22 @@ public class ChapterSaveManager : MonoBehaviour
                 data.solvedPuzzleIds = new List<string>();
             if (data.collectedPickupIds == null)
                 data.collectedPickupIds = new List<string>();
+            if (data.discoveredKeyIds == null)
+                data.discoveredKeyIds = new List<string>();
+            if (data.unlockedRoomIds == null)
+                data.unlockedRoomIds = new List<string> { "foyer" };
+            if (!data.unlockedRoomIds.Contains("foyer"))
+                data.unlockedRoomIds.Add("foyer");
+            if (data.solvedHotspotIds == null)
+                data.solvedHotspotIds = new List<string>();
+            if (data.codexUnlockedKeyIds == null)
+                data.codexUnlockedKeyIds = new List<string>();
 
             if (data.version < 2)
                 MigrateV1ToV2();
+
+            // Keep legacy solvedPuzzleIds and new solvedHotspotIds in sync.
+            MirrorHotspotIds();
         }
         catch
         {
@@ -444,6 +457,89 @@ public class ChapterSaveManager : MonoBehaviour
             data.checkpointX = cp.x;
             data.checkpointY = cp.y;
         }
+    }
+
+    // ── S0-S6 flow helpers ───────────────────────────────────────────────
+
+    /// <summary>Record that the player has completed the S1 onboarding reel.</summary>
+    public void RecordOnboardingComplete()
+    {
+        data.hasCompletedOnboarding = true;
+        WriteSave();
+    }
+
+    /// <summary>Reset onboarding flag for Story Replay (keeps key progress).</summary>
+    public void ResetOnboardingOnly()
+    {
+        data.hasCompletedOnboarding = false;
+        WriteSave();
+    }
+
+    /// <summary>Record key discovered via S4 sheet. Also unlocks Codex entry.</summary>
+    public void RecordKeyDiscovered(string keyId)
+    {
+        if (!data.discoveredKeyIds.Contains(keyId))
+        {
+            data.discoveredKeyIds.Add(keyId);
+            if (!data.codexUnlockedKeyIds.Contains(keyId))
+                data.codexUnlockedKeyIds.Add(keyId);
+        }
+        WriteSave();
+    }
+
+    /// <summary>Set the currently equipped key by id (e.g. "anywhere").</summary>
+    public void RecordEquippedKey(string keyId)
+    {
+        data.equippedKeyId = keyId;
+        WriteSave();
+    }
+
+    /// <summary>Record a hotspot solved (e.g. "foyer_stair_door") and mirror to legacy list.</summary>
+    public void RecordHotspotSolved(string hotspotId)
+    {
+        if (!data.solvedHotspotIds.Contains(hotspotId))
+            data.solvedHotspotIds.Add(hotspotId);
+        MirrorHotspotIds();
+        WriteSave();
+    }
+
+    /// <summary>Unlock a room node on the S2 Chapter Map (e.g. "wellhouse").</summary>
+    public void RecordRoomUnlocked(string roomId)
+    {
+        if (!data.unlockedRoomIds.Contains(roomId))
+            data.unlockedRoomIds.Add(roomId);
+        WriteSave();
+    }
+
+    public bool IsHotspotSolved(string hotspotId) =>
+        data.solvedHotspotIds.Contains(hotspotId);
+
+    public bool IsRoomUnlocked(string roomId) =>
+        data.unlockedRoomIds.Contains(roomId);
+
+    public bool HasKeyDiscovered(string keyId) =>
+        data.discoveredKeyIds.Contains(keyId);
+
+    /// <summary>
+    /// Keep legacy solvedPuzzleIds and new solvedHotspotIds in sync.
+    /// Both lists are maintained so old scene scripts (PuzzleBase) keep working.
+    /// </summary>
+    private void MirrorHotspotIds()
+    {
+        // Legacy → new
+        if (data.solvedPuzzleIds.Contains("chapter1_door") &&
+            !data.solvedHotspotIds.Contains("foyer_stair_door"))
+            data.solvedHotspotIds.Add("foyer_stair_door");
+
+        // New → legacy
+        if (data.solvedHotspotIds.Contains("foyer_stair_door") &&
+            !data.solvedPuzzleIds.Contains("chapter1_door"))
+            data.solvedPuzzleIds.Add("chapter1_door");
+
+        // Mirror room unlock from hotspot
+        if (data.solvedHotspotIds.Contains("foyer_stair_door") &&
+            !data.unlockedRoomIds.Contains("wellhouse"))
+            data.unlockedRoomIds.Add("wellhouse");
     }
 
     private void WriteSave()
