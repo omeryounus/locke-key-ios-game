@@ -34,9 +34,9 @@ public class GrokUIFlowManager : MonoBehaviour
     private CanvasGroup toastGroup;
 
     // ── S2 map live refs ─────────────────────────────────────────────────
-    private Image foyerCheckmark;
+    private GameObject foyerCheckmark;
     private Button wellhouseBtn;
-    private Image wellhouseLock;
+    private GameObject wellhouseLock;
     private Text keyCountLabel;
 
     // ── S4 discovery live refs ────────────────────────────────────────────
@@ -163,13 +163,13 @@ public class GrokUIFlowManager : MonoBehaviour
 
         // Foyer checkmark
         if (foyerCheckmark != null)
-            foyerCheckmark.gameObject.SetActive(foyerSolved);
+            foyerCheckmark.SetActive(foyerSolved);
 
         // Wellhouse lock / button
         if (wellhouseBtn != null)
             wellhouseBtn.interactable = wellhouseUnlocked;
         if (wellhouseLock != null)
-            wellhouseLock.gameObject.SetActive(!wellhouseUnlocked);
+            wellhouseLock.SetActive(!wellhouseUnlocked);
 
         // Key count label
         int discovered = save.Data.discoveredKeyIds?.Count ?? 0;
@@ -295,9 +295,8 @@ public class GrokUIFlowManager : MonoBehaviour
         checkText.fontSize = 24;
         checkText.color = new Color(0.3f, 0.9f, 0.4f);
         checkText.alignment = TextAnchor.UpperRight;
-        foyerCheckmark = checkGo.AddComponent<Image>(); // dummy Image so we can hide easily
-        foyerCheckmark.color = Color.clear;
-        foyerCheckmark.gameObject.SetActive(false);
+        foyerCheckmark = checkGo;
+        foyerCheckmark.SetActive(false);
 
         // ─── Wellhouse node ───────────────────────────────────────────────
         BuildRoomCard(panel.transform,
@@ -341,7 +340,7 @@ public class GrokUIFlowManager : MonoBehaviour
 
     private void BuildRoomCard(Transform parent, string label, Vector2 anchor,
         bool unlocked, Action outCallback,
-        out Button outBtn, out Image outLockImg)
+        out Button outBtn, out GameObject outLockGo)
     {
         var cardGo = new GameObject(label.Replace(" ", "") + "Card",
             typeof(RectTransform), typeof(Image), typeof(Button));
@@ -357,7 +356,7 @@ public class GrokUIFlowManager : MonoBehaviour
         btn.onClick.AddListener(() => outCallback?.Invoke());
         btn.interactable = unlocked;
 
-        // Label
+        // Label child
         var labelGo = new GameObject("Label", typeof(RectTransform), typeof(Text));
         labelGo.transform.SetParent(cardGo.transform, false);
         var lRect = labelGo.GetComponent<RectTransform>();
@@ -374,7 +373,7 @@ public class GrokUIFlowManager : MonoBehaviour
         lText.text = label;
         lText.alignment = TextAnchor.MiddleLeft;
 
-        // Lock icon
+        // Lock icon child (Text only — no extra Image component)
         var lockGo = new GameObject("Lock", typeof(RectTransform), typeof(Text));
         lockGo.transform.SetParent(cardGo.transform, false);
         var lockRect = lockGo.GetComponent<RectTransform>();
@@ -385,13 +384,12 @@ public class GrokUIFlowManager : MonoBehaviour
         lockText.font = font;
         lockText.fontSize = 24;
         lockText.color = new Color(0.55f, 0.45f, 0.30f);
-        lockText.text = "🔒";
+        lockText.text = "\U0001F512"; // 🔒
         lockText.alignment = TextAnchor.MiddleCenter;
         lockGo.SetActive(!unlocked);
 
         outBtn = btn;
-        outLockImg = lockGo.AddComponent<Image>();
-        outLockImg.color = Color.clear;
+        outLockGo = lockGo; // caller uses SetActive() directly
     }
 
     // ── S4 Key Discovery ─────────────────────────────────────────────────
