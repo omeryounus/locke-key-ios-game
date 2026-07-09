@@ -231,7 +231,7 @@ public class ChapterSaveManager : MonoBehaviour
         }
     }
 
-    private static void ResetSaveOnDisk()
+    public static void ResetSaveOnDisk()
     {
         var save = new ChapterSaveData();
         if (BeatCheckpoints.TryGetValue(0, out var checkpoint))
