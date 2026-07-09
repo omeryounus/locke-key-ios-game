@@ -84,20 +84,18 @@ public class ChapterRoomBackgrounds : MonoBehaviour
 
     private void CreateLayers()
     {
-        farRenderer = CreateLayer("RoomFar", -40, 0.08f, 28f, 8f, 2.5f, 1f, out farParallax);
-        midRenderer = CreateLayer("RoomMid", -25, 0.18f, 30f, 9f, 1.8f, 0.5f, out midParallax);
-        nearRenderer = CreateLayer("RoomNear", -8, 0.32f, 32f, 10f, 0.8f, -0.25f, out nearParallax);
+        farRenderer = CreateLayer("RoomFar", -40, 0.08f, 1f, out farParallax);
+        midRenderer = CreateLayer("RoomMid", -25, 0.18f, 0.5f, out midParallax);
+        nearRenderer = CreateLayer("RoomNear", -8, 0.32f, -0.25f, out nearParallax);
     }
 
-    private static SpriteRenderer CreateLayer(string name, int sortOrder, float scroll, float scaleX, float scaleY,
-        float y, float z, out ParallaxLayer parallax)
+    private static SpriteRenderer CreateLayer(string name, int sortOrder, float scroll, float z, out ParallaxLayer parallax)
     {
         var go = new GameObject(name);
         var renderer = go.AddComponent<SpriteRenderer>();
         renderer.sortingOrder = sortOrder;
         renderer.color = Color.white;
-        go.transform.localScale = new Vector3(scaleX, scaleY, 1f);
-        go.transform.position = new Vector3(0f, y, z);
+        go.transform.position = new Vector3(0f, 0f, z);
         parallax = go.AddComponent<ParallaxLayer>();
         parallax.Configure(scroll);
         return renderer;
@@ -105,11 +103,33 @@ public class ChapterRoomBackgrounds : MonoBehaviour
 
     private void ApplySet(LayerSet set)
     {
-        if (farRenderer != null) farRenderer.sprite = set.far;
-        if (midRenderer != null) midRenderer.sprite = set.mid;
-        if (nearRenderer != null) nearRenderer.sprite = set.near;
+        if (farRenderer != null)
+        {
+            farRenderer.sprite = set.far;
+            AdjustScaleToAspect(farRenderer.transform, set.far, 28f, -4.5f);
+        }
+        if (midRenderer != null)
+        {
+            midRenderer.sprite = set.mid;
+            AdjustScaleToAspect(midRenderer.transform, set.mid, 30f, -4.5f);
+        }
+        if (nearRenderer != null)
+        {
+            nearRenderer.sprite = set.near;
+            AdjustScaleToAspect(nearRenderer.transform, set.near, 32f, -4.5f);
+        }
         farParallax?.Configure(set.farScroll);
         midParallax?.Configure(set.midScroll);
         nearParallax?.Configure(set.nearScroll);
+    }
+
+    private void AdjustScaleToAspect(Transform t, Sprite sprite, float targetWidth, float baseBottomY)
+    {
+        if (sprite == null) return;
+        var rect = sprite.rect;
+        var aspect = rect.width / rect.height;
+        var height = targetWidth / aspect;
+        t.localScale = new Vector3(targetWidth, height, 1f);
+        t.position = new Vector3(t.position.x, baseBottomY + height * 0.5f, t.position.z);
     }
 }
