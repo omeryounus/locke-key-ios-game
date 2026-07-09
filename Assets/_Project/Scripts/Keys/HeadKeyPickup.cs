@@ -9,6 +9,7 @@ public class HeadKeyPickup : MonoBehaviour, IInteractable
     [SerializeField] private SpriteRenderer keyRenderer;
 
     [SerializeField] private string pickupId = "head_key";
+    private const string KeyId = "head";
 
     private bool isAvailable;
     private bool collected;
@@ -37,7 +38,7 @@ public class HeadKeyPickup : MonoBehaviour, IInteractable
     {
         if (save == null) return;
 
-        if (save.IsPickupCollected(pickupId))
+        if (save.IsPickupCollected(pickupId) || save.HasKeyDiscovered(KeyId))
         {
             collected = true;
             SetVisible(false);
@@ -71,11 +72,36 @@ public class HeadKeyPickup : MonoBehaviour, IInteractable
     {
         if (!isAvailable || collected || keyManager == null) return;
 
-        keyManager.GrantHeadKey();
+        if (ChapterSaveManager.Instance?.HasKeyDiscovered(KeyId) == true)
+        {
+            CompletePickup(equipIt: false);
+            return;
+        }
+
+        if (GrokUIFlowManager.Instance != null)
+        {
+            GrokUIFlowManager.Instance.ShowDiscovery(
+                keyId: KeyId,
+                onAdded: () => CompletePickup(equipIt: false),
+                onAddedAndEquipped: () => CompletePickup(equipIt: true));
+        }
+        else
+            CompletePickup(equipIt: true);
+    }
+
+    private void CompletePickup(bool equipIt)
+    {
+        keyManager.GrantHeadKeySilent();
         collected = true;
         SetVisible(false);
-        PickupFeedback.PlayKeyPickup("Head Key claimed — memories stir at the edge of sight.");
-        ChapterSaveManager.Instance?.RecordPickupCollected(pickupId);
+
+        var save = ChapterSaveManager.Instance;
+        save?.RecordKeyDiscovered(KeyId);
+        if (equipIt) save?.RecordEquippedKey(KeyId);
+        save?.RecordPickupCollected(pickupId);
+        save?.SaveNow();
+
+        PickupFeedback.PlayKeyPickup("Head Key added to key ring.");
     }
 
     private void SetVisible(bool visible)

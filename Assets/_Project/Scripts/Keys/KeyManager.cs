@@ -50,6 +50,12 @@ public class KeyManager : MonoBehaviour
 
     public void GrantHeadKey() => EnsureHeadKey(silent: false);
 
+    /// <summary>Grant without discovery notification — used after S4 sheet confirms.</summary>
+    public void GrantGhostKeySilent() => EnsureGhostKey(silent: true);
+
+    /// <summary>Grant without discovery notification — used after S4 sheet confirms.</summary>
+    public void GrantHeadKeySilent() => EnsureHeadKey(silent: true);
+
     private void EnsureGhostKey(bool silent)
     {
         if (ownedKeys.Exists(k => k.abilityType == KeyAbilityType.GhostPhase))

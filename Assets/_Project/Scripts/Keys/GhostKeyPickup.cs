@@ -10,6 +10,7 @@ public class GhostKeyPickup : MonoBehaviour, IInteractable
     [SerializeField] private ChapterBeatDirector beatDirector;
 
     [SerializeField] private string pickupId = "ghost_key";
+    private const string KeyId = "ghost";
 
     private bool isAvailable;
     private bool collected;
@@ -42,7 +43,7 @@ public class GhostKeyPickup : MonoBehaviour, IInteractable
     {
         if (save == null) return;
 
-        if (save.IsPickupCollected(pickupId))
+        if (save.IsPickupCollected(pickupId) || save.HasKeyDiscovered(KeyId))
         {
             collected = true;
             SetVisible(false);
@@ -81,12 +82,37 @@ public class GhostKeyPickup : MonoBehaviour, IInteractable
     {
         if (!isAvailable || collected || keyManager == null) return;
 
-        keyManager.GrantGhostKey();
+        if (ChapterSaveManager.Instance?.HasKeyDiscovered(KeyId) == true)
+        {
+            CompletePickup(equipIt: false);
+            return;
+        }
+
+        if (GrokUIFlowManager.Instance != null)
+        {
+            GrokUIFlowManager.Instance.ShowDiscovery(
+                keyId: KeyId,
+                onAdded: () => CompletePickup(equipIt: false),
+                onAddedAndEquipped: () => CompletePickup(equipIt: true));
+        }
+        else
+            CompletePickup(equipIt: true);
+    }
+
+    private void CompletePickup(bool equipIt)
+    {
+        keyManager.GrantGhostKeySilent();
         collected = true;
         beatDirector?.NotifyGhostKeyCollected();
         SetVisible(false);
-        PickupFeedback.PlayKeyPickup("Ghost Key claimed — the HUD pulses with pale light.");
-        ChapterSaveManager.Instance?.RecordPickupCollected(pickupId);
+
+        var save = ChapterSaveManager.Instance;
+        save?.RecordKeyDiscovered(KeyId);
+        if (equipIt) save?.RecordEquippedKey(KeyId);
+        save?.RecordPickupCollected(pickupId);
+        save?.SaveNow();
+
+        PickupFeedback.PlayKeyPickup("Ghost Key added to key ring.");
     }
 
     private void SetVisible(bool visible)

@@ -13,10 +13,16 @@ public static class GameBootContext
     public static bool OpenMapOnStart { get; set; }
 
     /// <summary>
+    /// When true, TitleScreen opens the S1 story reel immediately (Replay Story).
+    /// </summary>
+    public static bool OpenStoryReelOnStart { get; set; }
+
+    /// <summary>
     /// Reset all boot flags. Call at the end of the consuming scene's Start().
     /// </summary>
     public static void Reset()
     {
         OpenMapOnStart = false;
+        OpenStoryReelOnStart = false;
     }
 }

@@ -31,9 +31,11 @@ public class TitleScreenController : MonoBehaviour
     private Image reelImage;
     private Text reelLore;
     private Button[] dotButtons;
+    private Button nextSlideBtn;
     private int currentSlide;
 
-    private ChapterSaveData SaveData => ChapterSaveManager.Instance?.Data;
+    private static bool HasCompletedOnboarding =>
+        ChapterSaveManager.HasCompletedOnboardingOnDisk();
 
     private void Awake()
     {
@@ -75,7 +77,13 @@ public class TitleScreenController : MonoBehaviour
 
         Debug.Log($"[TitleScreen] Ready. screen={Screen.width}x{Screen.height}, font={(font != null)}");
 
-        if (SaveData?.hasCompletedOnboarding == true)
+        if (GameBootContext.OpenStoryReelOnStart)
+        {
+            GameBootContext.OpenStoryReelOnStart = false;
+            StartCoroutine(CrossFade(splashGroup, reelGroup, 0.35f));
+            ShowSlide(0);
+        }
+        else if (HasCompletedOnboarding)
             ShowSplashReturnState();
         else
             ShowSplashFirstTime();
@@ -89,7 +97,13 @@ public class TitleScreenController : MonoBehaviour
         reelGroup.interactable = reelGroup.blocksRaycasts = false;
     }
 
-    private void ShowSplashReturnState() => ShowSplashFirstTime();
+    private void ShowSplashReturnState()
+    {
+        splashGroup.alpha = 1f;
+        splashGroup.interactable = splashGroup.blocksRaycasts = true;
+        reelGroup.alpha = 0f;
+        reelGroup.interactable = reelGroup.blocksRaycasts = false;
+    }
 
     private void HandleEnterKeyhouse()
     {
@@ -123,7 +137,7 @@ public class TitleScreenController : MonoBehaviour
 
     private void HandleOnboardingComplete()
     {
-        ChapterSaveManager.Instance?.RecordOnboardingComplete();
+        ChapterSaveManager.RecordOnboardingCompleteOnDisk();
         GameBootContext.OpenMapOnStart = true;
         SceneManager.LoadScene(SceneNames.Chapter1);
     }
@@ -134,6 +148,13 @@ public class TitleScreenController : MonoBehaviour
         var sprite = Resources.Load<Sprite>(StoryPaths[index]);
         if (reelImage != null) reelImage.sprite = sprite;
         if (reelLore != null) reelLore.text = StoryLore[index];
+
+        if (nextSlideBtn != null)
+        {
+            bool last = index >= StoryPaths.Length - 1;
+            var label = nextSlideBtn.transform.Find("Label")?.GetComponent<Text>();
+            if (label != null) label.text = last ? "Enter Keyhouse" : "Next";
+        }
 
         for (int i = 0; i < dotButtons.Length; i++)
         {
@@ -182,7 +203,7 @@ public class TitleScreenController : MonoBehaviour
             FontStyle.Italic, LockeKeyUITheme.BodyText, new Vector2(0.5f, 0.63f),
             "Chapter 1 — Keyhouse", new Vector2(LockeKeyUITheme.RefWidth - 60f, 36f), TextAnchor.MiddleCenter);
 
-        bool hasOnboarding = SaveData?.hasCompletedOnboarding ?? false;
+        bool hasOnboarding = HasCompletedOnboarding;
         if (!hasOnboarding)
         {
             LockeUIComponents.CreatePrimaryButton(panel.transform, font, "Enter Keyhouse",
@@ -245,7 +266,7 @@ public class TitleScreenController : MonoBehaviour
         LockeUIComponents.CreateSecondaryButton(panel.transform, font, "Skip",
             new Vector2(0.86f, 0.94f), HandleSkip, 100f);
 
-        LockeUIComponents.CreatePrimaryButton(panel.transform, font, "Next",
+        nextSlideBtn = LockeUIComponents.CreatePrimaryButton(panel.transform, font, "Next",
             new Vector2(0.5f, 0.082f), HandleNextSlide, 200f);
 
         return cg;

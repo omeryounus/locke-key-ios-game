@@ -170,6 +170,42 @@ public class ChapterSaveManager : MonoBehaviour
         return save != null && HasProgress(save);
     }
 
+    public static bool HasCompletedOnboardingOnDisk()
+    {
+        var save = TryLoadFromDisk();
+        return save != null && save.hasCompletedOnboarding;
+    }
+
+    public static void RecordOnboardingCompleteOnDisk()
+    {
+        var save = TryLoadFromDisk() ?? new ChapterSaveData();
+        save.hasCompletedOnboarding = true;
+        if (save.unlockedRoomIds == null || save.unlockedRoomIds.Count == 0)
+            save.unlockedRoomIds = new List<string> { "foyer" };
+        WriteSaveDataToDisk(save);
+    }
+
+    public static void ResetOnboardingOnDisk()
+    {
+        var save = TryLoadFromDisk();
+        if (save == null) return;
+        save.hasCompletedOnboarding = false;
+        WriteSaveDataToDisk(save);
+    }
+
+    /// <summary>Replay Story: reset onboarding flag only, keep keys and progress.</summary>
+    public static void ReplayStoryFromDisk()
+    {
+        if (Instance != null)
+        {
+            Instance.SaveNow();
+            Instance.ResetOnboardingOnly();
+            return;
+        }
+
+        ResetOnboardingOnDisk();
+    }
+
     public static string ReadSaveSummaryFromDisk()
     {
         var save = TryLoadFromDisk();

@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 /// <summary>
@@ -12,6 +14,7 @@ using UnityEngine.UI;
 ///   ShowDiscovery(keyId, onAdded, onAddedAndEquipped)
 ///   ShowLock(def, onSuccess)
 ///   ShowKeyRing()
+///   ShowCodex()
 ///   ShowToast(message)
 ///   bool IsEquipped(keyId)
 /// </summary>
@@ -27,6 +30,8 @@ public class GrokUIFlowManager : MonoBehaviour
     private CanvasGroup discoveryGroup;
     private CanvasGroup lockGroup;
     private CanvasGroup ringGroup;
+    private CanvasGroup codexGroup;
+    private CanvasGroup settingsGroup;
     private CanvasGroup toastGroup;
 
     // ── S2 map live refs ─────────────────────────────────────────────────
@@ -142,6 +147,12 @@ public class GrokUIFlowManager : MonoBehaviour
         SetOverlay(ringGroup, true);
     }
 
+    public void ShowCodex()
+    {
+        RefreshCodex();
+        SetOverlay(codexGroup, true);
+    }
+
     public void ShowToast(string message)
     {
         if (toastCoroutine != null) StopCoroutine(toastCoroutine);
@@ -255,9 +266,11 @@ public class GrokUIFlowManager : MonoBehaviour
         discoveryGroup = BuildDiscoveryPanel(root);
         lockGroup      = BuildLockPanel(root);
         ringGroup      = BuildRingPanel(root);
+        codexGroup     = BuildCodexPanel(root);
+        settingsGroup  = BuildSettingsPanel(root);
         toastGroup     = BuildToast(root);
 
-        foreach (var cg in new[] { mapGroup, discoveryGroup, lockGroup, ringGroup })
+        foreach (var cg in new[] { mapGroup, discoveryGroup, lockGroup, ringGroup, codexGroup, settingsGroup })
             SetOverlay(cg, false);
     }
 
@@ -300,10 +313,23 @@ public class GrokUIFlowManager : MonoBehaviour
 
         mapProgressFill = BuildMapProgressBar(panel.transform);
 
+        LockeUIComponents.CreateSecondaryButton(panel.transform, font, "Replay Story",
+            new Vector2(0.28f, 0.10f), HandleReplayStory, 150f);
+        LockeUIComponents.CreateSecondaryButton(panel.transform, font, "Settings",
+            new Vector2(0.72f, 0.10f), () => SetOverlay(settingsGroup, true), 150f);
+        LockeUIComponents.CreateSecondaryButton(panel.transform, font, "Codex",
+            new Vector2(0.28f, 0.04f), ShowCodex, 150f);
         LockeUIComponents.CreateSecondaryButton(panel.transform, font, "Close Map",
-            new Vector2(0.5f, 0.04f), HideChapterMap, 240f);
+            new Vector2(0.72f, 0.04f), HideChapterMap, 150f);
 
         return cg;
+    }
+
+    private void HandleReplayStory()
+    {
+        ChapterSaveManager.ReplayStoryFromDisk();
+        GameBootContext.OpenStoryReelOnStart = true;
+        SceneManager.LoadScene(SceneNames.Title);
     }
 
     // ── S4 Key Discovery ─────────────────────────────────────────────────
@@ -550,6 +576,158 @@ public class GrokUIFlowManager : MonoBehaviour
         ChapterSaveManager.Instance?.RecordEquippedKey(selectedKeyId);
         ShowToast($"Equipped: {ArtPaths.KeyDisplayName(selectedKeyId)}");
         RefreshRing();
+    }
+
+    // ── S7 Codex ──────────────────────────────────────────────────────────
+
+    private Transform codexEntriesRoot;
+
+    private CanvasGroup BuildCodexPanel(Transform root)
+    {
+        var scrimGo = new GameObject("CodexScrim", typeof(RectTransform));
+        scrimGo.transform.SetParent(root, false);
+        StretchFull(scrimGo.GetComponent<RectTransform>());
+        LockeUIComponents.CreateScrim(scrimGo.transform, () => SetOverlay(codexGroup, false));
+        var cg = scrimGo.AddComponent<CanvasGroup>();
+
+        LockeUIComponents.CreateBottomSheet(scrimGo.transform, 0.72f, out _, out var sheetImage);
+        var sheet = sheetImage.transform;
+        sheetImage.color = LockeKeyUITheme.SheetBottom;
+
+        var panelSprite = Resources.Load<Sprite>(ArtPaths.UiCodexPanel);
+        if (panelSprite != null)
+        {
+            var deco = new GameObject("CodexDeco", typeof(RectTransform), typeof(Image));
+            deco.transform.SetParent(sheet, false);
+            var dRect = deco.GetComponent<RectTransform>();
+            dRect.anchorMin = new Vector2(0.04f, 0.82f);
+            dRect.anchorMax = new Vector2(0.96f, 0.98f);
+            dRect.offsetMin = dRect.offsetMax = Vector2.zero;
+            var dImg = deco.GetComponent<Image>();
+            dImg.sprite = panelSprite;
+            dImg.preserveAspect = true;
+            dImg.color = new Color(1f, 1f, 1f, 0.35f);
+        }
+
+        LockeUIComponents.AddText(sheet, "CodexTitle", font, LockeKeyUITheme.TitleSize + 2,
+            FontStyle.Bold, LockeKeyUITheme.LKGold, new Vector2(0.5f, 0.90f),
+            "Manor Chronicles", new Vector2(300f, 36f), TextAnchor.MiddleCenter);
+
+        var scrollGo = new GameObject("CodexScroll", typeof(RectTransform), typeof(ScrollRect), typeof(Image));
+        scrollGo.transform.SetParent(sheet, false);
+        var scrollRect = scrollGo.GetComponent<RectTransform>();
+        scrollRect.anchorMin = new Vector2(0.05f, 0.08f);
+        scrollRect.anchorMax = new Vector2(0.95f, 0.80f);
+        scrollRect.offsetMin = scrollRect.offsetMax = Vector2.zero;
+        scrollGo.GetComponent<Image>().color = new Color(0.08f, 0.09f, 0.13f, 0.6f);
+
+        var viewport = new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(Mask));
+        viewport.transform.SetParent(scrollGo.transform, false);
+        var vpRect = viewport.GetComponent<RectTransform>();
+        StretchFull(vpRect);
+        viewport.GetComponent<Image>().color = Color.clear;
+        viewport.GetComponent<Mask>().showMaskGraphic = false;
+
+        var content = new GameObject("Content", typeof(RectTransform), typeof(VerticalLayoutGroup),
+            typeof(ContentSizeFitter));
+        content.transform.SetParent(viewport.transform, false);
+        var contentRect = content.GetComponent<RectTransform>();
+        contentRect.anchorMin = new Vector2(0f, 1f);
+        contentRect.anchorMax = new Vector2(1f, 1f);
+        contentRect.pivot = new Vector2(0.5f, 1f);
+        contentRect.offsetMin = contentRect.offsetMax = Vector2.zero;
+        var vlg = content.GetComponent<VerticalLayoutGroup>();
+        vlg.spacing = 10f;
+        vlg.padding = new RectOffset(8, 8, 8, 8);
+        vlg.childControlWidth = true;
+        vlg.childControlHeight = true;
+        vlg.childForceExpandWidth = true;
+        vlg.childForceExpandHeight = false;
+        content.GetComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        codexEntriesRoot = content.transform;
+
+        var scroll = scrollGo.GetComponent<ScrollRect>();
+        scroll.viewport = vpRect;
+        scroll.content = contentRect;
+        scroll.horizontal = false;
+        scroll.vertical = true;
+
+        LockeUIComponents.CreateSecondaryButton(sheet, font, "Close",
+            new Vector2(0.5f, 0.02f), () => SetOverlay(codexGroup, false), 200f);
+
+        return cg;
+    }
+
+    private void RefreshCodex()
+    {
+        if (codexEntriesRoot == null) return;
+
+        for (int i = codexEntriesRoot.childCount - 1; i >= 0; i--)
+            Destroy(codexEntriesRoot.GetChild(i).gameObject);
+
+        var save = ChapterSaveManager.Instance;
+        var unlocked = save?.Data.codexUnlockedKeyIds ?? new List<string>();
+
+        AddCodexCard("Locke Ancestry",
+            "The Locke family has inhabited Keyhouse manor since the Revolutionary War, forging keys from whispering iron to seal the demon void.");
+        AddCodexCard("The Wellhouse Echo",
+            "A creature mimicking Dodge trapped inside the well. It craves the Omega Key to open the portal and unleash the leviathans.");
+
+        foreach (var keyId in unlocked)
+            AddCodexCard(ArtPaths.KeyDisplayName(keyId), KeyDescription(keyId).Replace("\n", " "));
+
+        if (unlocked.Count == 0)
+        {
+            AddCodexCard("No Key Lore Yet",
+                "Discover keys in Keyhouse to unlock additional codex entries.");
+        }
+    }
+
+    private void AddCodexCard(string title, string body)
+    {
+        var card = new GameObject("CodexCard", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+        card.transform.SetParent(codexEntriesRoot, false);
+        card.GetComponent<Image>().color = new Color(0.12f, 0.13f, 0.18f, 0.9f);
+        card.GetComponent<LayoutElement>().minHeight = 72f;
+
+        LockeUIComponents.AddText(card.transform, "Title", font, LockeKeyUITheme.BodySize,
+            FontStyle.Bold, LockeKeyUITheme.LKGold, new Vector2(0.5f, 0.72f),
+            title, new Vector2(LockeKeyUITheme.RefWidth - 80f, 28f), TextAnchor.MiddleLeft);
+
+        var bodyText = LockeUIComponents.AddText(card.transform, "Body", font, LockeKeyUITheme.CaptionSize + 2,
+            FontStyle.Normal, LockeKeyUITheme.BodyText, new Vector2(0.5f, 0.35f),
+            body, new Vector2(LockeKeyUITheme.RefWidth - 80f, 48f), TextAnchor.UpperLeft);
+        bodyText.horizontalOverflow = HorizontalWrapMode.Wrap;
+        bodyText.verticalOverflow = VerticalWrapMode.Overflow;
+    }
+
+    // ── Settings stub ─────────────────────────────────────────────────────
+
+    private CanvasGroup BuildSettingsPanel(Transform root)
+    {
+        var scrimGo = new GameObject("SettingsScrim", typeof(RectTransform));
+        scrimGo.transform.SetParent(root, false);
+        StretchFull(scrimGo.GetComponent<RectTransform>());
+        LockeUIComponents.CreateScrim(scrimGo.transform, () => SetOverlay(settingsGroup, false));
+        var cg = scrimGo.AddComponent<CanvasGroup>();
+
+        LockeUIComponents.CreateBottomSheet(scrimGo.transform, 0.42f, out _, out var sheetImage);
+        var sheet = sheetImage.transform;
+        sheetImage.color = LockeKeyUITheme.SheetBottom;
+
+        LockeUIComponents.AddText(sheet, "SettingsTitle", font, LockeKeyUITheme.TitleSize + 2,
+            FontStyle.Bold, LockeKeyUITheme.LKGold, new Vector2(0.5f, 0.82f),
+            "Settings", new Vector2(280f, 36f), TextAnchor.MiddleCenter);
+
+        LockeUIComponents.AddText(sheet, "SettingsBody", font, LockeKeyUITheme.BodySize,
+            FontStyle.Normal, LockeKeyUITheme.BodyText, new Vector2(0.5f, 0.52f),
+            "Audio, haptics, and accessibility options\nwill ship in a future update.",
+            new Vector2(320f, 72f), TextAnchor.MiddleCenter);
+
+        LockeUIComponents.CreatePrimaryButton(sheet, font, "Close",
+            new Vector2(0.5f, 0.14f), () => SetOverlay(settingsGroup, false), 200f);
+
+        return cg;
     }
 
     // ── S8 Toast ──────────────────────────────────────────────────────────
