@@ -33,7 +33,7 @@ public class ChapterRoomBackgrounds : MonoBehaviour
         if (roomDirector == null)
             roomDirector = FindFirstObjectByType<ChapterRoomDirector>();
 
-        foyer = BuildSet("foyer", 0.06f, 0.14f, 0.28f);
+        foyer = BuildFoyerSet();
         library = BuildSet("library", 0.06f, 0.16f, 0.3f);
         sealedPassage = new LayerSet
         {
@@ -82,6 +82,20 @@ public class ChapterRoomBackgrounds : MonoBehaviour
                 ApplySet(sealedPassage);
                 break;
         }
+    }
+
+    private static LayerSet BuildFoyerSet()
+    {
+        var portrait = Resources.Load<Sprite>(ArtPaths.BgFoyerPortrait);
+        return new LayerSet
+        {
+            far = portrait != null ? portrait : Load("foyer_far"),
+            mid = portrait != null ? null : Load("foyer_mid"),
+            near = portrait != null ? null : Load("foyer_near"),
+            farScroll = 0.04f,
+            midScroll = 0.1f,
+            nearScroll = 0.2f
+        };
     }
 
     private static LayerSet BuildSet(string prefix, float farScroll, float midScroll, float nearScroll) =>
@@ -134,53 +148,51 @@ public class ChapterRoomBackgrounds : MonoBehaviour
         var wellhouse = Resources.Load<Sprite>(ArtPaths.BgWellhouse);
         if (wellhouse == null) return;
 
-        var set = new LayerSet
-        {
-            far = wellhouse,
-            mid = null,
-            near = null,
-            farScroll = 0f,
-            midScroll = 0f,
-            nearScroll = 0f
-        };
-        ApplySet(set);
+        ApplyLayer(farRenderer, wellhouse, 0f, -4.2f, 1f);
+        if (midRenderer != null) midRenderer.enabled = false;
+        if (nearRenderer != null) nearRenderer.enabled = false;
     }
 
     private void ApplySet(LayerSet set)
     {
-        if (farRenderer != null && farRenderer.sprite != set.far)
-        {
-            Debug.Log($"[Backgrounds] Applying far sprite: {(set.far != null ? set.far.name : "null")}");
-            farRenderer.sprite = set.far;
-            AdjustScaleToAspect(farRenderer.transform, set.far, 28f, -4.5f);
-        }
-        if (midRenderer != null && midRenderer.sprite != set.mid)
-        {
-            Debug.Log($"[Backgrounds] Applying mid sprite: {(set.mid != null ? set.mid.name : "null")}");
-            midRenderer.sprite = set.mid;
-            AdjustScaleToAspect(midRenderer.transform, set.mid, 30f, -4.5f);
-        }
-        if (nearRenderer != null && nearRenderer.sprite != set.near)
-        {
-            Debug.Log($"[Backgrounds] Applying near sprite: {(set.near != null ? set.near.name : "null")}");
-            nearRenderer.sprite = set.near;
-            AdjustScaleToAspect(nearRenderer.transform, set.near, 32f, -4.5f);
-        }
-        farParallax?.Configure(set.farScroll);
-        midParallax?.Configure(set.midScroll);
-        nearParallax?.Configure(set.nearScroll);
+        ApplyLayer(farRenderer, set.far, set.farScroll, -4.2f, 1f);
+        ApplyLayer(midRenderer, set.mid, set.midScroll, -3.8f, 0.55f);
+        ApplyLayer(nearRenderer, set.near, set.nearScroll, -3.4f, 0.35f);
     }
 
-    private void AdjustScaleToAspect(Transform t, Sprite sprite, float targetWidth, float baseBottomY)
+    private static void ApplyLayer(SpriteRenderer renderer, Sprite sprite, float scroll, float baseBottomY, float alpha)
     {
-        if (sprite == null) return;
-        var spriteWidth = sprite.bounds.size.x;
+        if (renderer == null) return;
+
+        if (sprite == null)
+        {
+            renderer.sprite = null;
+            renderer.enabled = false;
+            return;
+        }
+
+        renderer.enabled = true;
+        renderer.sprite = sprite;
+        renderer.color = new Color(1f, 1f, 1f, alpha);
+        FitSpriteToCameraHeight(renderer.transform, sprite, baseBottomY);
+
+        var parallax = renderer.GetComponent<ParallaxLayer>();
+        parallax?.Configure(scroll);
+    }
+
+    private static void FitSpriteToCameraHeight(Transform t, Sprite sprite, float baseBottomY)
+    {
+        var cam = Camera.main;
+        float targetHeight = cam != null ? cam.orthographicSize * 2.05f : 8.5f;
+
         var spriteHeight = sprite.bounds.size.y;
+        if (spriteHeight <= 0.001f) return;
 
-        var scaleFactor = targetWidth / spriteWidth;
-        t.localScale = new Vector3(scaleFactor, scaleFactor, 1f);
+        var scale = targetHeight / spriteHeight;
+        t.localScale = new Vector3(scale, scale, 1f);
 
-        var actualHeight = spriteHeight * scaleFactor;
-        t.position = new Vector3(t.position.x, baseBottomY + actualHeight * 0.5f, t.position.z);
+        var actualHeight = spriteHeight * scale;
+        var pos = t.position;
+        t.position = new Vector3(pos.x, baseBottomY + actualHeight * 0.5f, pos.z);
     }
 }

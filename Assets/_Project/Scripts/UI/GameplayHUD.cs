@@ -11,7 +11,7 @@ public class GameplayHUD : MonoBehaviour
     [SerializeField] private UIManager uiManager;
     [SerializeField] private UIIconLibrary iconLibrary;
     [SerializeField] private GameObject hudPrefab;
-    [SerializeField] private bool preferAuthoredPrefab = true;
+    [SerializeField] private bool preferAuthoredPrefab;
 
     private Text keyStatusText;
     private Text houseKeyText;
@@ -307,10 +307,11 @@ public class GameplayHUD : MonoBehaviour
 
         var flow = LockeUILayout.CreateFlowCanvas("GameplayCanvas", 100);
         var canvasRoot = LockeUILayout.GetContentRoot(flow);
-        var font = flow.Font;
-        var panelColor = new Color(0.05f, 0.06f, 0.1f, 0.72f);
-        var buttonColor = new Color(0.14f, 0.16f, 0.24f, 0.92f);
-        var accentColor = new Color(0.55f, 0.75f, 0.95f, 1f);
+        var font = flow.Font ?? LockeUILayout.GetUIFont();
+        var panelColor = new Color(0.05f, 0.06f, 0.1f, 0.82f);
+        var buttonColor = new Color(0.12f, 0.14f, 0.22f, 0.95f);
+        var accentColor = LockeKeyUITheme.LKGold;
+        var contentW = LockeKeyUITheme.HudContentWidth;
 
         var bar = LockeUIComponents.CreateHudBar(canvasRoot, font,
             ChapterRoomLabels.ForRoomId(ChapterRoomZone.RoomId.Foyer),
@@ -318,65 +319,88 @@ public class GameplayHUD : MonoBehaviour
             () => GrokUIFlowManager.Instance?.ShowKeyRing());
         roomTitleText = bar.transform.Find("Title")?.GetComponent<Text>();
 
-        keyStatusIcon = CreateStatusIcon(canvasRoot, "KeyStatusIcon",
-            new Vector2(24f, -20f), 40f);
-
         var keySlotGo = new GameObject("KeySlot", typeof(RectTransform), typeof(Image), typeof(KeySlotHUD));
         keySlotGo.transform.SetParent(canvasRoot, false);
         var keySlotRect = keySlotGo.GetComponent<RectTransform>();
-        keySlotRect.anchorMin = new Vector2(0f, 1f);
-        keySlotRect.anchorMax = new Vector2(0f, 1f);
-        keySlotRect.pivot = new Vector2(0f, 1f);
-        keySlotRect.anchoredPosition = new Vector2(180f, -12f);
-        keySlotRect.sizeDelta = new Vector2(72f, 72f);
+        keySlotRect.anchorMin = keySlotRect.anchorMax = new Vector2(1f, 1f);
+        keySlotRect.pivot = new Vector2(1f, 1f);
+        keySlotRect.anchoredPosition = new Vector2(-12f, -52f);
+        keySlotRect.sizeDelta = new Vector2(LockeKeyUITheme.KeySlotSize, LockeKeyUITheme.KeySlotSize);
         keySlotImage = keySlotGo.GetComponent<Image>();
         keySlotImage.preserveAspect = true;
         keySlotHud = keySlotGo.GetComponent<KeySlotHUD>();
 
-        keyStatusText = CreateText(canvasRoot, "KeyStatus", font, 24, TextAnchor.UpperLeft,
-            new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(260f, -24f), new Vector2(860f, 36f), accentColor);
+        keyStatusIcon = CreateStatusIcon(canvasRoot, "KeyStatusIcon", new Vector2(16f, -56f), 28f);
 
-        houseKeyIcon = CreateStatusIcon(canvasRoot, "HouseKeyIcon",
-            new Vector2(24f, -60f), 32f);
-        houseKeyText = CreateText(canvasRoot, "HouseKeyStatus", font, 20, TextAnchor.UpperLeft,
-            new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(64f, -64f), new Vector2(860f, 32f), Color.white);
+        keyStatusText = CreateText(canvasRoot, "KeyStatus", font, LockeKeyUITheme.CaptionSize + 2,
+            TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(0f, 1f),
+            new Vector2(16f, -56f), new Vector2(contentW * 0.55f, 28f), LockeKeyUITheme.BodyText);
+        keyStatusText.gameObject.SetActive(false);
 
-        hintText = CreateText(canvasRoot, "Hint", font, 22, TextAnchor.UpperLeft,
-            new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -104f), new Vector2(1200f, 72f),
-            new Color(0.85f, 0.82f, 0.75f, 1f));
+        houseKeyIcon = CreateStatusIcon(canvasRoot, "HouseKeyIcon", new Vector2(52f, -56f), 24f);
+        houseKeyIcon.gameObject.SetActive(false);
+        houseKeyText = CreateText(canvasRoot, "HouseKeyStatus", font, LockeKeyUITheme.CaptionSize,
+            TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(0f, 1f),
+            new Vector2(80f, -58f), new Vector2(contentW * 0.5f, 24f), LockeKeyUITheme.CaptionText);
+        houseKeyText.gameObject.SetActive(false);
 
-        toastText = CreateText(canvasRoot, "Toast", font, 24, TextAnchor.UpperCenter,
-            new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -160f), new Vector2(1100f, 48f),
-            new Color(1f, 0.85f, 0.55f, 1f));
+        hintText = CreateText(canvasRoot, "Hint", font, LockeKeyUITheme.BodySize, TextAnchor.UpperCenter,
+            new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+            new Vector2(0f, LockeKeyUITheme.ControlBarHeight + 12f),
+            new Vector2(contentW, 48f), LockeKeyUITheme.BodyText);
+
+        toastText = CreateText(canvasRoot, "Toast", font, LockeKeyUITheme.BodySize, TextAnchor.MiddleCenter,
+            new Vector2(0.5f, 0.72f), new Vector2(0.5f, 0.72f),
+            Vector2.zero, new Vector2(contentW - 24f, 44f), LockeKeyUITheme.LKGold);
         toastText.gameObject.SetActive(false);
 
         var controlBar = CreatePanel(canvasRoot, "ControlBar", panelColor,
-            new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 0f), new Vector2(0f, 140f));
+            new Vector2(0f, 0f), new Vector2(1f, 0f), Vector2.zero,
+            new Vector2(0f, LockeKeyUITheme.ControlBarHeight));
 
-        leftButton = CreateHoldButton(controlBar.transform, "Left", iconLibrary?.moveLeft, font, buttonColor, accentColor,
-            new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(24f, 20f), new Vector2(180f, 100f),
+        float btn = LockeKeyUITheme.TouchButtonSize;
+        float y = 18f;
+        float[] anchors = { 0.1f, 0.3f, 0.5f, 0.7f, 0.9f };
+
+        leftButton = CreatePortraitHoldButton(controlBar.transform, "Left", iconLibrary?.moveLeft, font,
+            buttonColor, accentColor, anchors[0], y, btn,
             () => gameplay?.SetMoveInput(-1f), () => gameplay?.SetMoveInput(0f));
 
-        rightButton = CreateHoldButton(controlBar.transform, "Right", iconLibrary?.moveRight, font, buttonColor, accentColor,
-            new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(220f, 20f), new Vector2(180f, 100f),
+        rightButton = CreatePortraitHoldButton(controlBar.transform, "Right", iconLibrary?.moveRight, font,
+            buttonColor, accentColor, anchors[1], y, btn,
             () => gameplay?.SetMoveInput(1f), () => gameplay?.SetMoveInput(0f));
 
-        jumpButton = CreateTapButton(controlBar.transform, "Jump", iconLibrary?.jump, font, buttonColor, accentColor,
-            new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(416f, 20f), new Vector2(180f, 100f),
-            () => gameplay?.RequestJump());
+        jumpButton = CreatePortraitTapButton(controlBar.transform, "Jump", iconLibrary?.jump, font,
+            buttonColor, accentColor, anchors[2], y, btn, () => gameplay?.RequestJump());
 
-        interactButton = CreateTapButton(controlBar.transform, "Interact", iconLibrary?.interact, font, buttonColor, accentColor,
-            new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-416f, 20f), new Vector2(180f, 100f),
-            () => gameplay?.RequestInteract());
+        interactButton = CreatePortraitTapButton(controlBar.transform, "Interact", iconLibrary?.interact, font,
+            buttonColor, accentColor, anchors[3], y, btn, () => gameplay?.RequestInteract());
 
-        useKeyButton = CreateTapButton(controlBar.transform, "Use Key", iconLibrary?.useKey, font, buttonColor, accentColor,
-            new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-216f, 20f), new Vector2(180f, 100f),
-            () => gameplay?.RequestUseKey());
+        useKeyButton = CreatePortraitTapButton(controlBar.transform, "UseKey", iconLibrary?.useKey, font,
+            buttonColor, accentColor, anchors[4], y, btn, () => gameplay?.RequestUseKey());
 
         SetControlVisibility(interact: false, jump: false, useKey: false);
 
         memoryOverlay = BuildMemoryOverlay(canvasRoot, font, panelColor, accentColor);
         memoryOverlay.SetActive(false);
+    }
+
+    private static GameObject CreatePortraitTapButton(Transform parent, string label, Sprite icon, Font font,
+        Color bg, Color textColor, float anchorX, float bottomInset, float size,
+        UnityEngine.Events.UnityAction onTap)
+    {
+        return CreateTapButton(parent, label, icon, font, bg, textColor,
+            new Vector2(anchorX, 0f), new Vector2(anchorX, 0f),
+            new Vector2(0f, bottomInset), new Vector2(size, size), onTap);
+    }
+
+    private static GameObject CreatePortraitHoldButton(Transform parent, string label, Sprite icon, Font font,
+        Color bg, Color textColor, float anchorX, float bottomInset, float size,
+        UnityEngine.Events.UnityAction onDown, UnityEngine.Events.UnityAction onUp)
+    {
+        return CreateHoldButton(parent, label, icon, font, bg, textColor,
+            new Vector2(anchorX, 0f), new Vector2(anchorX, 0f),
+            new Vector2(0f, bottomInset), new Vector2(size, size), onDown, onUp);
     }
 
     private static Image CreateStatusIcon(Transform parent, string name, Vector2 anchoredPos, float size)
@@ -488,10 +512,6 @@ public class GameplayHUD : MonoBehaviour
         var image = go.GetComponent<Image>();
         image.color = bg;
 
-        var outline = go.AddComponent<Outline>();
-        outline.effectColor = new Color(0.45f, 0.75f, 0.95f, 0.25f);
-        outline.effectDistance = new Vector2(1.5f, 1.5f);
-
         var button = go.GetComponent<Button>();
         button.targetGraphic = image;
         button.onClick.AddListener(onTap);
@@ -499,31 +519,11 @@ public class GameplayHUD : MonoBehaviour
         var rect = go.GetComponent<RectTransform>();
         rect.anchorMin = anchorMin;
         rect.anchorMax = anchorMax;
-        rect.pivot = new Vector2(anchorMin.x < 0.5f ? 0f : 1f, 0f);
+        rect.pivot = new Vector2(0.5f, 0f);
         rect.anchoredPosition = anchoredPos;
         rect.sizeDelta = sizeDelta;
 
-        if (icon != null)
-        {
-            var iconGo = new GameObject("Icon", typeof(RectTransform), typeof(Image));
-            iconGo.transform.SetParent(go.transform, false);
-            var iconImg = iconGo.GetComponent<Image>();
-            iconImg.sprite = icon;
-            iconImg.preserveAspect = true;
-            iconImg.color = Color.white;
-
-            var iconRect = iconGo.GetComponent<RectTransform>();
-            iconRect.anchorMin = new Vector2(0.18f, 0.18f);
-            iconRect.anchorMax = new Vector2(0.82f, 0.82f);
-            iconRect.offsetMin = Vector2.zero;
-            iconRect.offsetMax = Vector2.zero;
-        }
-        else
-        {
-            CreateText(go.transform, "Label", font, 22, TextAnchor.MiddleCenter,
-                Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, textColor).text = label;
-        }
-
+        StyleTouchButton(go.transform, label, icon, font, textColor);
         return go;
     }
 
@@ -536,10 +536,6 @@ public class GameplayHUD : MonoBehaviour
         var image = go.GetComponent<Image>();
         image.color = bg;
 
-        var outline = go.AddComponent<Outline>();
-        outline.effectColor = new Color(0.45f, 0.75f, 0.95f, 0.25f);
-        outline.effectDistance = new Vector2(1.5f, 1.5f);
-
         var hold = go.GetComponent<HoldButton>();
         hold.onDown.AddListener(onDown);
         hold.onUp.AddListener(onUp);
@@ -547,32 +543,40 @@ public class GameplayHUD : MonoBehaviour
         var rect = go.GetComponent<RectTransform>();
         rect.anchorMin = anchorMin;
         rect.anchorMax = anchorMax;
-        rect.pivot = new Vector2(anchorMin.x < 0.5f ? 0f : 1f, 0f);
+        rect.pivot = new Vector2(0.5f, 0f);
         rect.anchoredPosition = anchoredPos;
         rect.sizeDelta = sizeDelta;
+
+        StyleTouchButton(go.transform, label, icon, font, textColor);
+        return go;
+    }
+
+    private static void StyleTouchButton(Transform button, string label, Sprite icon, Font font, Color textColor)
+    {
+        var outline = button.gameObject.GetComponent<Outline>() ?? button.gameObject.AddComponent<Outline>();
+        outline.effectColor = new Color(LockeKeyUITheme.LKGold.r, LockeKeyUITheme.LKGold.g, LockeKeyUITheme.LKGold.b, 0.45f);
+        outline.effectDistance = new Vector2(1.5f, -1.5f);
 
         if (icon != null)
         {
             var iconGo = new GameObject("Icon", typeof(RectTransform), typeof(Image));
-            iconGo.transform.SetParent(go.transform, false);
+            iconGo.transform.SetParent(button, false);
             var iconImg = iconGo.GetComponent<Image>();
             iconImg.sprite = icon;
             iconImg.preserveAspect = true;
             iconImg.color = Color.white;
 
             var iconRect = iconGo.GetComponent<RectTransform>();
-            iconRect.anchorMin = new Vector2(0.18f, 0.18f);
-            iconRect.anchorMax = new Vector2(0.82f, 0.82f);
-            iconRect.offsetMin = Vector2.zero;
-            iconRect.offsetMax = Vector2.zero;
+            iconRect.anchorMin = new Vector2(0.14f, 0.14f);
+            iconRect.anchorMax = new Vector2(0.86f, 0.86f);
+            iconRect.offsetMin = iconRect.offsetMax = Vector2.zero;
         }
         else
         {
-            CreateText(go.transform, "Label", font, 22, TextAnchor.MiddleCenter,
-                Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, textColor).text = label;
+            var shortLabel = label.Length > 4 ? label[..4] : label;
+            CreateText(button, "Label", font, LockeKeyUITheme.CaptionSize + 1, TextAnchor.MiddleCenter,
+                Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, textColor).text = shortLabel;
         }
-
-        return go;
     }
 
     private static void SetStretch(RectTransform r)

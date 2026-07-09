@@ -81,6 +81,7 @@
     <Compile Include="Assets/_Project/Scripts/Audio/GameAudioController.cs" />
     <Compile Include="Assets/_Project/Scripts/Narrative/EchoEncounterManager.cs" />
     <Compile Include="Assets/_Project/Scripts/Player/CameraFollow2D.cs" />
+    <Compile Include="Assets/_Project/Scripts/Player/GameplayViewportCamera.cs" />
     <Compile Include="Assets/_Project/Scripts/Audio/GameHaptics.cs" />
     <Compile Include="Assets/_Project/Scripts/Narrative/EchoSpriteAnimator.cs" />
     <Compile Include="Assets/_Project/Scripts/Puzzles/SealedDoorPuzzle.cs" />

@@ -55,6 +55,16 @@ public class GameBootstrap : MonoBehaviour
 
         EnsureRoomZones();
         EnsurePlayerAnimator();
+        EnsureGameplayCamera();
+    }
+
+    private static void EnsureGameplayCamera()
+    {
+        var cam = Camera.main;
+        if (cam == null || cam.GetComponent<GameplayViewportCamera>() != null)
+            return;
+
+        cam.gameObject.AddComponent<GameplayViewportCamera>();
     }
 
     private static void EnsurePlayerAnimator()

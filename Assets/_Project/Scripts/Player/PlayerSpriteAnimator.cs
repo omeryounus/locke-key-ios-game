@@ -31,6 +31,11 @@ public class PlayerSpriteAnimator : MonoBehaviour
         walkBSprite = LoadFrame("player_walk_b") ?? walkASprite;
         jumpSprite = LoadFrame("player_jump") ?? idleSprite;
         spriteRenderer.sprite = idleSprite;
+        spriteRenderer.color = Color.white;
+
+        var scale = transform.localScale;
+        if (scale.x < 1.2f || scale.y < 1.2f)
+            transform.localScale = new Vector3(1.35f, 1.35f, 1f);
     }
 
     private static Sprite LoadFrame(string name) =>
@@ -40,8 +45,11 @@ public class PlayerSpriteAnimator : MonoBehaviour
     {
         if (spriteRenderer == null || rb == null) return;
 
-        var vx = Mathf.Abs(rb.linearVelocity.x);
-        var vy = rb.linearVelocity.y;
+        var vx = rb.linearVelocity.x;
+        var absVx = Mathf.Abs(vx);
+
+        if (absVx > 0.08f)
+            spriteRenderer.flipX = vx < 0f;
 
         if (!IsGrounded())
         {
@@ -49,7 +57,7 @@ public class PlayerSpriteAnimator : MonoBehaviour
             return;
         }
 
-        if (vx < 0.05f)
+        if (absVx < 0.05f)
         {
             spriteRenderer.sprite = idleSprite;
             return;

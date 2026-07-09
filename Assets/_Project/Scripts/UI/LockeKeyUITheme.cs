@@ -42,6 +42,9 @@ public static class LockeKeyUITheme
     public const float KeySlotSize = 72f;
     public const float KeySlotRingWidth = 3f;
     public const float ToastBottomInset = 24f;
+    public const float ControlBarHeight = 108f;
+    public const float TouchButtonSize = 64f;
+    public const float HudContentWidth = RefWidth - 32f;
     public const float ChapterCardThumbAspect = 16f / 9f;
 
     public static Color Hex(string hex)
