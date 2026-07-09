@@ -138,10 +138,13 @@ public class ChapterRoomBackgrounds : MonoBehaviour
     private void AdjustScaleToAspect(Transform t, Sprite sprite, float targetWidth, float baseBottomY)
     {
         if (sprite == null) return;
-        var rect = sprite.rect;
-        var aspect = rect.width / rect.height;
-        var height = targetWidth / aspect;
-        t.localScale = new Vector3(targetWidth, height, 1f);
-        t.position = new Vector3(t.position.x, baseBottomY + height * 0.5f, t.position.z);
+        var spriteWidth = sprite.bounds.size.x;
+        var spriteHeight = sprite.bounds.size.y;
+
+        var scaleFactor = targetWidth / spriteWidth;
+        t.localScale = new Vector3(scaleFactor, scaleFactor, 1f);
+
+        var actualHeight = spriteHeight * scaleFactor;
+        t.position = new Vector3(t.position.x, baseBottomY + actualHeight * 0.5f, t.position.z);
     }
 }
