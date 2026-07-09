@@ -92,7 +92,11 @@ public class GrokUIFlowManager : MonoBehaviour
         SetOverlay(mapGroup, true);
     }
 
-    public void HideChapterMap() => SetOverlay(mapGroup, false);
+    public void HideChapterMap()
+    {
+        SetOverlay(mapGroup, false);
+        EnsureGameplayVisible();
+    }
 
     public void ShowDiscovery(string keyId,
         Action onAdded, Action onAddedAndEquipped)
@@ -585,6 +589,14 @@ public class GrokUIFlowManager : MonoBehaviour
 
         HideChapterMap();
         FindFirstObjectByType<ChapterRoomDirector>()?.LoadMapDestination(destinationId);
+        EnsureGameplayVisible();
+    }
+
+    private static void EnsureGameplayVisible()
+    {
+        var cam = Camera.main;
+        if (cam != null && !cam.enabled)
+            cam.enabled = true;
     }
 
     private void CloseKeyRing()

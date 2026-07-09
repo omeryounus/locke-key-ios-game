@@ -4,6 +4,8 @@ using UnityEngine.UI;
 /// <summary>
 /// Portrait viewport (393×852) centered in landscape letterbox — matches ux_landscape_device_frame.
 /// Uses a single root overlay canvas (no nested canvases — avoids iOS/URP render failures).
+/// Letterbox bars only cover the side/top/bottom margins so the viewport center stays transparent
+/// and the game camera remains visible during gameplay.
 /// </summary>
 public static class LockeUILayout
 {
@@ -27,12 +29,10 @@ public static class LockeUILayout
         var rootRect = rootGo.GetComponent<RectTransform>();
         Stretch(rootRect);
 
-        var letterbox = new GameObject("Letterbox",
-            typeof(RectTransform), typeof(Image));
-        letterbox.transform.SetParent(rootGo.transform, false);
-        Stretch(letterbox.GetComponent<RectTransform>());
-        letterbox.GetComponent<Image>().color = LockeKeyUITheme.LKInk;
-        letterbox.GetComponent<Image>().raycastTarget = false;
+        var leftBar = CreateLetterboxBar(rootGo.transform, "LetterboxLeft");
+        var rightBar = CreateLetterboxBar(rootGo.transform, "LetterboxRight");
+        var topBar = CreateLetterboxBar(rootGo.transform, "LetterboxTop");
+        var bottomBar = CreateLetterboxBar(rootGo.transform, "LetterboxBottom");
 
         var viewportGo = new GameObject("Viewport", typeof(RectTransform));
         viewportGo.transform.SetParent(rootGo.transform, false);
@@ -40,7 +40,9 @@ public static class LockeUILayout
         viewport.anchorMin = viewport.anchorMax = new Vector2(0.5f, 0.5f);
         viewport.pivot = new Vector2(0.5f, 0.5f);
         ApplyViewportSize(viewport);
-        viewportGo.AddComponent<LockeViewportFitter>();
+
+        var fitter = viewportGo.AddComponent<LockeViewportFitter>();
+        fitter.Configure(leftBar, rightBar, topBar, bottomBar);
 
         var contentGo = new GameObject("Content", typeof(RectTransform));
         contentGo.transform.SetParent(viewport, false);
@@ -49,6 +51,7 @@ public static class LockeUILayout
         contentRect.pivot = new Vector2(0.5f, 0.5f);
         contentRect.sizeDelta = new Vector2(LockeKeyUITheme.RefWidth, LockeKeyUITheme.RefHeight);
         SyncContentScale(viewport, contentRect);
+        ApplyLetterboxBars(viewport, leftBar, rightBar, topBar, bottomBar);
 
         LayoutRebuilder.ForceRebuildLayoutImmediate(viewport);
         Canvas.ForceUpdateCanvases();
@@ -59,6 +62,15 @@ public static class LockeUILayout
             Viewport = viewport,
             Font = GetUIFont()
         };
+    }
+
+    private static RectTransform CreateLetterboxBar(Transform parent, string name)
+    {
+        var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+        go.transform.SetParent(parent, false);
+        go.GetComponent<Image>().color = LockeKeyUITheme.LKInk;
+        go.GetComponent<Image>().raycastTarget = false;
+        return go.GetComponent<RectTransform>();
     }
 
     public static void Stretch(RectTransform rect)
@@ -95,6 +107,70 @@ public static class LockeUILayout
         viewport.sizeDelta = ComputeViewportSize(Screen.width, Screen.height);
     }
 
+    public static void ApplyLetterboxBars(RectTransform viewport,
+        RectTransform left, RectTransform right, RectTransform top, RectTransform bottom)
+    {
+        if (viewport == null) return;
+
+        var vpSize = viewport.sizeDelta;
+        if (vpSize.x <= 1f || vpSize.y <= 1f)
+            vpSize = ComputeViewportSize(Screen.width, Screen.height);
+
+        float halfW = vpSize.x * 0.5f;
+        float halfH = vpSize.y * 0.5f;
+        float screenAspect = (float)Screen.width / Mathf.Max(1, Screen.height);
+        float targetAspect = LockeKeyUITheme.RefWidth / LockeKeyUITheme.RefHeight;
+        bool sideBars = screenAspect > targetAspect;
+
+        if (left != null)
+        {
+            left.gameObject.SetActive(sideBars);
+            if (sideBars)
+            {
+                left.anchorMin = Vector2.zero;
+                left.anchorMax = new Vector2(0.5f, 1f);
+                left.offsetMin = Vector2.zero;
+                left.offsetMax = new Vector2(-halfW, 0f);
+            }
+        }
+
+        if (right != null)
+        {
+            right.gameObject.SetActive(sideBars);
+            if (sideBars)
+            {
+                right.anchorMin = new Vector2(0.5f, 0f);
+                right.anchorMax = Vector2.one;
+                right.offsetMin = new Vector2(halfW, 0f);
+                right.offsetMax = Vector2.zero;
+            }
+        }
+
+        if (top != null)
+        {
+            top.gameObject.SetActive(!sideBars);
+            if (!sideBars)
+            {
+                top.anchorMin = new Vector2(0f, 0.5f);
+                top.anchorMax = Vector2.one;
+                top.offsetMin = new Vector2(0f, halfH);
+                top.offsetMax = Vector2.zero;
+            }
+        }
+
+        if (bottom != null)
+        {
+            bottom.gameObject.SetActive(!sideBars);
+            if (!sideBars)
+            {
+                bottom.anchorMin = Vector2.zero;
+                bottom.anchorMax = new Vector2(1f, 0.5f);
+                bottom.offsetMin = Vector2.zero;
+                bottom.offsetMax = new Vector2(0f, -halfH);
+            }
+        }
+    }
+
     public static void SyncContentScale(RectTransform viewport, RectTransform content)
     {
         if (viewport == null || content == null) return;
@@ -120,7 +196,6 @@ public static class LockeUILayout
             font = Resources.GetBuiltinResource<Font>("Arial.ttf");
         return font;
     }
-
 }
 
 /// <summary>
@@ -129,7 +204,19 @@ public static class LockeUILayout
 public class LockeViewportFitter : MonoBehaviour
 {
     private RectTransform rect;
+    private RectTransform letterboxLeft;
+    private RectTransform letterboxRight;
+    private RectTransform letterboxTop;
+    private RectTransform letterboxBottom;
     private Vector2Int lastScreen;
+
+    public void Configure(RectTransform left, RectTransform right, RectTransform top, RectTransform bottom)
+    {
+        letterboxLeft = left;
+        letterboxRight = right;
+        letterboxTop = top;
+        letterboxBottom = bottom;
+    }
 
     private void Awake()
     {
@@ -157,6 +244,8 @@ public class LockeViewportFitter : MonoBehaviour
         var content = rect.Find("Content") as RectTransform;
         if (content != null)
             LockeUILayout.SyncContentScale(rect, content);
+
+        LockeUILayout.ApplyLetterboxBars(rect, letterboxLeft, letterboxRight, letterboxTop, letterboxBottom);
 
         LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
         Canvas.ForceUpdateCanvases();
