@@ -245,12 +245,13 @@ public class GrokUIFlowManager : MonoBehaviour
     {
         var flow = LockeUILayout.CreateFlowCanvas("GrokOverlayCanvas", 300);
         font = flow.Font;
+        var root = LockeUILayout.GetContentRoot(flow);
 
-        mapGroup       = BuildMapPanel(flow.Canvas.transform);
-        discoveryGroup = BuildDiscoveryPanel(flow.Canvas.transform);
-        lockGroup      = BuildLockPanel(flow.Canvas.transform);
-        ringGroup      = BuildRingPanel(flow.Canvas.transform);
-        toastGroup     = BuildToast(flow.Canvas.transform);
+        mapGroup       = BuildMapPanel(root);
+        discoveryGroup = BuildDiscoveryPanel(root);
+        lockGroup      = BuildLockPanel(root);
+        ringGroup      = BuildRingPanel(root);
+        toastGroup     = BuildToast(root);
 
         foreach (var cg in new[] { mapGroup, discoveryGroup, lockGroup, ringGroup })
             SetOverlay(cg, false);

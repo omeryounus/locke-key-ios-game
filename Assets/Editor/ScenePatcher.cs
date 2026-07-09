@@ -42,9 +42,10 @@ public static class ScenePatcher
 
         bool dirty = false;
 
-        // Ensure there is a root host for TitleScreenController
+        // Single host for TitleScreenController (remove legacy duplicate on TitleScreen GO).
         var host = FindOrCreateGO(scene, "TitleScreenHost");
         dirty |= EnsureComponent<TitleScreenController>(host);
+        dirty |= RemoveDuplicateTitleControllers(scene, host);
 
         // Ensure Camera exists with correct settings
         var cam = EnsureCamera(scene);
@@ -100,6 +101,22 @@ public static class ScenePatcher
         go.AddComponent<T>();
         Debug.Log($"[ScenePatcher] Added {typeof(T).Name} to '{go.name}'");
         return true;
+    }
+
+    private static bool RemoveDuplicateTitleControllers(Scene scene, GameObject host)
+    {
+        bool dirty = false;
+        foreach (var root in scene.GetRootGameObjects())
+        {
+            if (root == host) continue;
+            var dup = root.GetComponent<TitleScreenController>();
+            if (dup == null) continue;
+            Object.DestroyImmediate(dup);
+            Debug.Log($"[ScenePatcher] Removed duplicate TitleScreenController from '{root.name}'");
+            dirty = true;
+        }
+
+        return dirty;
     }
 
     private static Camera EnsureCamera(Scene scene)

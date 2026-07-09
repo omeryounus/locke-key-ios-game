@@ -9,6 +9,8 @@ using UnityEngine.UI;
 /// </summary>
 public class TitleScreenController : MonoBehaviour
 {
+    private static TitleScreenController activeInstance;
+
     private static readonly string[] StoryLore =
     {
         "You return to Keyhouse after years away.\nSomething is wrong with the doors.",
@@ -32,8 +34,28 @@ public class TitleScreenController : MonoBehaviour
 
     private ChapterSaveData SaveData => ChapterSaveManager.Instance?.Data;
 
+    private void Awake()
+    {
+        if (activeInstance != null && activeInstance != this)
+        {
+            Debug.LogWarning("[TitleScreen] Duplicate TitleScreenController disabled.");
+            enabled = false;
+            return;
+        }
+
+        activeInstance = this;
+    }
+
+    private void OnDestroy()
+    {
+        if (activeInstance == this)
+            activeInstance = null;
+    }
+
     private void Start()
     {
+        if (!enabled) return;
+
         EnsureEventSystem();
         BuildCanvas();
         if (SaveData?.hasCompletedOnboarding == true)
@@ -106,10 +128,18 @@ public class TitleScreenController : MonoBehaviour
 
     private void BuildCanvas()
     {
+        var existing = GameObject.Find("TitleCanvas");
+        if (existing != null)
+        {
+            Debug.LogWarning("[TitleScreen] TitleCanvas already exists; skipping rebuild.");
+            return;
+        }
+
         var flow = LockeUILayout.CreateFlowCanvas("TitleCanvas", 200);
         font = flow.Font;
-        splashGroup = BuildSplash(flow.Canvas.transform);
-        reelGroup = BuildReel(flow.Canvas.transform);
+        var parent = LockeUILayout.GetContentRoot(flow);
+        splashGroup = BuildSplash(parent);
+        reelGroup = BuildReel(parent);
     }
 
     private CanvasGroup BuildSplash(Transform root)

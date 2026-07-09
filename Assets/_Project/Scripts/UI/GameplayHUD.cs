@@ -306,7 +306,7 @@ public class GameplayHUD : MonoBehaviour
         EnsureEventSystem();
 
         var flow = LockeUILayout.CreateFlowCanvas("GameplayCanvas", 100);
-        var canvasRoot = flow.Canvas.transform;
+        var canvasRoot = LockeUILayout.GetContentRoot(flow);
         var font = flow.Font;
         var panelColor = new Color(0.05f, 0.06f, 0.1f, 0.72f);
         var buttonColor = new Color(0.14f, 0.16f, 0.24f, 0.92f);
