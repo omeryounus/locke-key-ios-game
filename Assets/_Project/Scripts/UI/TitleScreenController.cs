@@ -36,7 +36,10 @@ public class TitleScreenController : MonoBehaviour
     {
         EnsureEventSystem();
         BuildCanvas();
-        SaveData?.hasCompletedOnboarding == true ? ShowSplashReturnState() : ShowSplashFirstTime();
+        if (SaveData?.hasCompletedOnboarding == true)
+            ShowSplashReturnState();
+        else
+            ShowSplashFirstTime();
     }
 
     private void ShowSplashFirstTime()
