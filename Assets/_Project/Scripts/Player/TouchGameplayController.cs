@@ -25,6 +25,7 @@ public class TouchGameplayController : MonoBehaviour
     private bool jumpRequested;
     private bool interactRequested;
     private bool useKeyRequested;
+    private bool isKeyboardActive;
 
     private void Update()
     {
@@ -108,9 +109,15 @@ public class TouchGameplayController : MonoBehaviour
     {
         var kbMove = Input.GetAxisRaw("Horizontal");
         if (Mathf.Abs(kbMove) > 0.01f)
+        {
             moveInput = kbMove;
-        else if (Input.touchCount == 0)
+            isKeyboardActive = true;
+        }
+        else if (isKeyboardActive)
+        {
             moveInput = 0f;
+            isKeyboardActive = false;
+        }
 
         if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
             jumpRequested = true;

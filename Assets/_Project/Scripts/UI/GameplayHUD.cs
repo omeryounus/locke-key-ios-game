@@ -151,7 +151,10 @@ public class GameplayHUD : MonoBehaviour
             hintText.text = gameplay.GetHintLabel();
 
         if (keyStatusIcon != null && iconLibrary != null)
+        {
             keyStatusIcon.sprite = ResolveActiveKeyIcon();
+            keyStatusIcon.enabled = keyStatusIcon.sprite != null;
+        }
 
         keySlotHud?.Refresh();
 
@@ -449,11 +452,10 @@ public class GameplayHUD : MonoBehaviour
         go.transform.SetParent(parent, false);
         var image = go.GetComponent<Image>();
         image.color = bg;
-        if (icon != null)
-        {
-            image.sprite = icon;
-            image.color = Color.white;
-        }
+
+        var outline = go.AddComponent<Outline>();
+        outline.effectColor = new Color(0.45f, 0.75f, 0.95f, 0.25f);
+        outline.effectDistance = new Vector2(1.5f, 1.5f);
 
         var button = go.GetComponent<Button>();
         button.targetGraphic = image;
@@ -466,7 +468,22 @@ public class GameplayHUD : MonoBehaviour
         rect.anchoredPosition = anchoredPos;
         rect.sizeDelta = sizeDelta;
 
-        if (icon == null)
+        if (icon != null)
+        {
+            var iconGo = new GameObject("Icon", typeof(RectTransform), typeof(Image));
+            iconGo.transform.SetParent(go.transform, false);
+            var iconImg = iconGo.GetComponent<Image>();
+            iconImg.sprite = icon;
+            iconImg.preserveAspect = true;
+            iconImg.color = Color.white;
+
+            var iconRect = iconGo.GetComponent<RectTransform>();
+            iconRect.anchorMin = new Vector2(0.18f, 0.18f);
+            iconRect.anchorMax = new Vector2(0.82f, 0.82f);
+            iconRect.offsetMin = Vector2.zero;
+            iconRect.offsetMax = Vector2.zero;
+        }
+        else
         {
             CreateText(go.transform, "Label", font, 22, TextAnchor.MiddleCenter,
                 Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, textColor).text = label;
@@ -482,9 +499,11 @@ public class GameplayHUD : MonoBehaviour
         var go = new GameObject(label + "Button", typeof(RectTransform), typeof(Image), typeof(HoldButton));
         go.transform.SetParent(parent, false);
         var image = go.GetComponent<Image>();
-        image.color = icon != null ? Color.white : bg;
-        if (icon != null)
-            image.sprite = icon;
+        image.color = bg;
+
+        var outline = go.AddComponent<Outline>();
+        outline.effectColor = new Color(0.45f, 0.75f, 0.95f, 0.25f);
+        outline.effectDistance = new Vector2(1.5f, 1.5f);
 
         var hold = go.GetComponent<HoldButton>();
         hold.onDown.AddListener(onDown);
@@ -497,7 +516,22 @@ public class GameplayHUD : MonoBehaviour
         rect.anchoredPosition = anchoredPos;
         rect.sizeDelta = sizeDelta;
 
-        if (icon == null)
+        if (icon != null)
+        {
+            var iconGo = new GameObject("Icon", typeof(RectTransform), typeof(Image));
+            iconGo.transform.SetParent(go.transform, false);
+            var iconImg = iconGo.GetComponent<Image>();
+            iconImg.sprite = icon;
+            iconImg.preserveAspect = true;
+            iconImg.color = Color.white;
+
+            var iconRect = iconGo.GetComponent<RectTransform>();
+            iconRect.anchorMin = new Vector2(0.18f, 0.18f);
+            iconRect.anchorMax = new Vector2(0.82f, 0.82f);
+            iconRect.offsetMin = Vector2.zero;
+            iconRect.offsetMax = Vector2.zero;
+        }
+        else
         {
             CreateText(go.transform, "Label", font, 22, TextAnchor.MiddleCenter,
                 Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, textColor).text = label;
