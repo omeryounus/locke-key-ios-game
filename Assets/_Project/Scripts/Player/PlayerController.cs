@@ -8,8 +8,11 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     [Header("Movement")]
-    public float moveSpeed = 4f;
-    public float jumpForce = 8f;
+    public float moveSpeed = 4.2f;
+    public float jumpForce = 8.5f;
+    public float acceleration = 14f;
+    public float deceleration = 18f;
+    public float airControlReduction = 0.55f;
 
     [Header("Ghost Key")]
     public float ghostPhaseDuration = 5f;
@@ -23,8 +26,10 @@ public class PlayerController : MonoBehaviour
     private float ghostMoveMultiplier = 0.85f;
     private float noiseStepInterval = 0.5f;
     private float noiseTimer;
+    private float targetHorizontalVelocity;
 
     public bool IsGhostPhasing => isGhostPhasing;
+    public bool IsGrounded => isGrounded;
 
     private void Awake()
     {
@@ -54,7 +59,47 @@ public class PlayerController : MonoBehaviour
     public void Move(float horizontalInput)
     {
         var speed = isGhostPhasing ? moveSpeed * ghostMoveMultiplier : moveSpeed;
-        rb.linearVelocity = new Vector2(horizontalInput * speed, rb.linearVelocity.y);
+        targetHorizontalVelocity = horizontalInput * speed;
+    }
+
+    private void FixedUpdate()
+    {
+        isGrounded = CheckGrounded();
+
+        float currentX = rb.linearVelocity.x;
+        float targetX = targetHorizontalVelocity;
+
+        // Apply acceleration or deceleration with air reduction if jumping
+        float rate;
+        if (Mathf.Abs(targetX) > 0.01f)
+        {
+            rate = isGrounded ? acceleration : acceleration * airControlReduction;
+            
+            // Turnaround speed boost (realistic friction change when sliding back)
+            if (Mathf.Sign(targetX) != Mathf.Sign(currentX) && Mathf.Abs(currentX) > 0.1f)
+                rate *= 1.4f;
+        }
+        else
+        {
+            rate = isGrounded ? deceleration : deceleration * airControlReduction;
+        }
+
+        float newX = Mathf.MoveTowards(currentX, targetX, rate * Time.fixedDeltaTime);
+        rb.linearVelocity = new Vector2(newX, rb.linearVelocity.y);
+    }
+
+    private bool CheckGrounded()
+    {
+        var col = GetComponent<Collider2D>();
+        if (col == null) return false;
+
+        var bounds = col.bounds;
+        Vector2 origin = new Vector2(bounds.center.x, bounds.min.y - 0.01f);
+        Vector2 size = new Vector2(bounds.size.x * 0.85f, 0.02f);
+        int mask = solidLayers.value & ~(1 << gameObject.layer);
+
+        var hit = Physics2D.BoxCast(origin, size, 0f, Vector2.down, 0.02f, mask);
+        return hit.collider != null;
     }
 
     public void Jump()
@@ -138,14 +183,4 @@ public class PlayerController : MonoBehaviour
         eventBus?.GhostPhaseEnded();
     }
 
-    private void OnCollisionEnter2D(Collision2D collision)
-    {
-        if (collision.contacts.Length > 0 && collision.contacts[0].normal.y > 0.5f)
-            isGrounded = true;
-    }
-
-    private void OnCollisionExit2D(Collision2D collision)
-    {
-        isGrounded = false;
-    }
 }

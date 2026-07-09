@@ -14,6 +14,7 @@ public class PlayerSpriteAnimator : MonoBehaviour
     private Sprite jumpSprite;
     private SpriteRenderer spriteRenderer;
     private Rigidbody2D rb;
+    private PlayerController playerController;
     private float walkTimer;
     private bool useWalkA = true;
 
@@ -21,6 +22,7 @@ public class PlayerSpriteAnimator : MonoBehaviour
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
         rb = GetComponent<Rigidbody2D>();
+        playerController = GetComponent<PlayerController>();
         LoadSprites();
     }
 
@@ -75,7 +77,6 @@ public class PlayerSpriteAnimator : MonoBehaviour
 
     private bool IsGrounded()
     {
-        var hits = Physics2D.Raycast(transform.position, Vector2.down, 1.1f);
-        return hits.collider != null && !hits.collider.isTrigger;
+        return playerController != null ? playerController.IsGrounded : true;
     }
 }
