@@ -275,6 +275,8 @@ def main() -> None:
     for src_name, out_name, art_guid, res_guid, long_edge in ZONE_LAYERS:
         img = Image.open(src_dir / src_name)
         img = fit_long_edge(img, long_edge)
+        if "_mid" in out_name or "_near" in out_name:
+            img = remove_dark_background(img, threshold=32)
         parallax_path = PARALLAX / out_name
         res_path = RES / "Parallax" / out_name
         write_sprite(parallax_path, img, art_guid, ppu=100)
