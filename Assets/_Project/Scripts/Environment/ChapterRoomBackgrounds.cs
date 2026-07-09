@@ -107,6 +107,7 @@ public class ChapterRoomBackgrounds : MonoBehaviour
         if (renderer == null)
             renderer = go.AddComponent<SpriteRenderer>();
 
+        renderer.sortingLayerName = "Background";
         renderer.sortingOrder = sortOrder;
         renderer.color = Color.white;
 

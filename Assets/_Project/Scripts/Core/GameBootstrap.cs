@@ -101,6 +101,69 @@ public class GameBootstrap : MonoBehaviour
     private void Start()
     {
         Debug.Log("Locke & Key: Chapter 1 — Welcome to Keyhouse");
+        StartCoroutine(LogDiagnosticsRoutine());
+    }
+
+    private System.Collections.IEnumerator LogDiagnosticsRoutine()
+    {
+        yield return new WaitForSecondsRealtime(0.5f);
+        
+        Debug.Log("=== RUNTIME RENDER DIAGNOSTICS ===");
+        
+        // 1. Camera
+        var cam = Camera.main;
+        if (cam != null)
+        {
+            var follow = cam.GetComponent<CameraFollow2D>();
+            Debug.Log($"[Diag] Camera: pos={cam.transform.position}, target={(follow != null && follow.target != null ? follow.target.name : "null")}, size={cam.orthographicSize}");
+        }
+        else
+        {
+            Debug.Log("[Diag] Camera: No Main Camera found!");
+        }
+
+        // 2. Player
+        var player = FindFirstObjectByType<PlayerController>();
+        if (player != null)
+        {
+            var sr = player.GetComponent<SpriteRenderer>();
+            var active = player.gameObject.activeInHierarchy;
+            var pos = player.transform.position;
+            var scale = player.transform.localScale;
+            var spriteName = sr != null && sr.sprite != null ? sr.sprite.name : "null";
+            var sLayer = sr != null ? sr.sortingLayerName : "null";
+            var sOrder = sr != null ? sr.sortingOrder : 0;
+            var enabled = sr != null && sr.enabled;
+            Debug.Log($"[Diag] Player: active={active}, pos={pos}, scale={scale}, enabled={enabled}, sprite={spriteName}, sortingLayer={sLayer}, sortingOrder={sOrder}");
+        }
+        else
+        {
+            Debug.Log("[Diag] Player: FindFirstObjectByType<PlayerController> returned null!");
+        }
+
+        // 3. Parallax Backgrounds
+        string[] bgNames = { "ParallaxFar", "ParallaxMid", "ParallaxNear" };
+        foreach (var name in bgNames)
+        {
+            var bg = GameObject.Find(name);
+            if (bg != null)
+            {
+                var sr = bg.GetComponent<SpriteRenderer>();
+                var pos = bg.transform.position;
+                var scale = bg.transform.localScale;
+                var spriteName = sr != null && sr.sprite != null ? sr.sprite.name : "null";
+                var sLayer = sr != null ? sr.sortingLayerName : "null";
+                var sOrder = sr != null ? sr.sortingOrder : 0;
+                var active = bg.activeInHierarchy;
+                var enabled = sr != null && sr.enabled;
+                Debug.Log($"[Diag] Bg '{name}': active={active}, pos={pos}, scale={scale}, enabled={enabled}, sprite={spriteName}, sortingLayer={sLayer}, sortingOrder={sOrder}");
+            }
+            else
+            {
+                Debug.Log($"[Diag] Bg '{name}': GameObject.Find returned null!");
+            }
+        }
+        Debug.Log("==================================");
     }
 
     private void OnDestroy()
