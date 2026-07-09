@@ -21,6 +21,8 @@ public class PlayerController : MonoBehaviour
     private Coroutine ghostPhaseRoutine;
     private EventBus eventBus;
     private float ghostMoveMultiplier = 0.85f;
+    private float noiseStepInterval = 0.5f;
+    private float noiseTimer;
 
     public bool IsGhostPhasing => isGhostPhasing;
 
@@ -28,6 +30,25 @@ public class PlayerController : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         eventBus = Resources.Load<EventBus>("EventBus");
+    }
+
+    private void Update()
+    {
+        if (isGhostPhasing) return;
+
+        if (isGrounded && Mathf.Abs(rb.linearVelocity.x) > 0.1f)
+        {
+            noiseTimer += Time.deltaTime;
+            if (noiseTimer >= noiseStepInterval)
+            {
+                noiseTimer = 0f;
+                eventBus?.NoiseHeard(transform.position, 2.5f);
+            }
+        }
+        else
+        {
+            noiseTimer = noiseStepInterval;
+        }
     }
 
     public void Move(float horizontalInput)
@@ -41,6 +62,7 @@ public class PlayerController : MonoBehaviour
         if (!isGrounded) return;
         if (isGhostPhasing) return;
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+        eventBus?.NoiseHeard(transform.position, 6.0f);
     }
 
     public void ActivateGhostPhase(float duration)
@@ -54,6 +76,42 @@ public class PlayerController : MonoBehaviour
     public void TryMirrorTravel()
     {
         Debug.Log("Mirror Key: searching for nearby reflective surface...");
+        var colliders = Physics2D.OverlapCircleAll(transform.position, 3.5f);
+        MirrorSurface nearestMirror = null;
+        float minDist = float.MaxValue;
+
+        foreach (var col in colliders)
+        {
+            var mirror = col.GetComponent<MirrorSurface>();
+            if (mirror != null && mirror.isReflective && mirror.destinationMirror != null)
+            {
+                float dist = Vector2.Distance(transform.position, mirror.transform.position);
+                if (dist < minDist)
+                {
+                    minDist = dist;
+                    nearestMirror = mirror;
+                }
+            }
+        }
+
+        if (nearestMirror != null)
+        {
+            var dest = nearestMirror.destinationMirror;
+            transform.position = dest.GetTravelPosition();
+
+            // Visual and audio feedback
+            FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.45f, 0.35f);
+            FindFirstObjectByType<GameAudioController>()?.PlayMemoryTransition();
+            GameHaptics.TriggerHapticLight();
+            FindFirstObjectByType<GameplayHUD>()?.ShowToast("Teleported through reflection.", 3f);
+            Debug.Log($"Mirror travel successful: Teleported from {nearestMirror.name} to {dest.name}");
+        }
+        else
+        {
+            FindFirstObjectByType<GameplayHUD>()?.ShowToast("No reflective surfaces in range.", 3.5f);
+            FindFirstObjectByType<GameAudioController>()?.PlayDoorRattle();
+            Debug.LogWarning("Mirror Travel failed: no paired reflective surface in range.");
+        }
     }
 
     public void ManipulateShadows()

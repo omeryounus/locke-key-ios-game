@@ -42,15 +42,19 @@ public class MemoryFragmentPuzzle : PuzzleBase
 
         headKey.Activate();
 
+        var touchController = FindFirstObjectByType<TouchGameplayController>();
+        if (touchController != null)
+            touchController.SetInputLocked(true);
+
+        var mindscapeGo = new GameObject("HeadKeyMindscape");
+        var mindscapePanel = mindscapeGo.AddComponent<HeadKeyMindscapePanel>();
+        mindscapePanel.Initialize(uiManager);
+    }
+
+    public void SolveFromUI()
+    {
         if (portraitRenderer != null)
             portraitRenderer.color = new Color(0.75f, 0.55f, 0.95f, 1f);
-
-        uiManager?.ShowMemoryFragment(
-            "Rendell at the Black Door",
-            "The portrait exhales cold light. You are standing in a hallway that was never built.\n\n" +
-            "Rendell Locke turns toward you — or toward someone who isn't there yet.\n\n" +
-            "\"The house remembers everything,\" he says. \"Even the things we tried to bury.\"",
-            panelIndex: 1);
 
         MarkAsSolved();
     }

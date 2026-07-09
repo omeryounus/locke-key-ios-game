@@ -28,6 +28,7 @@ public class EventBus : ScriptableObject
     public event Action OnEchoCaught;
     public event Action OnGhostPhaseStarted;
     public event Action OnGhostPhaseEnded;
+    public event Action<Vector2, float> OnNoiseHeard; // position and intensity
 
     public void KeyActivated(IKeyAbility key) => OnKeyActivated?.Invoke(key);
     public void KeyDeactivated(IKeyAbility key) => OnKeyDeactivated?.Invoke(key);
@@ -48,4 +49,6 @@ public class EventBus : ScriptableObject
     public void GhostPhaseStarted() => OnGhostPhaseStarted?.Invoke();
 
     public void GhostPhaseEnded() => OnGhostPhaseEnded?.Invoke();
+
+    public void NoiseHeard(Vector2 pos, float radius) => OnNoiseHeard?.Invoke(pos, radius);
 }
