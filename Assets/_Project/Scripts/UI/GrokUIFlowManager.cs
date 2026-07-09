@@ -19,11 +19,7 @@ public class GrokUIFlowManager : MonoBehaviour
 {
     public static GrokUIFlowManager Instance { get; private set; }
 
-    private const float REF_W = 393f;
-    private const float REF_H = 852f;
-
     // ── shared canvas ────────────────────────────────────────────────────
-    private Canvas overlayCanvas;
     private Font font;
 
     // ── overlay groups ───────────────────────────────────────────────────
@@ -72,7 +68,6 @@ public class GrokUIFlowManager : MonoBehaviour
 
     private void Start()
     {
-        font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         BuildCanvas();
 
         // Consume boot flag
@@ -174,7 +169,7 @@ public class GrokUIFlowManager : MonoBehaviour
         // Key count label
         int discovered = save.Data.discoveredKeyIds?.Count ?? 0;
         if (keyCountLabel != null)
-            keyCountLabel.text = $"{discovered} / {ArtPaths.AllKeyIds.Length} keys";
+            keyCountLabel.text = $"{discovered} / {KeyCatalog.Count} keys";
     }
 
     private void RefreshLockState()
@@ -189,12 +184,12 @@ public class GrokUIFlowManager : MonoBehaviour
             if (correct)
             {
                 lockEquippedLabel.text = $"Equipped: {reqName} ✓";
-                lockEquippedLabel.color = new Color(0.3f, 0.9f, 0.4f);
+                lockEquippedLabel.color = LockeKeyUITheme.Success;
             }
             else
             {
                 lockEquippedLabel.text = $"Requires: {reqName}";
-                lockEquippedLabel.color = new Color(0.75f, 0.55f, 0.35f);
+                lockEquippedLabel.color = LockeKeyUITheme.LKIron;
             }
         }
 
@@ -202,9 +197,7 @@ public class GrokUIFlowManager : MonoBehaviour
         {
             lockTryBtn.interactable = correct;
             var img = lockTryBtn.GetComponent<Image>();
-            if (img) img.color = correct
-                ? new Color(0.88f, 0.74f, 0.28f)
-                : new Color(0.35f, 0.35f, 0.35f, 0.4f);
+            if (img) img.color = correct ? LockeKeyUITheme.LKGold : new Color(0.35f, 0.35f, 0.35f, 0.4f);
         }
     }
 
@@ -213,9 +206,9 @@ public class GrokUIFlowManager : MonoBehaviour
         var save = ChapterSaveManager.Instance;
         if (save == null || ringSlotImages == null) return;
 
-        for (int i = 0; i < ArtPaths.AllKeyIds.Length && i < ringSlotImages.Length; i++)
+        for (int i = 0; i < KeyCatalog.Count && i < ringSlotImages.Length; i++)
         {
-            string kid = ArtPaths.AllKeyIds[i];
+            string kid = KeyCatalog.AllKeyIds[i];
             bool owned = save.HasKeyDiscovered(kid);
             var sprite = owned
                 ? Resources.Load<Sprite>(ArtPaths.KeySpriteForId(kid))
@@ -225,10 +218,10 @@ public class GrokUIFlowManager : MonoBehaviour
 
             // Gold ring on equipped slot
             var equipped = save.Data.equippedKeyId == kid && owned;
-            var border = ringSlotImages[i].transform.Find("Border")?.GetComponent<Image>();
+            var border = ringSlotImages[i].transform.Find("Ring")?.GetComponent<Image>();
             if (border) border.color = equipped
-                ? new Color(0.88f, 0.74f, 0.28f)
-                : new Color(0.3f, 0.3f, 0.3f, 0.4f);
+                ? LockeKeyUITheme.LKGold
+                : new Color(0.3f, 0.3f, 0.3f, 0.35f);
         }
     }
 
@@ -238,25 +231,15 @@ public class GrokUIFlowManager : MonoBehaviour
 
     private void BuildCanvas()
     {
-        var go = new GameObject("GrokOverlayCanvas",
-            typeof(RectTransform), typeof(Canvas),
-            typeof(CanvasScaler), typeof(GraphicRaycaster));
-        overlayCanvas = go.GetComponent<Canvas>();
-        overlayCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        overlayCanvas.sortingOrder = 300;
+        var flow = LockeUILayout.CreateFlowCanvas("GrokOverlayCanvas", 300);
+        font = flow.Font;
 
-        var scaler = go.GetComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(REF_W, REF_H);
-        scaler.matchWidthOrHeight = 1f;
+        mapGroup       = BuildMapPanel(flow.Canvas.transform);
+        discoveryGroup = BuildDiscoveryPanel(flow.Canvas.transform);
+        lockGroup      = BuildLockPanel(flow.Canvas.transform);
+        ringGroup      = BuildRingPanel(flow.Canvas.transform);
+        toastGroup     = BuildToast(flow.Canvas.transform);
 
-        mapGroup       = BuildMapPanel(go.transform);
-        discoveryGroup = BuildDiscoveryPanel(go.transform);
-        lockGroup      = BuildLockPanel(go.transform);
-        ringGroup      = BuildRingPanel(go.transform);
-        toastGroup     = BuildToast(go.transform);
-
-        // All hidden by default
         foreach (var cg in new[] { mapGroup, discoveryGroup, lockGroup, ringGroup })
             SetOverlay(cg, false);
     }
@@ -265,209 +248,77 @@ public class GrokUIFlowManager : MonoBehaviour
 
     private CanvasGroup BuildMapPanel(Transform root)
     {
-        var panel = MakeFullPanel(root, "ChapterMap", new Color(0.04f, 0.05f, 0.10f, 0.96f));
+        var panel = MakeFullPanel(root, "ChapterMap", LockeKeyUITheme.LKMoon);
         var cg = panel.AddComponent<CanvasGroup>();
 
-        // Title
-        AddLabel(panel.transform, "MapTitle", font, 28,
-            new Color(0.88f, 0.78f, 0.40f), new Vector2(0.5f, 0.92f),
-            "Keyhouse — Chapter 1", REF_W - 40f, 42f, FontStyle.Bold);
+        LockeUIComponents.AddText(panel.transform, "MapTitle", font, LockeKeyUITheme.DisplaySize - 2,
+            FontStyle.Bold, LockeKeyUITheme.LKGold, new Vector2(0.5f, 0.92f),
+            "Keyhouse — Chapter 1", new Vector2(LockeKeyUITheme.RefWidth - 40f, 42f), TextAnchor.MiddleCenter);
 
-        // ─── Foyer node ──────────────────────────────────────────────────
-        BuildRoomCard(panel.transform,
-            label: "Foyer",
-            anchor: new Vector2(0.5f, 0.72f),
-            unlocked: true,
-            outCallback: () => { HideChapterMap(); /* room already loaded */ },
-            out var foyerBtn, out var foyerLock);
-
-        // Checkmark overlay on Foyer card
-        var checkGo = new GameObject("Checkmark",
-            typeof(RectTransform), typeof(Text));
-        checkGo.transform.SetParent(foyerBtn.transform, false);
-        var checkRect = checkGo.GetComponent<RectTransform>();
-        checkRect.anchorMin = new Vector2(0.7f, 0.6f);
-        checkRect.anchorMax = new Vector2(1.0f, 1.0f);
-        checkRect.offsetMin = checkRect.offsetMax = Vector2.zero;
-        var checkText = checkGo.GetComponent<Text>();
-        checkText.font = font;
-        checkText.text = "✓";
-        checkText.fontSize = 24;
-        checkText.color = new Color(0.3f, 0.9f, 0.4f);
-        checkText.alignment = TextAnchor.UpperRight;
-        foyerCheckmark = checkGo;
+        var foyer = LockeUIComponents.CreateChapterCard(panel.transform, font, "Foyer",
+            new Vector2(0.5f, 0.72f), true, ArtPaths.BgFoyerPortrait,
+            () => HideChapterMap());
+        foyerCheckmark = LockeUIComponents.AddText(foyer.cardBtn.transform, "Checkmark", font, 22,
+            FontStyle.Bold, LockeKeyUITheme.Success, new Vector2(0.92f, 0.72f), "✓",
+            new Vector2(28f, 28f), TextAnchor.MiddleCenter).gameObject;
         foyerCheckmark.SetActive(false);
 
-        // ─── Wellhouse node ───────────────────────────────────────────────
-        BuildRoomCard(panel.transform,
-            label: "Wellhouse",
-            anchor: new Vector2(0.5f, 0.52f),
-            unlocked: false,
-            outCallback: () => { HideChapterMap(); ShowToast("Wellhouse — coming next."); },
-            out wellhouseBtn, out wellhouseLock);
+        var well = LockeUIComponents.CreateChapterCard(panel.transform, font, "Wellhouse",
+            new Vector2(0.5f, 0.52f), false, ArtPaths.BgWellhouse,
+            () => { HideChapterMap(); ShowToast("Wellhouse — coming next."); });
+        wellhouseBtn = well.cardBtn;
+        wellhouseLock = well.lockIcon;
 
-        // ─── Black Door node ──────────────────────────────────────────────
-        BuildRoomCard(panel.transform,
-            label: "The Black Door",
-            anchor: new Vector2(0.5f, 0.32f),
-            unlocked: false,
-            outCallback: () => ShowToast("This door has no keyhole."),
-            out _, out _);
+        LockeUIComponents.CreateChapterCard(panel.transform, font, "The Black Door",
+            new Vector2(0.5f, 0.32f), false, ArtPaths.BgBlackDoor,
+            () => ShowToast("This door has no keyhole."));
 
-        // ─── Key count ────────────────────────────────────────────────────
-        var countGo = new GameObject("KeyCount",
-            typeof(RectTransform), typeof(Text));
-        countGo.transform.SetParent(panel.transform, false);
-        var countRect = countGo.GetComponent<RectTransform>();
-        countRect.anchorMin = new Vector2(0.1f, 0.10f);
-        countRect.anchorMax = new Vector2(0.9f, 0.16f);
-        countRect.offsetMin = countRect.offsetMax = Vector2.zero;
-        keyCountLabel = countGo.GetComponent<Text>();
-        keyCountLabel.font = font;
-        keyCountLabel.fontSize = 20;
-        keyCountLabel.color = new Color(0.65f, 0.65f, 0.75f);
-        keyCountLabel.alignment = TextAnchor.MiddleCenter;
-        keyCountLabel.text = "0 / 13 keys";
+        keyCountLabel = LockeUIComponents.AddText(panel.transform, "KeyCount", font, LockeKeyUITheme.BodySize,
+            FontStyle.Normal, LockeKeyUITheme.CaptionText, new Vector2(0.5f, 0.12f),
+            $"0 / {KeyCatalog.Count} keys", new Vector2(300f, 32f), TextAnchor.MiddleCenter);
 
-        // Close (back to gameplay)
-        AddButton(panel.transform, "✕ Close Map", font,
-            new Vector2(0.5f, 0.04f), HideChapterMap,
-            new Color(0.18f, 0.18f, 0.22f), new Color(0.7f, 0.7f, 0.75f),
-            260f, 50f);
+        LockeUIComponents.CreateSecondaryButton(panel.transform, font, "Close Map",
+            new Vector2(0.5f, 0.04f), HideChapterMap, 240f);
 
         return cg;
-    }
-
-    private void BuildRoomCard(Transform parent, string label, Vector2 anchor,
-        bool unlocked, Action outCallback,
-        out Button outBtn, out GameObject outLockGo)
-    {
-        var cardGo = new GameObject(label.Replace(" ", "") + "Card",
-            typeof(RectTransform), typeof(Image), typeof(Button));
-        cardGo.transform.SetParent(parent, false);
-        var rect = cardGo.GetComponent<RectTransform>();
-        rect.anchorMin = rect.anchorMax = anchor;
-        rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.sizeDelta = new Vector2(320f, 80f);
-        cardGo.GetComponent<Image>().color = unlocked
-            ? new Color(0.12f, 0.14f, 0.20f)
-            : new Color(0.08f, 0.09f, 0.12f);
-        var btn = cardGo.GetComponent<Button>();
-        btn.onClick.AddListener(() => outCallback?.Invoke());
-        btn.interactable = unlocked;
-
-        // Label child
-        var labelGo = new GameObject("Label", typeof(RectTransform), typeof(Text));
-        labelGo.transform.SetParent(cardGo.transform, false);
-        var lRect = labelGo.GetComponent<RectTransform>();
-        lRect.anchorMin = new Vector2(0.08f, 0.1f);
-        lRect.anchorMax = new Vector2(0.80f, 0.9f);
-        lRect.offsetMin = lRect.offsetMax = Vector2.zero;
-        var lText = labelGo.GetComponent<Text>();
-        lText.font = font;
-        lText.fontSize = 22;
-        lText.fontStyle = FontStyle.Bold;
-        lText.color = unlocked
-            ? new Color(0.88f, 0.84f, 0.76f)
-            : new Color(0.40f, 0.40f, 0.45f);
-        lText.text = label;
-        lText.alignment = TextAnchor.MiddleLeft;
-
-        // Lock icon child (Text only — no extra Image component)
-        var lockGo = new GameObject("Lock", typeof(RectTransform), typeof(Text));
-        lockGo.transform.SetParent(cardGo.transform, false);
-        var lockRect = lockGo.GetComponent<RectTransform>();
-        lockRect.anchorMin = new Vector2(0.82f, 0.1f);
-        lockRect.anchorMax = new Vector2(1.0f, 0.9f);
-        lockRect.offsetMin = lockRect.offsetMax = Vector2.zero;
-        var lockText = lockGo.GetComponent<Text>();
-        lockText.font = font;
-        lockText.fontSize = 24;
-        lockText.color = new Color(0.55f, 0.45f, 0.30f);
-        lockText.text = "\U0001F512"; // 🔒
-        lockText.alignment = TextAnchor.MiddleCenter;
-        lockGo.SetActive(!unlocked);
-
-        outBtn = btn;
-        outLockGo = lockGo; // caller uses SetActive() directly
     }
 
     // ── S4 Key Discovery ─────────────────────────────────────────────────
 
     private CanvasGroup BuildDiscoveryPanel(Transform root)
     {
-        // Dark scrim
-        var scrimGo = new GameObject("DiscoveryScrim",
-            typeof(RectTransform), typeof(Image), typeof(Button));
+        var scrimGo = new GameObject("DiscoveryScrim", typeof(RectTransform));
         scrimGo.transform.SetParent(root, false);
         StretchFull(scrimGo.GetComponent<RectTransform>());
-        scrimGo.GetComponent<Image>().color = new Color(0, 0, 0, 0.60f);
-        scrimGo.GetComponent<Button>().onClick.AddListener(() =>
-            SetOverlay(discoveryGroup, false));
+        LockeUIComponents.CreateScrim(scrimGo.transform, () => SetOverlay(discoveryGroup, false));
         var cg = scrimGo.AddComponent<CanvasGroup>();
 
-        // Sheet (.medium: bottom 55%)
-        var sheet = new GameObject("DiscoverySheet",
-            typeof(RectTransform), typeof(Image));
-        sheet.transform.SetParent(scrimGo.transform, false);
-        var sRect = sheet.GetComponent<RectTransform>();
-        sRect.anchorMin = new Vector2(0f, 0f);
-        sRect.anchorMax = new Vector2(1f, 0.58f);
-        sRect.offsetMin = sRect.offsetMax = Vector2.zero;
-        sheet.GetComponent<Image>().color = new Color(0.08f, 0.09f, 0.13f);
+        LockeUIComponents.CreateBottomSheet(scrimGo.transform, 0.58f, out _, out var sheetImage);
+        var sheet = sheetImage.transform;
+        sheetImage.color = LockeKeyUITheme.SheetBottom;
 
-        // Key illustration
-        var keyImgGo = new GameObject("KeyImage",
-            typeof(RectTransform), typeof(Image));
-        keyImgGo.transform.SetParent(sheet.transform, false);
+        var keyImgGo = new GameObject("KeyImage", typeof(RectTransform), typeof(Image));
+        keyImgGo.transform.SetParent(sheet, false);
         var kiRect = keyImgGo.GetComponent<RectTransform>();
-        kiRect.anchorMin = new Vector2(0.28f, 0.62f);
-        kiRect.anchorMax = new Vector2(0.72f, 0.96f);
+        kiRect.anchorMin = new Vector2(0.28f, 0.58f);
+        kiRect.anchorMax = new Vector2(0.72f, 0.92f);
         kiRect.offsetMin = kiRect.offsetMax = Vector2.zero;
         discoveryKeyImage = keyImgGo.GetComponent<Image>();
         discoveryKeyImage.preserveAspect = true;
 
-        // Key name
-        var nameGo = new GameObject("KeyName",
-            typeof(RectTransform), typeof(Text));
-        nameGo.transform.SetParent(sheet.transform, false);
-        var nRect = nameGo.GetComponent<RectTransform>();
-        nRect.anchorMin = new Vector2(0.05f, 0.48f);
-        nRect.anchorMax = new Vector2(0.95f, 0.62f);
-        nRect.offsetMin = nRect.offsetMax = Vector2.zero;
-        discoveryKeyName = nameGo.GetComponent<Text>();
-        discoveryKeyName.font = font;
-        discoveryKeyName.fontSize = 26;
-        discoveryKeyName.fontStyle = FontStyle.Bold;
-        discoveryKeyName.color = new Color(0.92f, 0.80f, 0.38f);
-        discoveryKeyName.alignment = TextAnchor.MiddleCenter;
+        discoveryKeyName = LockeUIComponents.AddText(sheet, "KeyName", font, LockeKeyUITheme.TitleSize + 2,
+            FontStyle.Bold, LockeKeyUITheme.LKGold, new Vector2(0.5f, 0.46f), "",
+            new Vector2(320f, 36f), TextAnchor.MiddleCenter);
 
-        // Description
-        var descGo = new GameObject("KeyDesc",
-            typeof(RectTransform), typeof(Text));
-        descGo.transform.SetParent(sheet.transform, false);
-        var dRect = descGo.GetComponent<RectTransform>();
-        dRect.anchorMin = new Vector2(0.06f, 0.28f);
-        dRect.anchorMax = new Vector2(0.94f, 0.48f);
-        dRect.offsetMin = dRect.offsetMax = Vector2.zero;
-        discoveryKeyDesc = descGo.GetComponent<Text>();
-        discoveryKeyDesc.font = font;
-        discoveryKeyDesc.fontSize = 18;
-        discoveryKeyDesc.color = new Color(0.72f, 0.70f, 0.65f);
-        discoveryKeyDesc.alignment = TextAnchor.UpperCenter;
+        discoveryKeyDesc = LockeUIComponents.AddText(sheet, "KeyDesc", font, LockeKeyUITheme.BodySize,
+            FontStyle.Normal, LockeKeyUITheme.BodyText, new Vector2(0.5f, 0.30f), "",
+            new Vector2(340f, 72f), TextAnchor.UpperCenter);
         discoveryKeyDesc.lineSpacing = 1.25f;
 
-        // Add & Equip
-        addEquipBtn = AddButton(sheet.transform, "Add & Equip", font,
-            new Vector2(0.5f, 0.13f), null,
-            new Color(0.88f, 0.74f, 0.28f), new Color(0.05f, 0.04f, 0.02f),
-            270f, 54f);
-
-        // Add Only
-        addOnlyBtn = AddButton(sheet.transform, "Add Only", font,
-            new Vector2(0.5f, 0.04f), null,
-            new Color(0.18f, 0.18f, 0.22f), new Color(0.7f, 0.7f, 0.75f),
-            200f, 44f);
+        addEquipBtn = LockeUIComponents.CreatePrimaryButton(sheet, font, "Add to Ring & Equip",
+            new Vector2(0.5f, 0.14f), null, 300f);
+        addOnlyBtn = LockeUIComponents.CreateSecondaryButton(sheet, font, "Add to Ring",
+            new Vector2(0.5f, 0.05f), null, 300f);
 
         return cg;
     }
@@ -480,7 +331,7 @@ public class GrokUIFlowManager : MonoBehaviour
             typeof(RectTransform), typeof(Image), typeof(Button));
         scrimGo.transform.SetParent(root, false);
         StretchFull(scrimGo.GetComponent<RectTransform>());
-        scrimGo.GetComponent<Image>().color = new Color(0, 0, 0, 0.65f);
+        scrimGo.GetComponent<Image>().color = LockeKeyUITheme.OverlayScrim;
         scrimGo.GetComponent<Button>().onClick.AddListener(() =>
             SetOverlay(lockGroup, false));
         var cg = scrimGo.AddComponent<CanvasGroup>();
@@ -494,10 +345,9 @@ public class GrokUIFlowManager : MonoBehaviour
         sRect.offsetMin = sRect.offsetMax = Vector2.zero;
         sheet.GetComponent<Image>().color = new Color(0.07f, 0.08f, 0.12f);
 
-        // Title
-        AddLabel(sheet.transform, "LockTitle", font, 24,
-            new Color(0.88f, 0.78f, 0.40f), new Vector2(0.5f, 0.88f),
-            "Locked Door", REF_W - 60f, 38f, FontStyle.Bold);
+        LockeUIComponents.AddText(sheet.transform, "LockTitle", font, LockeKeyUITheme.TitleSize + 2,
+            FontStyle.Bold, LockeKeyUITheme.LKGold, new Vector2(0.5f, 0.88f),
+            "Locked Door", new Vector2(320f, 38f), TextAnchor.MiddleCenter);
 
         // Equipped status
         var eqGo = new GameObject("EquippedLabel",
@@ -512,30 +362,24 @@ public class GrokUIFlowManager : MonoBehaviour
         lockEquippedLabel.fontSize = 20;
         lockEquippedLabel.alignment = TextAnchor.MiddleCenter;
         lockEquippedLabel.text = "No key equipped";
-        lockEquippedLabel.color = new Color(0.75f, 0.55f, 0.35f);
+        lockEquippedLabel.color = LockeKeyUITheme.LKIron;
 
-        // Hint
-        AddLabel(sheet.transform, "LockHint", font, 16,
-            new Color(0.52f, 0.52f, 0.58f), new Vector2(0.5f, 0.50f),
+        LockeUIComponents.AddText(sheet.transform, "LockHint", font, LockeKeyUITheme.CaptionSize + 4,
+            FontStyle.Normal, LockeKeyUITheme.CaptionText, new Vector2(0.5f, 0.50f),
             "Equip the correct key from your key ring, then tap Try Key.",
-            REF_W - 60f, 44f, FontStyle.Normal);
+            new Vector2(320f, 44f), TextAnchor.MiddleCenter);
 
-        // Try Key button
-        lockTryBtn = AddButton(sheet.transform, "Try Key", font,
-            new Vector2(0.5f, 0.25f), HandleLockTry,
-            new Color(0.35f, 0.35f, 0.35f, 0.4f), Color.white,
-            260f, 56f);
+        lockTryBtn = LockeUIComponents.CreatePrimaryButton(sheet.transform, font, "Try Key",
+            new Vector2(0.5f, 0.25f), HandleLockTry, 260f);
         lockTryBtn.interactable = false;
+        lockTryBtn.GetComponent<Image>().color = new Color(0.35f, 0.35f, 0.35f, 0.4f);
 
-        // Open Key Ring shortcut
-        AddButton(sheet.transform, "Open Key Ring", font,
+        LockeUIComponents.CreateSecondaryButton(sheet.transform, font, "Open Key Ring",
             new Vector2(0.5f, 0.09f), () =>
             {
                 SetOverlay(lockGroup, false);
                 ShowKeyRing();
-            },
-            new Color(0.15f, 0.17f, 0.22f), new Color(0.7f, 0.7f, 0.75f),
-            200f, 44f);
+            }, 220f);
 
         return cg;
     }
@@ -565,7 +409,7 @@ public class GrokUIFlowManager : MonoBehaviour
             typeof(RectTransform), typeof(Image), typeof(Button));
         scrimGo.transform.SetParent(root, false);
         StretchFull(scrimGo.GetComponent<RectTransform>());
-        scrimGo.GetComponent<Image>().color = new Color(0, 0, 0, 0.70f);
+        scrimGo.GetComponent<Image>().color = LockeKeyUITheme.OverlayScrim;
         scrimGo.GetComponent<Button>().onClick.AddListener(() =>
             SetOverlay(ringGroup, false));
         var cg = scrimGo.AddComponent<CanvasGroup>();
@@ -580,16 +424,12 @@ public class GrokUIFlowManager : MonoBehaviour
         sRect.offsetMin = sRect.offsetMax = Vector2.zero;
         sheet.GetComponent<Image>().color = new Color(0.06f, 0.07f, 0.10f);
 
-        AddLabel(sheet.transform, "RingTitle", font, 24,
-            new Color(0.88f, 0.78f, 0.40f), new Vector2(0.5f, 0.94f),
-            "Key Ring", REF_W - 60f, 36f, FontStyle.Bold);
+        LockeUIComponents.AddText(sheet.transform, "RingTitle", font, LockeKeyUITheme.TitleSize + 2,
+            FontStyle.Bold, LockeKeyUITheme.LKGold, new Vector2(0.5f, 0.94f),
+            "Key Ring", new Vector2(300f, 36f), TextAnchor.MiddleCenter);
 
-        // 3 × 5 grid (13 keys + 2 empty padding slots)
         int totalSlots = 15;
         ringSlotImages = new Image[totalSlots];
-        float slotSize = 80f;
-        float gapX = 12f;
-        float gapY = 12f;
         int cols = 3;
 
         for (int i = 0; i < totalSlots; i++)
@@ -598,42 +438,26 @@ public class GrokUIFlowManager : MonoBehaviour
             int row = i / cols;
             float cx = 0.18f + col * 0.32f;
             float cy = 0.75f - row * 0.175f;
+            string keyId = i < KeyCatalog.Count ? KeyCatalog.AllKeyIds[i] : null;
 
-            string keyId = i < ArtPaths.AllKeyIds.Length ? ArtPaths.AllKeyIds[i] : null;
-
-            var slotGo = new GameObject($"Slot_{i}",
-                typeof(RectTransform), typeof(Image));
-            if (keyId != null) slotGo.AddComponent<Button>();
-            slotGo.transform.SetParent(sheet.transform, false);
-            var sRect2 = slotGo.GetComponent<RectTransform>();
-            sRect2.anchorMin = sRect2.anchorMax = new Vector2(cx, cy);
-            sRect2.pivot = new Vector2(0.5f, 0.5f);
-            sRect2.sizeDelta = new Vector2(slotSize, slotSize);
-
-            var slotImg = slotGo.GetComponent<Image>();
-            slotImg.color = Color.white;
-            ringSlotImages[i] = slotImg;
-
-            // Border child
-            var borderGo = new GameObject("Border",
-                typeof(RectTransform), typeof(Image));
-            borderGo.transform.SetParent(slotGo.transform, false);
-            var bRect = borderGo.GetComponent<RectTransform>();
-            bRect.anchorMin = Vector2.zero; bRect.anchorMax = Vector2.one;
-            bRect.offsetMin = new Vector2(-3, -3);
-            bRect.offsetMax = new Vector2(3, 3);
-            borderGo.GetComponent<Image>().color = new Color(0.3f, 0.3f, 0.3f, 0.4f);
-
-            // Click to select
-            if (keyId != null)
+            if (keyId == null)
             {
-                string kid = keyId;
-                slotGo.GetComponent<Button>().onClick.AddListener(() =>
-                {
-                    selectedKeyId = kid;
-                    RefreshRingDetail();
-                });
+                var empty = new GameObject($"Slot_{i}", typeof(RectTransform), typeof(Image));
+                empty.transform.SetParent(sheet.transform, false);
+                var eRect = empty.GetComponent<RectTransform>();
+                eRect.anchorMin = eRect.anchorMax = new Vector2(cx, cy);
+                eRect.sizeDelta = new Vector2(LockeKeyUITheme.KeySlotSize, LockeKeyUITheme.KeySlotSize);
+                ringSlotImages[i] = empty.GetComponent<Image>();
+                ringSlotImages[i].color = new Color(0.12f, 0.13f, 0.18f, 0.5f);
+                continue;
             }
+
+            var (slotImg, _) = LockeUIComponents.CreateKeySlot(sheet.transform, new Vector2(cx, cy), keyId);
+            ringSlotImages[i] = slotImg;
+            var slotBtn = slotImg.GetComponent<Button>() ?? slotImg.gameObject.AddComponent<Button>();
+            slotBtn.targetGraphic = slotImg;
+            string kid = keyId;
+            slotBtn.onClick.AddListener(() => { selectedKeyId = kid; RefreshRingDetail(); });
         }
 
         // Detail panel (right of grid) — name + desc + equip
@@ -675,17 +499,12 @@ public class GrokUIFlowManager : MonoBehaviour
         ringDetailDesc.text = "";
         ringDetailDesc.alignment = TextAnchor.UpperLeft;
 
-        ringEquipBtn = AddButton(detailGo.transform, "Equip", font,
-            new Vector2(0.80f, 0.5f), HandleEquipSelected,
-            new Color(0.88f, 0.74f, 0.28f), new Color(0.05f, 0.04f, 0.02f),
-            100f, 46f);
+        ringEquipBtn = LockeUIComponents.CreatePrimaryButton(detailGo.transform, font, "Equip",
+            new Vector2(0.80f, 0.5f), HandleEquipSelected, 110f);
         ringEquipBtn.interactable = false;
 
-        // Close
-        AddButton(sheet.transform, "✕", font,
-            new Vector2(0.94f, 0.96f), () => SetOverlay(ringGroup, false),
-            new Color(0.18f, 0.18f, 0.22f, 0.6f), new Color(0.7f, 0.7f, 0.75f),
-            44f, 44f);
+        LockeUIComponents.CreateSecondaryButton(sheet.transform, font, "Close",
+            new Vector2(0.94f, 0.96f), () => SetOverlay(ringGroup, false), 72f);
 
         return cg;
     }
@@ -715,31 +534,7 @@ public class GrokUIFlowManager : MonoBehaviour
 
     private CanvasGroup BuildToast(Transform root)
     {
-        var toastGo = new GameObject("Toast",
-            typeof(RectTransform), typeof(Image));
-        toastGo.transform.SetParent(root, false);
-        var rect = toastGo.GetComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0.1f, 0.10f);
-        rect.anchorMax = new Vector2(0.9f, 0.17f);
-        rect.offsetMin = rect.offsetMax = Vector2.zero;
-        toastGo.GetComponent<Image>().color = new Color(0.08f, 0.09f, 0.14f, 0.94f);
-
-        var tGo = new GameObject("ToastText",
-            typeof(RectTransform), typeof(Text));
-        tGo.transform.SetParent(toastGo.transform, false);
-        var tRect = tGo.GetComponent<RectTransform>();
-        tRect.anchorMin = new Vector2(0.04f, 0f);
-        tRect.anchorMax = new Vector2(0.96f, 1f);
-        tRect.offsetMin = tRect.offsetMax = Vector2.zero;
-        toastText = tGo.GetComponent<Text>();
-        toastText.font = font;
-        toastText.fontSize = 18;
-        toastText.color = new Color(0.88f, 0.84f, 0.76f);
-        toastText.alignment = TextAnchor.MiddleCenter;
-
-        var cg = toastGo.AddComponent<CanvasGroup>();
-        cg.alpha = 0f;
-        cg.blocksRaycasts = false;
+        toastText = LockeUIComponents.CreateToastHost(root, font, out var cg);
         return cg;
     }
 
