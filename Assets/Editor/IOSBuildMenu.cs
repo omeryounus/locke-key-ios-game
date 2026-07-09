@@ -17,7 +17,37 @@ public static class IOSBuildMenu
         BuildIOS();
     }
 
+    /// <summary>
+    /// Batch entry: Unity -batchmode -executeMethod IOSBuildMenu.BuildIOS
+    /// Waits for script compile before building.
+    /// </summary>
     public static void BuildIOS()
+    {
+        AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
+        EditorApplication.update += WaitForCompilationThenBuild;
+    }
+
+    private static void WaitForCompilationThenBuild()
+    {
+        if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+            return;
+
+        EditorApplication.update -= WaitForCompilationThenBuild;
+
+        if (EditorUtility.scriptCompilationFailed)
+        {
+            Debug.LogError(
+                "iOS build aborted: script compilation failed. " +
+                "Open the Editor console or log file and search for 'error CS'.");
+            if (Application.isBatchMode)
+                EditorApplication.Exit(1);
+            return;
+        }
+
+        RunBuild();
+    }
+
+    private static void RunBuild()
     {
         var scenes = EditorBuildSettings.scenes
             .Where(scene => scene.enabled)
@@ -27,7 +57,8 @@ public static class IOSBuildMenu
         if (scenes.Length == 0)
         {
             Debug.LogError("No enabled scenes in Build Settings.");
-            EditorApplication.Exit(1);
+            if (Application.isBatchMode)
+                EditorApplication.Exit(1);
             return;
         }
 

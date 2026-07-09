@@ -21,13 +21,21 @@ fi
 
 mkdir -p "${ROOT}/Builds/iOS"
 
+LOG="${ROOT}/Builds/iOS/unity-build.log"
+
 "${UNITY_PATH}" \
   -batchmode \
   -nographics \
   -quit \
   -projectPath "${ROOT}" \
   -executeMethod IOSBuildMenu.BuildIOS \
-  -logFile "${ROOT}/Builds/iOS/unity-build.log"
+  -logFile "${LOG}" || {
+  echo "iOS build failed. Compiler errors from log:"
+  grep -E 'error CS|Scripts have compiler errors|script compilation failed' "${LOG}" 2>/dev/null | tail -30 || true
+  echo "Full log: ${LOG}"
+  exit 1
+}
 
 echo "iOS Xcode project generated at ${ROOT}/Builds/iOS"
+echo "Log: ${LOG}"
 echo "Open the .xcodeproj on macOS and run on device or simulator."
