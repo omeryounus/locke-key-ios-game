@@ -106,64 +106,18 @@ public class GameBootstrap : MonoBehaviour
 
     private System.Collections.IEnumerator LogDiagnosticsRoutine()
     {
-        yield return new WaitForSecondsRealtime(0.5f);
-        
-        Debug.Log("=== RUNTIME RENDER DIAGNOSTICS ===");
-        
-        // 1. Camera
-        var cam = Camera.main;
-        if (cam != null)
+        while (true)
         {
-            var follow = cam.GetComponent<CameraFollow2D>();
-            Debug.Log($"[Diag] Camera: pos={cam.transform.position}, target={(follow != null && follow.target != null ? follow.target.name : "null")}, size={cam.orthographicSize}");
-        }
-        else
-        {
-            Debug.Log("[Diag] Camera: No Main Camera found!");
-        }
-
-        // 2. Player
-        var player = FindFirstObjectByType<PlayerController>();
-        if (player != null)
-        {
-            var sr = player.GetComponent<SpriteRenderer>();
-            var active = player.gameObject.activeInHierarchy;
-            var pos = player.transform.position;
-            var scale = player.transform.localScale;
-            var spriteName = sr != null && sr.sprite != null ? sr.sprite.name : "null";
-            var sLayer = sr != null ? sr.sortingLayerName : "null";
-            var sOrder = sr != null ? sr.sortingOrder : 0;
-            var enabled = sr != null && sr.enabled;
-            Debug.Log($"[Diag] Player: active={active}, pos={pos}, scale={scale}, enabled={enabled}, sprite={spriteName}, sortingLayer={sLayer}, sortingOrder={sOrder}");
-        }
-        else
-        {
-            Debug.Log("[Diag] Player: FindFirstObjectByType<PlayerController> returned null!");
-        }
-
-        // 3. Parallax Backgrounds
-        string[] bgNames = { "ParallaxFar", "ParallaxMid", "ParallaxNear" };
-        foreach (var name in bgNames)
-        {
-            var bg = GameObject.Find(name);
-            if (bg != null)
+            yield return new WaitForSecondsRealtime(1.0f);
+            
+            var player = FindFirstObjectByType<PlayerController>();
+            var gameplay = FindFirstObjectByType<TouchGameplayController>();
+            if (player != null && gameplay != null)
             {
-                var sr = bg.GetComponent<SpriteRenderer>();
-                var pos = bg.transform.position;
-                var scale = bg.transform.localScale;
-                var spriteName = sr != null && sr.sprite != null ? sr.sprite.name : "null";
-                var sLayer = sr != null ? sr.sortingLayerName : "null";
-                var sOrder = sr != null ? sr.sortingOrder : 0;
-                var active = bg.activeInHierarchy;
-                var enabled = sr != null && sr.enabled;
-                Debug.Log($"[Diag] Bg '{name}': active={active}, pos={pos}, scale={scale}, enabled={enabled}, sprite={spriteName}, sortingLayer={sLayer}, sortingOrder={sOrder}");
-            }
-            else
-            {
-                Debug.Log($"[Diag] Bg '{name}': GameObject.Find returned null!");
+                var rb = player.GetComponent<Rigidbody2D>();
+                Debug.Log($"[DiagLoop] Player Pos: {player.transform.position}, Vel: {(rb != null ? rb.linearVelocity.ToString() : "null")}, MoveInput: {gameplay.MoveInput}, InputLocked: {gameplay.GetKeyStatusLabel()} / {gameplay.GetHouseKeyLabel()}");
             }
         }
-        Debug.Log("==================================");
     }
 
     private void OnDestroy()

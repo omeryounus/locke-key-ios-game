@@ -205,10 +205,14 @@ public static class LockeUIComponents
         rect.pivot = new Vector2(0.5f, 0f);
         rect.anchoredPosition = new Vector2(0f, LockeKeyUITheme.ToastBottomInset);
         rect.sizeDelta = new Vector2(0f, 44f);
-        toastGo.GetComponent<Image>().color = new Color(0.08f, 0.09f, 0.14f, 0.94f);
+        var img = toastGo.GetComponent<Image>();
+        img.color = new Color(0.08f, 0.09f, 0.14f, 0.94f);
+        img.raycastTarget = false;
 
         group = toastGo.AddComponent<CanvasGroup>();
         group.alpha = 0f;
+        group.interactable = false;
+        group.blocksRaycasts = false;
         return AddText(toastGo.transform, "ToastText", font, LockeKeyUITheme.BodySize, FontStyle.Normal,
             LockeKeyUITheme.BodyText, new Vector2(0.5f, 0.5f), "", new Vector2(320f, 40f), TextAnchor.MiddleCenter);
     }
@@ -243,6 +247,7 @@ public static class LockeUIComponents
         t.color = color;
         t.text = text;
         t.alignment = alignment;
+        t.raycastTarget = false;
         return t;
     }
 
