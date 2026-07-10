@@ -154,17 +154,24 @@ public class ChapterBeatDirector : MonoBehaviour
                 {
                     hud?.ShowToast("Walk to the highlighted Front Door.", 3f);
                     hud?.FlashInteractButton(1.5f);
+                    FindFirstObjectByType<ObjectiveTrackerHUD>()?.Peek();
                 }
                 break;
             case Beat.Library:
                 hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: false);
                 if (announce)
-                    hud?.ShowToast("Clear the collapsed bookshelf with Interact.", 4f);
+                {
+                    hud?.ShowToast("Clear the collapsed bookshelf with Interact.", 3f);
+                    FindFirstObjectByType<ObjectiveTrackerHUD>()?.Peek();
+                }
                 break;
             case Beat.GhostKeyUse:
                 hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: true);
                 if (announce)
-                    hud?.ShowToast("At the sealed door: Use Key, then walk through.", 4.5f);
+                {
+                    hud?.ShowToast("At the sealed door: Use Key, then walk through.", 3.5f);
+                    FindFirstObjectByType<ObjectiveTrackerHUD>()?.Peek();
+                }
                 break;
             case Beat.EchoEncounter:
                 hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: true);

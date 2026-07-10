@@ -1,15 +1,14 @@
 using UnityEngine;
 
 /// <summary>
-/// Production character presentation: idle breathe, walk cycle, jump/land squash,
-/// facing, and Ghost Key ethereal tint.
+/// Idle breathe, hood-friendly squash, walk cycle, jump/land, +20% base brightness.
 /// </summary>
 [RequireComponent(typeof(SpriteRenderer))]
 public class PlayerSpriteAnimator : MonoBehaviour
 {
     [SerializeField] private float walkFrameRate = 11f;
-    [SerializeField] private float idleBreatheAmount = 0.018f;
-    [SerializeField] private float idleBreatheSpeed = 2.2f;
+    [SerializeField] private float idleBreatheAmount = 0.035f;
+    [SerializeField] private float idleBreatheSpeed = 1.85f;
     [SerializeField] private float landSquash = 0.12f;
     [SerializeField] private float squashRecoverSpeed = 10f;
 
@@ -24,7 +23,8 @@ public class PlayerSpriteAnimator : MonoBehaviour
     private bool useWalkA = true;
     private Vector3 baseScale = new(1.55f, 1.55f, 1f);
     private float squash;
-    private Color baseColor = Color.white;
+    private float hoodTilt;
+    private Color baseColor = new(1.2f, 1.2f, 1.2f, 1f); // +20% brightness
     private Color ghostTint = new(0.62f, 0.88f, 1f, 0.55f);
     private EventBus eventBus;
     private bool ghostVisual;
@@ -58,18 +58,13 @@ public class PlayerSpriteAnimator : MonoBehaviour
         walkBSprite = LoadFrame("player_walk_b") ?? walkASprite;
         jumpSprite = LoadFrame("player_jump") ?? idleSprite;
         spriteRenderer.sprite = idleSprite;
-        spriteRenderer.color = Color.white;
-        baseColor = Color.white;
+        spriteRenderer.color = baseColor;
 
         var scale = transform.localScale;
         if (Mathf.Abs(scale.x) < 1.45f || Mathf.Abs(scale.y) < 1.45f)
             transform.localScale = baseScale;
         else
             baseScale = new Vector3(Mathf.Abs(scale.x), Mathf.Abs(scale.y), 1f);
-
-        // Ensure white (readable) if something left the sprite dim
-        if (spriteRenderer.color.r < 0.5f)
-            spriteRenderer.color = Color.white;
     }
 
     private static Sprite LoadFrame(string name) =>
@@ -90,13 +85,11 @@ public class PlayerSpriteAnimator : MonoBehaviour
         if (absVx > 0.08f)
             spriteRenderer.flipX = vx < 0f;
 
-        // Frame selection
         if (!grounded)
         {
             spriteRenderer.sprite = jumpSprite;
-            // Air stretch when rising, slight squash falling.
-            var air = vy > 0.2f ? 0.06f : -0.04f;
-            squash = Mathf.Lerp(squash, air, Time.deltaTime * 8f);
+            squash = Mathf.Lerp(squash, vy > 0.2f ? 0.06f : -0.04f, Time.deltaTime * 8f);
+            hoodTilt = Mathf.Lerp(hoodTilt, -vx * 0.8f, Time.deltaTime * 5f);
         }
         else if (playerController != null && playerController.JustLanded)
         {
@@ -106,9 +99,12 @@ public class PlayerSpriteAnimator : MonoBehaviour
         else if (absVx < 0.08f)
         {
             spriteRenderer.sprite = idleSprite;
-            // Idle breathe
+            // Stronger idle breathing
             var breathe = Mathf.Sin(Time.time * idleBreatheSpeed) * idleBreatheAmount;
-            squash = Mathf.Lerp(squash, breathe, Time.deltaTime * 6f);
+            var breathe2 = Mathf.Sin(Time.time * idleBreatheSpeed * 0.5f) * idleBreatheAmount * 0.35f;
+            squash = Mathf.Lerp(squash, breathe + breathe2, Time.deltaTime * 5f);
+            // Hood sway while idle
+            hoodTilt = Mathf.Sin(Time.time * 1.6f) * 3.2f;
         }
         else
         {
@@ -117,18 +113,17 @@ public class PlayerSpriteAnimator : MonoBehaviour
             {
                 walkTimer = 0f;
                 useWalkA = !useWalkA;
-                // Subtle walk bob per step
                 squash = -0.04f;
             }
 
             spriteRenderer.sprite = useWalkA ? walkASprite : walkBSprite;
             squash = Mathf.Lerp(squash, 0f, Time.deltaTime * squashRecoverSpeed);
+            hoodTilt = Mathf.Lerp(hoodTilt, -Mathf.Sign(vx) * 2.5f, Time.deltaTime * 6f);
         }
 
-        squash = Mathf.Lerp(squash, 0f, Time.deltaTime * squashRecoverSpeed * 0.35f);
+        squash = Mathf.Lerp(squash, 0f, Time.deltaTime * squashRecoverSpeed * 0.25f);
         ApplyScale(squash);
 
-        // Ghost ethereal blend
         var targetColor = ghostVisual ? ghostTint : baseColor;
         spriteRenderer.color = Color.Lerp(spriteRenderer.color, targetColor, Time.deltaTime * 8f);
         if (ghostVisual)
@@ -137,21 +132,20 @@ public class PlayerSpriteAnimator : MonoBehaviour
             var c = spriteRenderer.color;
             spriteRenderer.color = new Color(c.r, c.g, c.b, flicker);
         }
+
+        // Drive hood visual if present
+        var hood = transform.Find("HoodSway");
+        if (hood != null)
+            hood.localRotation = Quaternion.Euler(0f, 0f, hoodTilt);
     }
 
     private void ApplyScale(float squashAmount)
     {
-        // squashAmount negative = shorter/wider (land), positive = taller/thinner (jump)
         var y = baseScale.y * (1f + squashAmount);
         var x = baseScale.x * (1f - squashAmount * 0.7f);
-        var facing = spriteRenderer.flipX ? -1f : 1f;
-        // Keep positive base; flipX handles facing on sprite, not scale.
         transform.localScale = new Vector3(Mathf.Abs(x), Mathf.Abs(y), 1f);
-        _ = facing;
     }
 
-    private bool IsGrounded()
-    {
-        return playerController != null ? playerController.IsGrounded : true;
-    }
+    private bool IsGrounded() =>
+        playerController != null ? playerController.IsGrounded : true;
 }

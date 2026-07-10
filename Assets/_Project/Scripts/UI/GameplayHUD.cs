@@ -148,13 +148,13 @@ public class GameplayHUD : MonoBehaviour
     public void ApplyLeftHandedLayout()
     {
         if (leftButton == null || rightButton == null) return;
-        // Swap move cluster and action cluster sides for left-handed thumbs.
         bool left = GameSettings.LeftHanded;
-        SetButtonAnchor(leftButton, left ? 0.9f : 0.12f);
+        // Keep wide gap between move and interact clusters.
+        SetButtonAnchor(leftButton, left ? 0.90f : 0.10f);
         SetButtonAnchor(rightButton, left ? 0.72f : 0.28f);
-        SetButtonAnchor(jumpButton, left ? 0.28f : 0.55f);
-        SetButtonAnchor(interactButton, left ? 0.12f : 0.75f);
-        SetButtonAnchor(useKeyButton, left ? 0.12f : 0.92f, yExtra: 78f);
+        SetButtonAnchor(jumpButton, left ? 0.28f : 0.68f, yExtra: 38f);
+        SetButtonAnchor(interactButton, left ? 0.10f : 0.88f);
+        SetButtonAnchor(useKeyButton, left ? 0.10f : 0.88f, yExtra: 88f);
     }
 
     private static void SetButtonAnchor(GameObject go, float x, float yExtra = 22f)
@@ -568,37 +568,35 @@ public class GameplayHUD : MonoBehaviour
         barRect.sizeDelta = new Vector2(0f, 130f);
         barRect.anchoredPosition = Vector2.zero;
 
-        // Semi-transparent circular cluster — thumb zones with breathing room
-        var circleColor = new Color(0.07f, 0.08f, 0.12f, 0.55f);
-        float moveBtn = 76f;
-        float actionBtn = 70f;
-        float y = 26f;
+        // Circular glass buttons — wide gap between move (left) and actions (right)
+        var glass = new Color(0.08f, 0.09f, 0.13f, 0.52f);
+        float moveBtn = 78f;
+        float y = 28f;
 
-        // Move cluster — left thumb
         leftButton = CreatePortraitHoldButton(controlBar.transform, "Left", iconLibrary?.moveLeft, font,
-            circleColor, accentColor, 0.11f, y, moveBtn,
+            glass, accentColor, 0.10f, y, moveBtn,
             () => gameplay?.SetMoveInput(-1f), () => gameplay?.SetMoveInput(0f));
 
         rightButton = CreatePortraitHoldButton(controlBar.transform, "Right", iconLibrary?.moveRight, font,
-            circleColor, accentColor, 0.32f, y, moveBtn,
+            glass, accentColor, 0.28f, y, moveBtn,
             () => gameplay?.SetMoveInput(1f), () => gameplay?.SetMoveInput(0f));
 
-        // Action cluster — right thumb, staggered for reach
+        // Gap across center of screen — actions start ~0.68
         jumpButton = CreatePortraitTapButton(controlBar.transform, "Jump", iconLibrary?.jump, font,
-            circleColor, accentColor, 0.62f, y + 8f, actionBtn, () => gameplay?.RequestJump());
+            glass, accentColor, 0.68f, y + 10f, 70f, () => gameplay?.RequestJump());
 
         interactButton = CreatePortraitTapButton(controlBar.transform, "Interact", iconLibrary?.interact, font,
-            new Color(0.12f, 0.14f, 0.1f, 0.62f), accentColor, 0.84f, y, 78f, () => gameplay?.RequestInteract());
+            new Color(0.12f, 0.14f, 0.1f, 0.58f), accentColor, 0.88f, y, 80f, () => gameplay?.RequestInteract());
 
         useKeyButton = CreatePortraitTapButton(controlBar.transform, "UseKey", iconLibrary?.useKey, font,
-            circleColor, accentColor, 0.84f, y + 82f, 64f, () => gameplay?.RequestUseKey());
+            glass, accentColor, 0.88f, y + 88f, 64f, () => gameplay?.RequestUseKey());
 
         WireJumpHold(jumpButton);
-        MakeCircular(leftButton);
-        MakeCircular(rightButton);
-        MakeCircular(jumpButton);
-        MakeCircular(interactButton);
-        MakeCircular(useKeyButton);
+        MakeCircularGlass(leftButton);
+        MakeCircularGlass(rightButton);
+        MakeCircularGlass(jumpButton);
+        MakeCircularGlass(interactButton);
+        MakeCircularGlass(useKeyButton);
 
         SetControlVisibility(interact: true, jump: true, useKey: false);
 
@@ -610,19 +608,23 @@ public class GameplayHUD : MonoBehaviour
         canvasContentRoot = canvasRoot;
     }
 
-    private static void MakeCircular(GameObject go)
+    private static void MakeCircularGlass(GameObject go)
     {
         if (go == null) return;
-        // Soft outer glow as shadow substitute
+        var img = go.GetComponent<Image>();
+        if (img != null)
+            img.color = new Color(0.08f, 0.09f, 0.13f, 0.52f);
+
         var shadow = go.GetComponent<Shadow>() ?? go.AddComponent<Shadow>();
-        shadow.effectColor = new Color(0f, 0f, 0f, 0.45f);
-        shadow.effectDistance = new Vector2(0f, -3f);
-        var outline = go.GetComponent<Outline>();
-        if (outline != null)
-        {
-            outline.effectColor = new Color(1f, 1f, 1f, 0.18f);
-            outline.effectDistance = new Vector2(1.2f, -1.2f);
-        }
+        shadow.effectColor = new Color(0f, 0f, 0f, 0.55f);
+        shadow.effectDistance = new Vector2(0f, -4f);
+
+        // Soft edge (glass ring) — not a hard square border
+        var outline = go.GetComponent<Outline>() ?? go.AddComponent<Outline>();
+        outline.effectColor = new Color(1f, 1f, 1f, 0.14f);
+        outline.effectDistance = new Vector2(1.4f, -1.4f);
+
+        UIButtonFeedback.Ensure(go);
     }
 
     private void WireJumpHold(GameObject jumpGo)

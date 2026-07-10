@@ -4,26 +4,25 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
-/// Production touch feedback: press scale, color tint, optional haptic.
-/// Attach to any button / hold control for consistent mobile feel.
+/// Circular glass button feel: press scale, hover glow, soft shadow, haptics.
 /// </summary>
 [DisallowMultipleComponent]
 public class UIButtonFeedback : MonoBehaviour,
-    IPointerDownHandler, IPointerUpHandler, IPointerExitHandler, IPointerClickHandler
+    IPointerDownHandler, IPointerUpHandler, IPointerExitHandler, IPointerEnterHandler, IPointerClickHandler
 {
-    [SerializeField] private float pressedScale = 0.92f;
-    [SerializeField] private float animSpeed = 18f;
-    [SerializeField] private float pressedDim = 0.82f;
+    [SerializeField] private float pressedScale = 0.88f;
+    [SerializeField] private float hoverScale = 1.05f;
+    [SerializeField] private float animSpeed = 16f;
     [SerializeField] private bool hapticOnPress = true;
-    [SerializeField] private bool hapticOnClick = false;
 
     private RectTransform rect;
     private Graphic graphic;
+    private Image glow;
     private Vector3 baseScale = Vector3.one;
     private Color baseColor = Color.white;
     private bool pressed;
-    private float scaleVel;
-    private Coroutine restoreRoutine;
+    private bool hovered;
+    private Coroutine pulseRoutine;
 
     private void Awake()
     {
@@ -32,51 +31,85 @@ public class UIButtonFeedback : MonoBehaviour,
         baseScale = transform.localScale;
         if (graphic != null)
             baseColor = graphic.color;
+        EnsureGlassChrome();
+    }
+
+    private void EnsureGlassChrome()
+    {
+        // Soft drop shadow
+        var shadow = GetComponent<Shadow>() ?? gameObject.AddComponent<Shadow>();
+        shadow.effectColor = new Color(0f, 0f, 0f, 0.5f);
+        shadow.effectDistance = new Vector2(0f, -3.5f);
+
+        // Outer glow ring (hover)
+        if (transform.Find("HoverGlow") == null)
+        {
+            var go = new GameObject("HoverGlow", typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(transform, false);
+            go.transform.SetAsFirstSibling();
+            glow = go.GetComponent<Image>();
+            glow.color = new Color(GameSettings.AccentColor.r, GameSettings.AccentColor.g, GameSettings.AccentColor.b, 0f);
+            glow.raycastTarget = false;
+            var r = go.GetComponent<RectTransform>();
+            r.anchorMin = Vector2.zero;
+            r.anchorMax = Vector2.one;
+            r.offsetMin = new Vector2(-4f, -4f);
+            r.offsetMax = new Vector2(4f, 4f);
+        }
+        else
+            glow = transform.Find("HoverGlow").GetComponent<Image>();
+
+        // Circular glass fill if Image present
+        if (graphic is Image img)
+        {
+            // Prefer semi-transparent dark glass
+            if (img.color.a > 0.85f)
+                img.color = new Color(0.08f, 0.09f, 0.13f, 0.55f);
+            baseColor = img.color;
+        }
     }
 
     private void OnEnable()
     {
         pressed = false;
+        hovered = false;
         transform.localScale = baseScale;
-        if (graphic != null)
-            graphic.color = baseColor;
-    }
-
-    private void OnDisable()
-    {
-        pressed = false;
-        transform.localScale = baseScale;
-        if (graphic != null)
-            graphic.color = baseColor;
+        if (graphic != null) graphic.color = baseColor;
     }
 
     private void Update()
     {
         if (rect == null) return;
-        var target = pressed ? baseScale * pressedScale : baseScale;
-        transform.localScale = Vector3.Lerp(transform.localScale, target, Time.unscaledDeltaTime * animSpeed);
+        float targetMul = pressed ? pressedScale : (hovered ? hoverScale : 1f);
+        transform.localScale = Vector3.Lerp(transform.localScale, baseScale * targetMul, Time.unscaledDeltaTime * animSpeed);
+
+        if (glow != null)
+        {
+            float a = pressed ? 0.35f : (hovered ? 0.28f : 0.08f);
+            var c = GameSettings.AccentColor;
+            glow.color = Color.Lerp(glow.color, new Color(c.r, c.g, c.b, a), Time.unscaledDeltaTime * 10f);
+        }
     }
+
+    public void OnPointerEnter(PointerEventData eventData) => hovered = true;
 
     public void OnPointerDown(PointerEventData eventData)
     {
         pressed = true;
         if (graphic != null)
-            graphic.color = new Color(baseColor.r * pressedDim, baseColor.g * pressedDim,
-                baseColor.b * pressedDim, baseColor.a);
-
+            graphic.color = new Color(baseColor.r * 0.85f, baseColor.g * 0.85f, baseColor.b * 0.85f, baseColor.a);
         if (hapticOnPress)
             GameHaptics.TriggerHapticLight();
     }
 
     public void OnPointerUp(PointerEventData eventData) => Release();
-
-    public void OnPointerExit(PointerEventData eventData) => Release();
-
-    public void OnPointerClick(PointerEventData eventData)
+    public void OnPointerExit(PointerEventData eventData)
     {
-        if (hapticOnClick)
-            GameHaptics.TriggerHapticLight();
+        hovered = false;
+        Release();
     }
+
+    public void OnPointerClick(PointerEventData eventData) { }
 
     private void Release()
     {
@@ -86,12 +119,10 @@ public class UIButtonFeedback : MonoBehaviour,
             graphic.color = baseColor;
     }
 
-    /// <summary>One-shot highlight pulse (e.g. interactable in range).</summary>
     public void PulseHighlight(float intensity = 1.12f, float duration = 0.18f)
     {
-        if (restoreRoutine != null)
-            StopCoroutine(restoreRoutine);
-        restoreRoutine = StartCoroutine(PulseRoutine(intensity, duration));
+        if (pulseRoutine != null) StopCoroutine(pulseRoutine);
+        pulseRoutine = StartCoroutine(PulseRoutine(intensity, duration));
     }
 
     private IEnumerator PulseRoutine(float intensity, float duration)
@@ -104,9 +135,7 @@ public class UIButtonFeedback : MonoBehaviour,
             transform.localScale = baseScale * Mathf.Lerp(1f, intensity, k);
             yield return null;
         }
-
-        transform.localScale = pressed ? baseScale * pressedScale : baseScale;
-        restoreRoutine = null;
+        pulseRoutine = null;
     }
 
     public static UIButtonFeedback Ensure(GameObject go)

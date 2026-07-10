@@ -13,8 +13,8 @@ public static class TopHudLayout
     public const float InvSize = 40f;
     public const float MiniW = 96f;
     public const float MiniH = 56f;
-    public const float ObjectiveW = 240f;
-    public const float ObjectiveH = 34f;
+    public const float ObjectiveW = 260f;
+    public const float ObjectiveH = 78f;
     public const float EdgePad = 10f;
     public const float TopInset = 6f;
 

@@ -3,7 +3,8 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Progressive one-shot tutorial: move → door → interact. Fades forever after completion.
+/// Floating tutorial cards (not debug text). Each card shows title + body + optional check,
+/// auto-fades after 3s or when the player completes the action.
 /// </summary>
 public class TutorialCoach : MonoBehaviour
 {
@@ -11,10 +12,16 @@ public class TutorialCoach : MonoBehaviour
 
     private Step step = Step.Move;
     private CanvasGroup group;
-    private Text label;
+    private Text titleText;
+    private Text bodyText;
+    private Text checkText;
+    private Image cardBg;
     private TouchGameplayController gameplay;
     private float stepTimer;
+    private float autoFadeAt = 3f;
+    private bool fading;
     private bool built;
+    private Font font;
 
     private void Start()
     {
@@ -38,52 +45,79 @@ public class TutorialCoach : MonoBehaviour
                 var content = canvas.transform.Find("Viewport/Content") ?? canvas.transform;
                 Build(content, LockeUILayout.GetUIFont());
                 built = true;
-                Show("Hold ◀ ▶ to move");
+                ShowCard("Move", "Hold Left or Right", showCheck: false);
                 break;
             }
-
             yield return null;
         }
     }
 
-    private void Build(Transform parent, Font font)
+    private void Build(Transform parent, Font f)
     {
-        var go = new GameObject("TutorialCoach", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
+        font = f;
+        var go = new GameObject("TutorialCard", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
         go.transform.SetParent(parent, false);
         var rect = go.GetComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0.5f, 0.55f);
-        rect.anchorMax = new Vector2(0.5f, 0.55f);
-        rect.sizeDelta = new Vector2(300f, 44f);
-        go.GetComponent<Image>().color = new Color(0.05f, 0.06f, 0.1f, 0.9f);
+        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.52f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.sizeDelta = new Vector2(260f, 88f);
+
+        cardBg = go.GetComponent<Image>();
+        TopHudLayout.ApplyGlass(cardBg);
+        TopHudLayout.AddSoftBlurLayer(go.transform);
         group = go.GetComponent<CanvasGroup>();
 
-        var textGo = new GameObject("Label", typeof(RectTransform), typeof(Text));
-        textGo.transform.SetParent(go.transform, false);
-        label = textGo.GetComponent<Text>();
-        label.font = font;
-        label.fontSize = 15;
-        label.fontStyle = FontStyle.Bold;
-        label.color = Color.white;
-        label.alignment = TextAnchor.MiddleCenter;
-        var tRect = textGo.GetComponent<RectTransform>();
-        tRect.anchorMin = Vector2.zero;
-        tRect.anchorMax = Vector2.one;
-        tRect.offsetMin = tRect.offsetMax = Vector2.zero;
+        // Accent top line
+        var line = new GameObject("Line", typeof(RectTransform), typeof(Image));
+        line.transform.SetParent(go.transform, false);
+        var lRect = line.GetComponent<RectTransform>();
+        lRect.anchorMin = new Vector2(0.15f, 1f);
+        lRect.anchorMax = new Vector2(0.85f, 1f);
+        lRect.pivot = new Vector2(0.5f, 1f);
+        lRect.sizeDelta = new Vector2(0f, 2f);
+        line.GetComponent<Image>().color = GameSettings.AccentColor;
+        line.GetComponent<Image>().raycastTarget = false;
 
-        // Attach component to coach object for lifecycle
-        var self = go.AddComponent<TutorialCoachProxy>();
-        self.Bind(this);
+        titleText = MakeText(go.transform, "Title", 16, FontStyle.Bold, Color.white, new Vector2(0.5f, 0.68f), 220f);
+        bodyText = MakeText(go.transform, "Body", 13, FontStyle.Normal, LockeKeyUITheme.BodyText, new Vector2(0.5f, 0.38f), 230f);
+        checkText = MakeText(go.transform, "Check", 18, FontStyle.Bold, LockeKeyUITheme.Success, new Vector2(0.5f, 0.14f), 40f);
+        checkText.text = "✓";
+        checkText.gameObject.SetActive(false);
+
+        go.AddComponent<TutorialCoachProxy>().Bind(this);
     }
 
-    private void Show(string msg)
+    private Text MakeText(Transform parent, string name, int size, FontStyle style, Color color, Vector2 anchor, float width)
     {
-        if (label != null) label.text = msg;
+        var go = new GameObject(name, typeof(RectTransform), typeof(Text));
+        go.transform.SetParent(parent, false);
+        var t = go.GetComponent<Text>();
+        t.font = font;
+        t.fontSize = size;
+        t.fontStyle = style;
+        t.color = color;
+        t.alignment = TextAnchor.MiddleCenter;
+        t.raycastTarget = false;
+        var rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = rect.anchorMax = anchor;
+        rect.sizeDelta = new Vector2(width, 28f);
+        return t;
+    }
+
+    private void ShowCard(string title, string body, bool showCheck)
+    {
+        if (titleText != null) titleText.text = title;
+        if (bodyText != null) bodyText.text = body;
+        if (checkText != null) checkText.gameObject.SetActive(showCheck);
         if (group != null)
         {
             group.alpha = 1f;
             group.gameObject.SetActive(true);
+            group.transform.localScale = Vector3.one * 0.92f;
         }
         stepTimer = 0f;
+        fading = false;
+        autoFadeAt = 3f;
     }
 
     public void TickProxy()
@@ -91,13 +125,22 @@ public class TutorialCoach : MonoBehaviour
         if (GameSettings.TutorialCompleted || group == null) return;
         stepTimer += Time.deltaTime;
 
+        // Soft entrance scale
+        if (group.transform.localScale.x < 0.99f)
+            group.transform.localScale = Vector3.Lerp(group.transform.localScale, Vector3.one, Time.deltaTime * 8f);
+
+        // Auto-fade each card after 3s (unless completed early)
+        if (!fading && stepTimer >= autoFadeAt && step != Step.Done)
+            StartCoroutine(FadeCard(0.45f, advanceOnComplete: false));
+
         switch (step)
         {
             case Step.Move:
-                if (gameplay != null && Mathf.Abs(gameplay.MoveInput) > 0.2f && stepTimer > 0.4f)
+                if (gameplay != null && Mathf.Abs(gameplay.MoveInput) > 0.2f && stepTimer > 0.35f)
                 {
                     step = Step.CollectKey;
-                    Show("Walk to the glowing key · Tap Interact");
+                    ShowCard("Move", "Hold Left or Right", showCheck: true);
+                    StartCoroutine(AdvanceAfterCheck("Find the Key", "Walk to the glow · Tap Interact", Step.CollectKey));
                     FindFirstObjectByType<GameplayHUD>()?.SetControlVisibility(interact: true);
                 }
                 break;
@@ -107,7 +150,8 @@ public class TutorialCoach : MonoBehaviour
                 if (inv != null && inv.HasHouseKey)
                 {
                     step = Step.Door;
-                    Show("Go to the highlighted Front Door");
+                    ShowCard("Key Found", "Head to the Front Door", showCheck: true);
+                    StartCoroutine(AdvanceAfterCheck("Front Door", "Follow the glowing trail", Step.Door));
                 }
                 break;
             }
@@ -119,7 +163,7 @@ public class TutorialCoach : MonoBehaviour
                     Vector2.Distance(door.transform.position, player.transform.position) < 2.6f)
                 {
                     step = Step.Interact;
-                    Show("Tap Interact to unlock");
+                    ShowCard("Unlock", "Tap Interact", showCheck: false);
                     FindFirstObjectByType<GameplayHUD>()?.FlashInteractButton(2.5f);
                 }
                 break;
@@ -130,6 +174,7 @@ public class TutorialCoach : MonoBehaviour
                 if (door != null && door.isSolved)
                 {
                     step = Step.Done;
+                    ShowCard("Unlocked", "Explore the library", showCheck: true);
                     StartCoroutine(FadeOutForever());
                 }
                 break;
@@ -137,24 +182,43 @@ public class TutorialCoach : MonoBehaviour
         }
     }
 
-    private IEnumerator FadeOutForever()
+    private IEnumerator AdvanceAfterCheck(string nextTitle, string nextBody, Step stay)
     {
-        Show("Nice — explore the library ahead");
-        yield return new WaitForSeconds(2.2f);
+        yield return new WaitForSeconds(0.85f);
+        if (step == stay || step == Step.CollectKey || step == Step.Door)
+            ShowCard(nextTitle, nextBody, showCheck: false);
+    }
+
+    private IEnumerator FadeCard(float dur, bool advanceOnComplete)
+    {
+        fading = true;
         float t = 0f;
-        while (t < 0.6f)
+        while (t < dur)
         {
             t += Time.deltaTime;
-            if (group != null) group.alpha = 1f - t / 0.6f;
+            if (group != null) group.alpha = 1f - t / dur;
             yield return null;
         }
+        fading = false;
+        if (group != null && step != Step.Done)
+            group.alpha = 0f;
+    }
 
+    private IEnumerator FadeOutForever()
+    {
+        yield return new WaitForSeconds(1.8f);
+        float t = 0f;
+        while (t < 0.55f)
+        {
+            t += Time.deltaTime;
+            if (group != null) group.alpha = 1f - t / 0.55f;
+            yield return null;
+        }
         GameSettings.TutorialCompleted = true;
         if (group != null) group.gameObject.SetActive(false);
         enabled = false;
     }
 
-    /// <summary>Lives on the built UI object and forwards Update.</summary>
     private class TutorialCoachProxy : MonoBehaviour
     {
         private TutorialCoach owner;

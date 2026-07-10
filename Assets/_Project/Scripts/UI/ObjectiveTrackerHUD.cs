@@ -1,15 +1,25 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Compact centered objective pill beneath the title bar.
+/// Readable chapter objective card. Auto-collapses after 5 seconds; tap expands.
 /// </summary>
 public class ObjectiveTrackerHUD : MonoBehaviour
 {
+    private Text chapterText;
     private Text titleText;
-    private Text stepText;
+    private Text keysText;
+    private Text hintText;
     private Image cardBg;
+    private CanvasGroup group;
     private Font font;
+    private bool expanded = true;
+    private float expandTimer;
+    private const float CollapseAfter = 5f;
+    private Vector2 expandedSize = new(260f, 78f);
+    private Vector2 collapsedSize = new(200f, 28f);
+    private RectTransform rect;
 
     public static ObjectiveTrackerHUD Ensure(Transform canvasRoot, Font font)
     {
@@ -20,7 +30,7 @@ public class ObjectiveTrackerHUD : MonoBehaviour
             return existing;
         }
 
-        var go = new GameObject("ObjectiveTracker", typeof(RectTransform), typeof(ObjectiveTrackerHUD));
+        var go = new GameObject("ObjectiveTracker", typeof(RectTransform), typeof(ObjectiveTrackerHUD), typeof(Button));
         go.transform.SetParent(canvasRoot, false);
         var hud = go.GetComponent<ObjectiveTrackerHUD>();
         hud.Build(font);
@@ -30,29 +40,36 @@ public class ObjectiveTrackerHUD : MonoBehaviour
     private void Build(Font f)
     {
         font = f ?? LockeUILayout.GetUIFont();
-        var rect = GetComponent<RectTransform>();
+        rect = GetComponent<RectTransform>();
         TopHudLayout.PlaceObjective(rect);
+        rect.sizeDelta = expandedSize;
 
         cardBg = gameObject.AddComponent<Image>();
         TopHudLayout.ApplyGlass(cardBg);
         TopHudLayout.AddSoftBlurLayer(transform);
+        group = gameObject.AddComponent<CanvasGroup>();
 
-        // Thin gold accent line on top edge (not a heavy border)
-        var line = new GameObject("AccentLine", typeof(RectTransform), typeof(Image));
+        var btn = GetComponent<Button>();
+        btn.targetGraphic = cardBg;
+        btn.onClick.AddListener(ToggleExpand);
+
+        var line = new GameObject("Accent", typeof(RectTransform), typeof(Image));
         line.transform.SetParent(transform, false);
         var lRect = line.GetComponent<RectTransform>();
-        lRect.anchorMin = new Vector2(0.12f, 1f);
-        lRect.anchorMax = new Vector2(0.88f, 1f);
+        lRect.anchorMin = new Vector2(0.08f, 1f);
+        lRect.anchorMax = new Vector2(0.92f, 1f);
         lRect.pivot = new Vector2(0.5f, 1f);
         lRect.sizeDelta = new Vector2(0f, 2f);
-        line.GetComponent<Image>().color = new Color(
-            GameSettings.AccentColor.r, GameSettings.AccentColor.g, GameSettings.AccentColor.b, 0.55f);
+        line.GetComponent<Image>().color = GameSettings.AccentColor;
         line.GetComponent<Image>().raycastTarget = false;
 
-        stepText = MakeText("Step", 10, FontStyle.Bold, GameSettings.AccentColor,
-            new Vector2(0.5f, 0.72f), new Vector2(220f, 14f), TextAnchor.MiddleCenter);
-        titleText = MakeText("Title", 13, FontStyle.Bold, Color.white,
-            new Vector2(0.5f, 0.32f), new Vector2(220f, 18f), TextAnchor.MiddleCenter);
+        chapterText = Make("Chapter", 11, FontStyle.Bold, GameSettings.AccentColor, new Vector2(0.5f, 0.82f), 240f);
+        titleText = Make("Title", 14, FontStyle.Bold, Color.white, new Vector2(0.5f, 0.55f), 240f);
+        keysText = Make("Keys", 11, FontStyle.Normal, LockeKeyUITheme.BodyText, new Vector2(0.5f, 0.32f), 240f);
+        hintText = Make("Hint", 11, FontStyle.Normal, LockeKeyUITheme.CaptionText, new Vector2(0.5f, 0.12f), 240f);
+
+        expandTimer = CollapseAfter;
+        expanded = true;
     }
 
     public void Relayout()
@@ -61,57 +78,120 @@ public class ObjectiveTrackerHUD : MonoBehaviour
         if (cardBg != null) TopHudLayout.ApplyGlass(cardBg);
     }
 
-    private Text MakeText(string name, int size, FontStyle style, Color color, Vector2 anchor, Vector2 sizeDelta, TextAnchor align)
+    private Text Make(string name, int size, FontStyle style, Color color, Vector2 anchor, float width)
     {
         var go = new GameObject(name, typeof(RectTransform), typeof(Text));
         go.transform.SetParent(transform, false);
-        var rect = go.GetComponent<RectTransform>();
-        rect.anchorMin = rect.anchorMax = anchor;
-        rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.sizeDelta = sizeDelta;
         var t = go.GetComponent<Text>();
         t.font = font;
         t.fontSize = Mathf.RoundToInt(size * GameSettings.SubtitleScale);
         t.fontStyle = style;
         t.color = color;
-        t.alignment = align;
+        t.alignment = TextAnchor.MiddleCenter;
         t.raycastTarget = false;
+        var r = go.GetComponent<RectTransform>();
+        r.anchorMin = r.anchorMax = anchor;
+        r.sizeDelta = new Vector2(width, 20f);
         return t;
     }
 
-    private void Update() => RefreshFromBeat();
+    private void ToggleExpand()
+    {
+        expanded = !expanded;
+        expandTimer = expanded ? CollapseAfter : 0f;
+        ApplyExpandVisual();
+    }
+
+    private void ApplyExpandVisual()
+    {
+        if (rect == null) return;
+        rect.sizeDelta = expanded ? expandedSize : collapsedSize;
+        if (keysText != null) keysText.gameObject.SetActive(expanded);
+        if (hintText != null) hintText.gameObject.SetActive(expanded);
+        if (chapterText != null) chapterText.gameObject.SetActive(expanded);
+        // Collapsed: only title line
+        if (titleText != null)
+        {
+            var r = titleText.GetComponent<RectTransform>();
+            r.anchorMin = r.anchorMax = expanded ? new Vector2(0.5f, 0.55f) : new Vector2(0.5f, 0.5f);
+        }
+    }
+
+    private void Update()
+    {
+        RefreshFromBeat();
+
+        if (expanded)
+        {
+            expandTimer -= Time.deltaTime;
+            if (expandTimer <= 0f)
+            {
+                expanded = false;
+                ApplyExpandVisual();
+            }
+        }
+    }
 
     private void RefreshFromBeat()
     {
         var beat = FindFirstObjectByType<ChapterBeatDirector>();
         if (beat == null || titleText == null) return;
 
+        int keys = CountKeys();
+        if (keysText != null)
+            keysText.text = $"{keys} / 6 Keys";
+
+        if (chapterText != null)
+            chapterText.text = "Chapter 1";
+
         switch (beat.CurrentBeat)
         {
             case ChapterBeatDirector.Beat.Arrival:
-                Set("QUEST 1/6", "Collect the House Key");
+                Set("Find the House Key", "Follow the glowing trail");
                 break;
             case ChapterBeatDirector.Beat.StuckDoor:
-                Set("QUEST 2/6", "Unlock the Front Door");
+                Set("Unlock the Front Door", "Go to the highlighted door");
                 break;
             case ChapterBeatDirector.Beat.Library:
-                Set("QUEST 3/6", "Clear the Bookshelf");
+                Set("Clear the Bookshelf", "Tap Interact once");
                 break;
             case ChapterBeatDirector.Beat.GhostKeyUse:
-                Set("QUEST 4/6", "Phase Through the Seal");
+                Set("Phase Through the Seal", "Use Key, then walk through");
                 break;
             case ChapterBeatDirector.Beat.EchoEncounter:
-                Set("DANGER", "Escape the Echo");
+                Set("Escape the Echo", "Hide in the arch or run");
                 break;
             default:
-                Set("QUEST 6/6", "Uncover a Memory");
+                Set("Uncover a Memory", "Head Key → family portrait");
                 break;
         }
     }
 
-    private void Set(string step, string title)
+    private static int CountKeys()
     {
-        if (stepText != null) stepText.text = step;
+        int n = 0;
+        var inv = Object.FindFirstObjectByType<PlayerInventory>();
+        var km = Object.FindFirstObjectByType<KeyManager>();
+        if (inv != null && inv.HasHouseKey) n++;
+        if (km != null)
+        {
+            if (km.ownedKeys.Exists(k => k.abilityType == KeyManager.KeyAbilityType.GhostPhase)) n++;
+            if (km.ownedKeys.Exists(k => k.abilityType == KeyManager.KeyAbilityType.HeadMemory)) n++;
+        }
+        return n;
+    }
+
+    private void Set(string title, string hint)
+    {
         if (titleText != null) titleText.text = title;
+        if (hintText != null) hintText.text = hint;
+    }
+
+    /// <summary>Call when a major beat advances so the card re-opens briefly.</summary>
+    public void Peek()
+    {
+        expanded = true;
+        expandTimer = CollapseAfter;
+        ApplyExpandVisual();
     }
 }
