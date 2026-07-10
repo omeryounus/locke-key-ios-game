@@ -554,27 +554,30 @@ public class GameplayHUD : MonoBehaviour
         barRect.sizeDelta = new Vector2(0f, 130f);
         barRect.anchoredPosition = Vector2.zero;
 
-        // Circular semi-transparent buttons with soft shadow feel
-        var circleColor = new Color(0.08f, 0.09f, 0.14f, 0.62f);
-        float btn = 72f;
-        float y = 22f;
+        // Semi-transparent circular cluster — thumb zones with breathing room
+        var circleColor = new Color(0.07f, 0.08f, 0.12f, 0.55f);
+        float moveBtn = 76f;
+        float actionBtn = 70f;
+        float y = 26f;
 
+        // Move cluster — left thumb
         leftButton = CreatePortraitHoldButton(controlBar.transform, "Left", iconLibrary?.moveLeft, font,
-            circleColor, accentColor, 0.12f, y, btn,
+            circleColor, accentColor, 0.11f, y, moveBtn,
             () => gameplay?.SetMoveInput(-1f), () => gameplay?.SetMoveInput(0f));
 
         rightButton = CreatePortraitHoldButton(controlBar.transform, "Right", iconLibrary?.moveRight, font,
-            circleColor, accentColor, 0.30f, y, btn,
+            circleColor, accentColor, 0.32f, y, moveBtn,
             () => gameplay?.SetMoveInput(1f), () => gameplay?.SetMoveInput(0f));
 
+        // Action cluster — right thumb, staggered for reach
         jumpButton = CreatePortraitTapButton(controlBar.transform, "Jump", iconLibrary?.jump, font,
-            circleColor, accentColor, 0.55f, y, btn, () => gameplay?.RequestJump());
+            circleColor, accentColor, 0.62f, y + 8f, actionBtn, () => gameplay?.RequestJump());
 
         interactButton = CreatePortraitTapButton(controlBar.transform, "Interact", iconLibrary?.interact, font,
-            circleColor, accentColor, 0.75f, y, btn, () => gameplay?.RequestInteract());
+            new Color(0.12f, 0.14f, 0.1f, 0.62f), accentColor, 0.84f, y, 78f, () => gameplay?.RequestInteract());
 
         useKeyButton = CreatePortraitTapButton(controlBar.transform, "UseKey", iconLibrary?.useKey, font,
-            circleColor, accentColor, 0.92f, y + 56f, 64f, () => gameplay?.RequestUseKey());
+            circleColor, accentColor, 0.84f, y + 82f, 64f, () => gameplay?.RequestUseKey());
 
         WireJumpHold(jumpButton);
         MakeCircular(leftButton);

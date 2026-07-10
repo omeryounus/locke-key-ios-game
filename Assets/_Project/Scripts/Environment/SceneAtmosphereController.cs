@@ -2,27 +2,30 @@ using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
 /// <summary>
-/// Brightens the scene, adds ambient fill lights, dust motes, and soft fog tint
-/// so the foyer reads clearly on mobile OLED screens.
+/// Brightens the scene while keeping a spooky warm/cool split: readable OLED floors,
+/// dusty air, candle pools, and soft light shafts — not a washed-out flat look.
 /// </summary>
 public class SceneAtmosphereController : MonoBehaviour
 {
-    [SerializeField] private float baseBrightness = 1.22f;
-    [SerializeField] private int dustCount = 48;
+    [SerializeField] private int dustCount = 64;
 
     private Light2D globalFill;
     private Light2D warmKey;
     private Light2D coolRim;
+    private Light2D doorPool;
     private Transform dustRoot;
     private Sprite dustSprite;
     private Camera cam;
     private float appliedBrightness = 1f;
+    private GameObject shaftA;
+    private GameObject shaftB;
 
     private void Awake()
     {
         cam = Camera.main;
         EnsureLights();
         EnsureDust();
+        EnsureLightShafts();
         ApplyBrightness(GameSettings.Brightness);
     }
 
@@ -33,45 +36,86 @@ public class SceneAtmosphereController : MonoBehaviour
             ApplyBrightness(b);
 
         AnimateDust();
+        AnimateShafts();
     }
 
     public void ApplyBrightness(float brightness)
     {
         appliedBrightness = brightness;
-        if (globalFill != null)
-            globalFill.intensity = 0.55f * brightness;
-        if (warmKey != null)
-            warmKey.intensity = 0.85f * brightness;
-        if (coolRim != null)
-            coolRim.intensity = 0.35f * brightness;
 
-        // Lift ambient backdrop slightly so dark art still reads.
+        // Spooky but readable: fill never pure white; warm key carries mood.
+        if (globalFill != null)
+            globalFill.intensity = 0.72f * brightness;
+        if (warmKey != null)
+            warmKey.intensity = 1.05f * brightness;
+        if (coolRim != null)
+            coolRim.intensity = 0.42f * brightness;
+        if (doorPool != null)
+            doorPool.intensity = 0.65f * brightness;
+
         if (cam != null)
-            cam.backgroundColor = Color.Lerp(new Color(0.04f, 0.05f, 0.08f), new Color(0.12f, 0.11f, 0.14f), (brightness - 0.7f) / 0.9f);
+        {
+            // Deep ink edges, lifted mid so sprites separate from walls.
+            cam.backgroundColor = Color.Lerp(
+                new Color(0.06f, 0.05f, 0.08f),
+                new Color(0.14f, 0.12f, 0.15f),
+                Mathf.InverseLerp(0.7f, 1.5f, brightness));
+        }
 
         var backdrop = GameObject.Find("RoomBackdrop")?.GetComponent<SpriteRenderer>();
         if (backdrop != null)
         {
-            var lift = Mathf.Lerp(0.92f, 1.18f, (brightness - 0.7f) / 0.9f);
-            backdrop.color = new Color(lift, lift, lift, 1f);
+            // Mild lift — preserves contrast in dark art.
+            var lift = Mathf.Lerp(1.0f, 1.28f, Mathf.InverseLerp(0.7f, 1.5f, brightness));
+            // Slight warm grade for mansion feel
+            backdrop.color = new Color(lift, lift * 0.98f, lift * 0.94f, 1f);
         }
     }
 
     private void EnsureLights()
     {
         globalFill = FindOrCreateLight("AmbientFill", Light2D.LightType.Global,
-            new Color(0.92f, 0.9f, 0.95f), 0.65f);
+            new Color(0.88f, 0.86f, 0.95f), 0.8f);
 
         warmKey = FindOrCreateLight("WarmKeyLight", Light2D.LightType.Point,
-            new Color(1f, 0.78f, 0.48f), 0.9f);
-        warmKey.pointLightOuterRadius = 9f;
-        warmKey.pointLightInnerRadius = 1.2f;
-        warmKey.transform.position = new Vector3(0.5f, 1.8f, 0f);
+            new Color(1f, 0.72f, 0.42f), 1.1f);
+        warmKey.pointLightOuterRadius = 10f;
+        warmKey.pointLightInnerRadius = 1.4f;
+        warmKey.transform.position = new Vector3(0.4f, 1.9f, 0f);
 
         coolRim = FindOrCreateLight("CoolRimLight", Light2D.LightType.Point,
-            new Color(0.45f, 0.62f, 0.95f), 0.4f);
-        coolRim.pointLightOuterRadius = 7f;
-        coolRim.transform.position = new Vector3(-2.5f, 2.2f, 0f);
+            new Color(0.4f, 0.55f, 0.95f), 0.45f);
+        coolRim.pointLightOuterRadius = 8f;
+        coolRim.transform.position = new Vector3(-2.8f, 2.4f, 0f);
+
+        // Soft pool near typical front-door X so the objective area reads early.
+        doorPool = FindOrCreateLight("DoorPoolLight", Light2D.LightType.Point,
+            new Color(1f, 0.8f, 0.45f), 0.7f);
+        doorPool.pointLightOuterRadius = 3.2f;
+        doorPool.pointLightInnerRadius = 0.3f;
+        doorPool.transform.position = new Vector3(-0.2f, 0.4f, 0f);
+    }
+
+    private void EnsureLightShafts()
+    {
+        if (GameObject.Find("LightShaftA") != null) return;
+        shaftA = CreateShaft("LightShaftA", new Vector3(-3.0f, 1.5f, 0.08f), new Vector3(1.6f, 2.6f, 1f),
+            new Color(1f, 0.9f, 0.6f, 0.1f));
+        shaftB = CreateShaft("LightShaftB", new Vector3(1.1f, 1.7f, 0.08f), new Vector3(1.2f, 2.2f, 1f),
+            new Color(0.65f, 0.78f, 1f, 0.07f));
+    }
+
+    private static GameObject CreateShaft(string name, Vector3 pos, Vector3 scale, Color color)
+    {
+        var go = new GameObject(name, typeof(SpriteRenderer));
+        go.transform.position = pos;
+        go.transform.localScale = scale;
+        go.transform.rotation = Quaternion.Euler(0f, 0f, -12f);
+        var sr = go.GetComponent<SpriteRenderer>();
+        sr.sprite = CreateSoftDisc(48);
+        sr.color = color;
+        sr.sortingOrder = 1;
+        return go;
     }
 
     private static Light2D FindOrCreateLight(string name, Light2D.LightType type, Color color, float intensity)
@@ -90,9 +134,10 @@ public class SceneAtmosphereController : MonoBehaviour
 
     private void EnsureDust()
     {
+        if (dustRoot != null) return;
         dustRoot = new GameObject("DustMotes").transform;
         dustRoot.SetParent(transform);
-        dustSprite = CreateSoftCircleSprite(24);
+        dustSprite = CreateSoftDisc(24);
 
         for (var i = 0; i < dustCount; i++)
         {
@@ -101,29 +146,56 @@ public class SceneAtmosphereController : MonoBehaviour
             var sr = mote.GetComponent<SpriteRenderer>();
             sr.sprite = dustSprite;
             sr.sortingOrder = 8;
-            sr.color = new Color(1f, 0.95f, 0.8f, Random.Range(0.08f, 0.22f));
-            float size = Random.Range(0.04f, 0.11f);
+            // Warm dust in shafts, cooler motes elsewhere
+            bool warm = i % 3 == 0;
+            sr.color = warm
+                ? new Color(1f, 0.92f, 0.7f, Random.Range(0.1f, 0.28f))
+                : new Color(0.85f, 0.9f, 1f, Random.Range(0.08f, 0.2f));
+            float size = Random.Range(0.04f, 0.12f);
             mote.transform.localScale = Vector3.one * size;
             mote.transform.position = RandomDustPos();
-            mote.AddComponent<DustMote>().Init(Random.Range(0.15f, 0.45f), Random.Range(0.4f, 1.1f));
+            mote.AddComponent<DustMote>().Init(Random.Range(0.12f, 0.4f), Random.Range(0.35f, 1.2f));
         }
     }
 
     private void AnimateDust()
     {
         if (cam == null || dustRoot == null) return;
-        // Keep dust cloud around the camera so the foyer always feels alive.
         var center = cam.transform.position;
         dustRoot.position = new Vector3(center.x, center.y, 0f);
+    }
+
+    private void AnimateShafts()
+    {
+        float pulse = 0.85f + Mathf.Sin(Time.time * 0.7f) * 0.15f;
+        if (shaftA != null)
+        {
+            var sr = shaftA.GetComponent<SpriteRenderer>();
+            if (sr != null)
+            {
+                var c = sr.color;
+                sr.color = new Color(c.r, c.g, c.b, 0.08f * pulse * appliedBrightness);
+            }
+        }
+
+        if (shaftB != null)
+        {
+            var sr = shaftB.GetComponent<SpriteRenderer>();
+            if (sr != null)
+            {
+                var c = sr.color;
+                sr.color = new Color(c.r, c.g, c.b, 0.06f * pulse * appliedBrightness);
+            }
+        }
     }
 
     private Vector3 RandomDustPos()
     {
         var c = cam != null ? cam.transform.position : Vector3.zero;
-        return new Vector3(c.x + Random.Range(-4f, 4f), c.y + Random.Range(-2.5f, 2.8f), 0f);
+        return new Vector3(c.x + Random.Range(-4.5f, 4.5f), c.y + Random.Range(-2.6f, 3f), 0f);
     }
 
-    private static Sprite CreateSoftCircleSprite(int size)
+    private static Sprite CreateSoftDisc(int size)
     {
         var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
         var mid = (size - 1) * 0.5f;
@@ -131,8 +203,7 @@ public class SceneAtmosphereController : MonoBehaviour
         for (var x = 0; x < size; x++)
         {
             var d = Vector2.Distance(new Vector2(x, y), new Vector2(mid, mid)) / mid;
-            var a = Mathf.Clamp01(1f - d);
-            a = a * a;
+            var a = Mathf.Pow(Mathf.Clamp01(1f - d), 1.5f);
             tex.SetPixel(x, y, new Color(1f, 1f, 1f, a));
         }
 
@@ -161,11 +232,10 @@ public class SceneAtmosphereController : MonoBehaviour
             phase += Time.deltaTime * speed;
             transform.localPosition = baseLocal + new Vector3(
                 Mathf.Sin(phase * 0.7f) * drift * 0.35f,
-                Mathf.Sin(phase) * drift * 0.55f + Time.deltaTime * 0.02f,
+                Mathf.Sin(phase) * drift * 0.55f,
                 0f);
-            // Wrap slowly
-            if (transform.localPosition.y > 3.2f)
-                baseLocal.y = -2.8f;
+            if (transform.localPosition.y > 3.4f)
+                baseLocal.y = -2.9f;
         }
     }
 }

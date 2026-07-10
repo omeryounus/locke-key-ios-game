@@ -14,7 +14,7 @@ public static class GameSettings
 
     public static float Brightness
     {
-        get => PlayerPrefs.GetFloat(PrefBrightness, 1.22f); // default +22%
+        get => PlayerPrefs.GetFloat(PrefBrightness, 1.34f); // ~+30%, still moody
         set { PlayerPrefs.SetFloat(PrefBrightness, Mathf.Clamp(value, 0.7f, 1.6f)); PlayerPrefs.Save(); }
     }
 

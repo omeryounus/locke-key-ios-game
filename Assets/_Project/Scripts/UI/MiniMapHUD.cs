@@ -2,16 +2,19 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Compact chapter mini-map: player, objective marker, key collected pip.
+/// Clear mini-map with labeled player (P) and objective (!) markers.
 /// </summary>
 public class MiniMapHUD : MonoBehaviour
 {
     private RectTransform playerPip;
     private RectTransform objectivePip;
+    private Text playerLabel;
+    private Text objectiveLabel;
     private Image keyPip;
-    private Image compass;
+    private Image trailLine;
     private float mapWorldMinX = -6f;
     private float mapWorldMaxX = 12f;
+    private Font font;
 
     public static MiniMapHUD Ensure(Transform canvasRoot, Font font)
     {
@@ -24,69 +27,90 @@ public class MiniMapHUD : MonoBehaviour
         return hud;
     }
 
-    private void Build(Font font)
+    private void Build(Font f)
     {
+        font = f ?? LockeUILayout.GetUIFont();
         var rect = GetComponent<RectTransform>();
         rect.anchorMin = rect.anchorMax = new Vector2(1f, 1f);
         rect.pivot = new Vector2(1f, 1f);
-        rect.anchoredPosition = new Vector2(-10f, -54f);
-        rect.sizeDelta = new Vector2(110f, 72f);
+        rect.anchoredPosition = new Vector2(-10f, -52f);
+        rect.sizeDelta = new Vector2(124f, 84f);
 
         var bg = gameObject.AddComponent<Image>();
-        bg.color = new Color(0.04f, 0.05f, 0.08f, 0.82f);
+        bg.color = new Color(0.04f, 0.05f, 0.09f, 0.88f);
         var outline = gameObject.AddComponent<Outline>();
-        outline.effectColor = new Color(GameSettings.AccentColor.r, GameSettings.AccentColor.g, GameSettings.AccentColor.b, 0.35f);
-        outline.effectDistance = new Vector2(1f, -1f);
+        outline.effectColor = new Color(GameSettings.AccentColor.r, GameSettings.AccentColor.g, GameSettings.AccentColor.b, 0.45f);
+        outline.effectDistance = new Vector2(1.2f, -1.2f);
 
-        // Floor line
+        // Header
+        var header = MakeUiText("MAP", 10, FontStyle.Bold, LockeKeyUITheme.CaptionText,
+            new Vector2(0.5f, 0.88f), new Vector2(100f, 14f));
+
+        // Corridor floor
         var floor = new GameObject("Floor", typeof(RectTransform), typeof(Image));
         floor.transform.SetParent(transform, false);
         var fRect = floor.GetComponent<RectTransform>();
-        fRect.anchorMin = new Vector2(0.08f, 0.28f);
-        fRect.anchorMax = new Vector2(0.92f, 0.32f);
+        fRect.anchorMin = new Vector2(0.08f, 0.22f);
+        fRect.anchorMax = new Vector2(0.92f, 0.28f);
         fRect.offsetMin = fRect.offsetMax = Vector2.zero;
-        floor.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.15f);
+        floor.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.18f);
         floor.GetComponent<Image>().raycastTarget = false;
 
-        playerPip = CreatePip("Player", new Color(0.4f, 0.85f, 1f), 10f);
-        objectivePip = CreatePip("Objective", GameSettings.AccentColor, 12f);
+        // Path trail between player and objective
+        var trailGo = new GameObject("Trail", typeof(RectTransform), typeof(Image));
+        trailGo.transform.SetParent(transform, false);
+        trailLine = trailGo.GetComponent<Image>();
+        trailLine.color = new Color(GameSettings.AccentColor.r, GameSettings.AccentColor.g, GameSettings.AccentColor.b, 0.35f);
+        trailLine.raycastTarget = false;
+        var tRect = trailGo.GetComponent<RectTransform>();
+        tRect.sizeDelta = new Vector2(40f, 2f);
+        tRect.pivot = new Vector2(0f, 0.5f);
+
+        playerPip = CreatePip("Player", new Color(0.35f, 0.85f, 1f, 1f), 12f);
+        objectivePip = CreatePip("Objective", GameSettings.AccentColor, 14f);
+
+        playerLabel = MakeUiText("P", 9, FontStyle.Bold, Color.white,
+            new Vector2(0.5f, 0.5f), new Vector2(12f, 12f));
+        playerLabel.transform.SetParent(playerPip, false);
+        var pl = playerLabel.GetComponent<RectTransform>();
+        pl.anchorMin = Vector2.zero; pl.anchorMax = Vector2.one;
+        pl.offsetMin = pl.offsetMax = Vector2.zero;
+
+        objectiveLabel = MakeUiText("!", 11, FontStyle.Bold, Color.black,
+            new Vector2(0.5f, 0.5f), new Vector2(14f, 14f));
+        objectiveLabel.transform.SetParent(objectivePip, false);
+        var ol = objectiveLabel.GetComponent<RectTransform>();
+        ol.anchorMin = Vector2.zero; ol.anchorMax = Vector2.one;
+        ol.offsetMin = ol.offsetMax = Vector2.zero;
 
         var keyGo = new GameObject("KeyPip", typeof(RectTransform), typeof(Image));
         keyGo.transform.SetParent(transform, false);
         keyPip = keyGo.GetComponent<Image>();
         keyPip.color = LockeKeyUITheme.LKGold;
         var kRect = keyGo.GetComponent<RectTransform>();
-        kRect.anchorMin = kRect.anchorMax = new Vector2(0.12f, 0.78f);
-        kRect.sizeDelta = new Vector2(10f, 10f);
+        kRect.anchorMin = kRect.anchorMax = new Vector2(0.14f, 0.78f);
+        kRect.sizeDelta = new Vector2(11f, 11f);
 
-        var label = new GameObject("Label", typeof(RectTransform), typeof(Text));
-        label.transform.SetParent(transform, false);
-        var t = label.GetComponent<Text>();
-        t.font = font ?? LockeUILayout.GetUIFont();
-        t.fontSize = 9;
-        t.color = LockeKeyUITheme.CaptionText;
-        t.text = "MAP";
-        t.alignment = TextAnchor.UpperCenter;
-        var lRect = label.GetComponent<RectTransform>();
-        lRect.anchorMin = new Vector2(0f, 0.7f);
-        lRect.anchorMax = new Vector2(1f, 1f);
-        lRect.offsetMin = lRect.offsetMax = Vector2.zero;
+        var legend = MakeUiText("P you   ! goal", 8, FontStyle.Normal, LockeKeyUITheme.CaptionText,
+            new Vector2(0.55f, 0.1f), new Vector2(90f, 12f));
+    }
+
+    private Text MakeUiText(string text, int size, FontStyle style, Color color, Vector2 anchor, Vector2 sizeDelta)
+    {
+        var go = new GameObject("T_" + text, typeof(RectTransform), typeof(Text));
+        go.transform.SetParent(transform, false);
+        var t = go.GetComponent<Text>();
+        t.font = font;
+        t.fontSize = size;
+        t.fontStyle = style;
+        t.color = color;
+        t.text = text;
+        t.alignment = TextAnchor.MiddleCenter;
         t.raycastTarget = false;
-
-        // Compass N
-        var nGo = new GameObject("Compass", typeof(RectTransform), typeof(Text));
-        nGo.transform.SetParent(transform, false);
-        compass = null;
-        var nt = nGo.GetComponent<Text>();
-        nt.font = font ?? LockeUILayout.GetUIFont();
-        nt.fontSize = 10;
-        nt.fontStyle = FontStyle.Bold;
-        nt.color = GameSettings.AccentColor;
-        nt.text = "►";
-        nt.alignment = TextAnchor.MiddleCenter;
-        var nRect = nGo.GetComponent<RectTransform>();
-        nRect.anchorMin = nRect.anchorMax = new Vector2(0.88f, 0.78f);
-        nRect.sizeDelta = new Vector2(16f, 16f);
+        var rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = rect.anchorMax = anchor;
+        rect.sizeDelta = sizeDelta;
+        return t;
     }
 
     private RectTransform CreatePip(string name, Color color, float size)
@@ -107,20 +131,41 @@ public class MiniMapHUD : MonoBehaviour
         var guide = FindFirstObjectByType<ObjectiveGuideController>();
         var inv = FindFirstObjectByType<PlayerInventory>();
 
+        Vector2 pPos = Vector2.zero;
+        Vector2 oPos = Vector2.zero;
+
         if (player != null && playerPip != null)
-            playerPip.anchoredPosition = WorldToMap(player.transform.position);
+        {
+            pPos = WorldToMap(player.transform.position);
+            playerPip.anchoredPosition = pPos;
+        }
 
         if (guide != null && guide.CurrentTarget != null && objectivePip != null)
         {
             objectivePip.gameObject.SetActive(true);
-            objectivePip.anchoredPosition = WorldToMap(guide.CurrentTarget.position);
-            // Pulse
-            float s = 1f + Mathf.Sin(Time.time * 4f) * 0.2f;
+            oPos = WorldToMap(guide.CurrentTarget.position);
+            objectivePip.anchoredPosition = oPos;
+            float s = 1f + Mathf.Sin(Time.time * 4.5f) * 0.22f;
             objectivePip.localScale = Vector3.one * s;
+
+            if (trailLine != null)
+            {
+                trailLine.gameObject.SetActive(true);
+                var mid = (pPos + oPos) * 0.5f;
+                var dir = oPos - pPos;
+                float len = dir.magnitude;
+                trailLine.rectTransform.anchoredPosition = pPos;
+                trailLine.rectTransform.sizeDelta = new Vector2(Mathf.Max(4f, len), 2.5f);
+                float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+                trailLine.rectTransform.localRotation = Quaternion.Euler(0f, 0f, angle);
+                var c = GameSettings.AccentColor;
+                trailLine.color = new Color(c.r, c.g, c.b, 0.25f + Mathf.Sin(Time.time * 3f) * 0.1f);
+            }
         }
         else if (objectivePip != null)
         {
             objectivePip.gameObject.SetActive(false);
+            if (trailLine != null) trailLine.gameObject.SetActive(false);
         }
 
         if (keyPip != null)
@@ -128,15 +173,15 @@ public class MiniMapHUD : MonoBehaviour
             bool has = inv != null && inv.HasHouseKey;
             keyPip.enabled = has;
             if (has)
-                keyPip.color = new Color(1f, 0.85f, 0.3f, 0.7f + Mathf.Sin(Time.time * 3f) * 0.3f);
+                keyPip.color = new Color(1f, 0.85f, 0.3f, 0.75f + Mathf.Sin(Time.time * 3f) * 0.25f);
         }
     }
 
     private Vector2 WorldToMap(Vector3 world)
     {
         float t = Mathf.InverseLerp(mapWorldMinX, mapWorldMaxX, world.x);
-        float x = Mathf.Lerp(-42f, 42f, t);
-        float y = -8f;
+        float x = Mathf.Lerp(-46f, 46f, t);
+        float y = -6f;
         return new Vector2(x, y);
     }
 }

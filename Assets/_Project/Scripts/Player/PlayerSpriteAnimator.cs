@@ -22,7 +22,7 @@ public class PlayerSpriteAnimator : MonoBehaviour
     private PlayerController playerController;
     private float walkTimer;
     private bool useWalkA = true;
-    private Vector3 baseScale = new(1.35f, 1.35f, 1f);
+    private Vector3 baseScale = new(1.55f, 1.55f, 1f);
     private float squash;
     private Color baseColor = Color.white;
     private Color ghostTint = new(0.62f, 0.88f, 1f, 0.55f);
@@ -62,10 +62,14 @@ public class PlayerSpriteAnimator : MonoBehaviour
         baseColor = Color.white;
 
         var scale = transform.localScale;
-        if (Mathf.Abs(scale.x) < 1.2f || Mathf.Abs(scale.y) < 1.2f)
+        if (Mathf.Abs(scale.x) < 1.45f || Mathf.Abs(scale.y) < 1.45f)
             transform.localScale = baseScale;
         else
             baseScale = new Vector3(Mathf.Abs(scale.x), Mathf.Abs(scale.y), 1f);
+
+        // Ensure white (readable) if something left the sprite dim
+        if (spriteRenderer.color.r < 0.5f)
+            spriteRenderer.color = Color.white;
     }
 
     private static Sprite LoadFrame(string name) =>

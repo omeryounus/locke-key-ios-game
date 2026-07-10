@@ -32,8 +32,9 @@ public class InventoryStripHUD : MonoBehaviour
         var rect = GetComponent<RectTransform>();
         rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
         rect.pivot = new Vector2(0f, 1f);
-        rect.anchoredPosition = new Vector2(10f, -54f);
-        rect.sizeDelta = new Vector2(168f * scale, 72f * scale);
+        // Below compact quest tracker
+        rect.anchoredPosition = new Vector2(10f, -128f);
+        rect.sizeDelta = new Vector2(168f * scale, 64f * scale);
         baseScale = Vector3.one;
 
         card = gameObject.AddComponent<Image>();
