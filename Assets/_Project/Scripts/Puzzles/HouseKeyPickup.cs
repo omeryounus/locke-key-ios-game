@@ -1,10 +1,13 @@
 using UnityEngine;
 
 /// <summary>
-/// Beat 1 — glinting house key near the exterior planter.
+/// Tutorial pickup: House Key. Open the front door with Interact.
+/// Named consistently as House Key (not Anywhere) so the solution is obvious.
 /// </summary>
 public class HouseKeyPickup : SaveablePickup, IInteractable
 {
+    public const string KeyId = "house";
+
     [SerializeField] private PlayerInventory playerInventory;
     [SerializeField] private SpriteRenderer keyRenderer;
     [SerializeField] private ChapterBeatDirector beatDirector;
@@ -16,7 +19,7 @@ public class HouseKeyPickup : SaveablePickup, IInteractable
     public bool CanInteract => !Collected;
 
     public string InteractionHint =>
-        Collected ? string.Empty : "Glinting house key — tap Interact";
+        Collected ? string.Empty : "House Key — tap Interact to pick up";
 
     protected override void Awake()
     {
@@ -55,35 +58,29 @@ public class HouseKeyPickup : SaveablePickup, IInteractable
     {
         if (Collected) return;
 
-        // Guard: already discovered (e.g. save restore) — don't show sheet again.
-        if (ChapterSaveManager.Instance?.HasKeyDiscovered("anywhere") == true)
+        // Already have it (save restore) — just clean up visual.
+        if (playerInventory != null && playerInventory.HasHouseKey)
         {
             MarkCollected();
             return;
         }
 
-        // S4 Key Discovery sheet — player confirms before key is added.
-        if (GrokUIFlowManager.Instance != null)
+        if (ChapterSaveManager.Instance?.HasKeyDiscovered(KeyId) == true
+            || ChapterSaveManager.Instance?.HasKeyDiscovered("anywhere") == true)
         {
-            GrokUIFlowManager.Instance.ShowDiscovery(
-                keyId: "anywhere",
-                onAdded: () =>
-                {
-                    AddKeyToInventory(equipIt: false);
-                },
-                onAddedAndEquipped: () =>
-                {
-                    AddKeyToInventory(equipIt: true);
-                });
+            // Legacy saves used "anywhere" for this key.
+            playerInventory?.PickupHouseKey();
+            MarkCollected();
+            beatDirector?.NotifyHouseKeyCollected();
+            return;
         }
-        else
-        {
-            // Fallback if FlowManager not present (e.g. unit test scene).
-            AddKeyToInventory(equipIt: true);
-        }
+
+        // Immediate pickup — no multi-step sheet that confuses the tutorial.
+        // Optional discovery sheet only if we want spectacle; prefer clarity.
+        AddKeyToInventory();
     }
 
-    private void AddKeyToInventory(bool equipIt)
+    private void AddKeyToInventory()
     {
         if (playerInventory == null) return;
 
@@ -92,11 +89,16 @@ public class HouseKeyPickup : SaveablePickup, IInteractable
         beatDirector?.NotifyHouseKeyCollected();
 
         var save = ChapterSaveManager.Instance;
+        save?.RecordKeyDiscovered(KeyId);
+        save?.RecordEquippedKey(KeyId);
+        // Keep map systems that still key off "anywhere" working for older builds.
         save?.RecordKeyDiscovered("anywhere");
-        if (equipIt) save?.RecordEquippedKey("anywhere");
+        save?.RecordEquippedKey("anywhere");
         save?.SaveNow();
 
-        PickupFeedback.PlayKeyPickup("Anywhere Key added to key ring.");
+        PickupFeedback.PlayKeyPickup("House Key collected — use it on the front door.");
+        FindFirstObjectByType<GameplayHUD>()?.ShowToast(
+            "House Key collected. Walk to the door and tap Interact.", 4f);
     }
 
     protected override void ApplyCollectedVisuals()

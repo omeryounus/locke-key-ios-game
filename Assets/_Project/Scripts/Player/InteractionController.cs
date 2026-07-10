@@ -5,7 +5,7 @@ using UnityEngine;
 /// </summary>
 public class InteractionController : MonoBehaviour
 {
-    [SerializeField] private float interactRadius = 2.6f;
+    [SerializeField] private float interactRadius = 3.0f;
 
     public IInteractable NearestInteractable { get; private set; }
 

@@ -1,15 +1,15 @@
 using UnityEngine;
 
 /// <summary>
-/// Beat 4 — sealed door opens only while the Ghost Key phase is active (Use Key, not Interact).
-/// Solved only after the player actually crosses the passage trigger.
+/// Ghost Key tutorial: equip/own Ghost Key, stand at the sealed door, tap Use Key,
+/// then walk through while phasing. One clear magical solution.
 /// </summary>
 public class SealedDoorPuzzle : PuzzleBase
 {
     [SerializeField] private Collider2D doorCollider;
     [SerializeField] private GameObject passageTrigger;
     [SerializeField] private SpriteRenderer doorRenderer;
-    [SerializeField] private float useKeyRange = 3f;
+    [SerializeField] private float useKeyRange = 3.2f;
 
     private Transform player;
     private bool passageOpen;
@@ -20,10 +20,16 @@ public class SealedDoorPuzzle : PuzzleBase
 
     public override bool CanInteract => !isSolved;
 
-    public override string InteractionHint =>
-        isSolved
-            ? string.Empty
-            : "Sealed door — tap Use Key when nearby";
+    public override string InteractionHint
+    {
+        get
+        {
+            if (isSolved) return string.Empty;
+            if (!HasGhostKey())
+                return "Sealed door — needs the Ghost Key (clear the bookshelf)";
+            return "Sealed door — stand here and tap Use Key to phase through";
+        }
+    }
 
     protected override void Awake()
     {
@@ -65,20 +71,42 @@ public class SealedDoorPuzzle : PuzzleBase
     {
         if (isSolved) return;
         var hud = FindFirstObjectByType<GameplayHUD>();
-        var hasGhost = FindFirstObjectByType<KeyManager>()?.ownedKeys
-            .Exists(k => k.abilityType == KeyManager.KeyAbilityType.GhostPhase) == true;
-        if (!hasGhost)
-            hud?.ShowToast("Sealed by old magic. Something that phases might pass...", 3f);
+
+        if (!HasGhostKey())
+        {
+            hud?.ShowToast("Solid magic seals this door. A Ghost Key might pass through…", 3.5f);
+            FindFirstObjectByType<GameAudioController>()?.PlayDoorRattle();
+            return;
+        }
+
+        if (!IsPlayerInRange())
+        {
+            hud?.ShowToast("Step closer, then tap Use Key.", 2.8f);
+            return;
+        }
+
+        // Interact near door with Ghost Key = same as Use Key (removes confusion).
+        var km = FindFirstObjectByType<KeyManager>();
+        if (km != null)
+        {
+            // Ensure Ghost is active, then use it.
+            var ghost = km.ownedKeys.Find(k => k.abilityType == KeyManager.KeyAbilityType.GhostPhase);
+            if (ghost != null)
+                km.SelectKey(ghost);
+            km.UseActiveKey();
+        }
         else
-            hud?.ShowToast("Stand close and tap Use Key to phase through.", 3f);
-        FindFirstObjectByType<GameAudioController>()?.PlayDoorRattle();
-        GameHaptics.TriggerHapticLight();
+        {
+            hud?.ShowToast("Tap Use Key to phase through the seal.", 3f);
+        }
     }
 
     protected override void TrySolve() { }
 
     public bool IsPlayerInRange()
     {
+        if (player == null)
+            player = FindFirstObjectByType<PlayerController>()?.transform;
         if (player == null) return false;
         return Vector2.Distance(player.position, transform.position) <= useKeyRange;
     }
@@ -107,7 +135,7 @@ public class SealedDoorPuzzle : PuzzleBase
 
     private void HandleGhostPhaseStarted()
     {
-        if (isSolved || player == null || !IsPlayerInRange())
+        if (isSolved || !IsPlayerInRange())
             return;
 
         passageOpen = true;
@@ -124,7 +152,8 @@ public class SealedDoorPuzzle : PuzzleBase
             passageTrigger.SetActive(true);
 
         FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.25f, 0.4f);
-        FindFirstObjectByType<GameplayHUD>()?.ShowToast("The seal softens — step through now!", 2.8f);
+        FindFirstObjectByType<GameplayHUD>()?.ShowToast(
+            "You are ethereal — walk through the sealed door now!", 3.2f);
     }
 
     private void HandleGhostPhaseEnded()
@@ -145,10 +174,10 @@ public class SealedDoorPuzzle : PuzzleBase
 
         EndShimmer();
         ResealDoor();
-        FindFirstObjectByType<GameplayHUD>()?.ShowToast("The seal snaps shut — phase all the way through.", 3.2f);
+        FindFirstObjectByType<GameplayHUD>()?.ShowToast(
+            "The seal snapped shut — phase again and walk all the way through.", 3.5f);
         FindFirstObjectByType<GameAudioController>()?.PlayDoorRattle();
         GameHaptics.TriggerHapticStall();
-        FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.15f, 0.22f);
     }
 
     public override void RestoreSolvedState()
@@ -177,5 +206,11 @@ public class SealedDoorPuzzle : PuzzleBase
 
         if (passageTrigger != null)
             passageTrigger.SetActive(false);
+    }
+
+    private static bool HasGhostKey()
+    {
+        var km = FindFirstObjectByType<KeyManager>();
+        return km != null && km.ownedKeys.Exists(k => k.abilityType == KeyManager.KeyAbilityType.GhostPhase);
     }
 }

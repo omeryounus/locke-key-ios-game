@@ -909,6 +909,7 @@ public class GrokUIFlowManager : MonoBehaviour
 
     private static string KeyDescription(string keyId) => keyId switch
     {
+        "house"      => "Opens the front doors of Keyhouse.\nWalk to a locked door and tap Interact.",
         "anywhere"   => "Opens a door between any two points.\nUse near a wall to create a passage.",
         "head"       => "Unlocks the mind. Step inside a memory\nand witness what was hidden.",
         "mending"    => "Repairs broken objects and broken people.\nHandle with care.",

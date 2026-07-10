@@ -145,12 +145,16 @@ public class KeyManager : MonoBehaviour
         if (currentActiveKey.abilityType == KeyAbilityType.GhostPhase)
         {
             var sealedDoor = FindFirstObjectByType<SealedDoorPuzzle>();
+            // Allow free phase once the sealed door is solved; before that, require range.
             if (sealedDoor != null && !sealedDoor.isSolved && !sealedDoor.IsPlayerInRange())
             {
-                hud?.ShowToast("Move closer to the sealed door, then Use Key.", 3f);
+                hud?.ShowToast("Stand next to the sealed door, then tap Use Key.", 3f);
                 FindFirstObjectByType<GameAudioController>()?.PlayDoorRattle();
                 return;
             }
+
+            if (sealedDoor != null && !sealedDoor.isSolved && sealedDoor.IsPlayerInRange())
+                hud?.ShowToast("Phasing… walk through the door!", 2.5f);
         }
 
         ActivateAbility(currentActiveKey.abilityType);

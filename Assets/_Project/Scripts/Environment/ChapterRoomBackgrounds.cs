@@ -1,121 +1,91 @@
 using UnityEngine;
 
 /// <summary>
-/// Swaps layered parallax backgrounds per Chapter 1 room.
+/// Full-bleed cinematic room backdrops that cover the camera, with optional
+/// soft depth layer. Uses landscape game art (not stretched portrait UI plates).
 /// </summary>
 public class ChapterRoomBackgrounds : MonoBehaviour
 {
-    private struct LayerSet
-    {
-        public Sprite far;
-        public Sprite mid;
-        public Sprite near;
-        public float farScroll;
-        public float midScroll;
-        public float nearScroll;
-    }
-
     [SerializeField] private ChapterRoomDirector roomDirector;
 
-    private SpriteRenderer farRenderer;
-    private SpriteRenderer midRenderer;
-    private SpriteRenderer nearRenderer;
-    private ParallaxLayer farParallax;
-    private ParallaxLayer midParallax;
-    private ParallaxLayer nearParallax;
+    private SpriteRenderer backdrop;
+    private SpriteRenderer depthLayer;
+    private ParallaxLayer backdropParallax;
+    private ParallaxLayer depthParallax;
+    private ChapterRoomZone.RoomId lastRoom = (ChapterRoomZone.RoomId)(-1);
+    private string lastMapDest = "";
 
-    private LayerSet foyer;
-    private LayerSet library;
-    private LayerSet sealedPassage;
+    private Sprite foyerSprite;
+    private Sprite librarySprite;
+    private Sprite sealedSprite;
+    private Sprite wellhouseSprite;
+    private Sprite exteriorSprite;
 
     private void Awake()
     {
         if (roomDirector == null)
             roomDirector = FindFirstObjectByType<ChapterRoomDirector>();
 
-        foyer = BuildFoyerSet();
-        library = BuildSet("library", 0.06f, 0.16f, 0.3f);
-        sealedPassage = new LayerSet
-        {
-            far = Load("sealed_passage"),
-            mid = Load("library_mid"),
-            near = Load("library_near"),
-            farScroll = 0.04f,
-            midScroll = 0.1f,
-            nearScroll = 0.22f
-        };
+        foyerSprite = LoadBg("bg_room_foyer_16x9")
+                      ?? Resources.Load<Sprite>(ArtPaths.BgFoyerLandscape);
+        librarySprite = LoadBg("bg_room_library_16x9")
+                        ?? Resources.Load<Sprite>("Art/Parallax/library_far");
+        sealedSprite = LoadBg("bg_room_sealed_16x9")
+                       ?? Resources.Load<Sprite>("Art/Parallax/sealed_passage");
+        wellhouseSprite = Resources.Load<Sprite>(ArtPaths.BgWellhouse);
+        exteriorSprite = foyerSprite;
 
         CreateLayers();
-        ApplySet(foyer);
+        ApplyRoom(ChapterRoomZone.RoomId.ExteriorEntrance, force: true);
     }
 
-    private ChapterRoomZone.RoomId lastRoomLog = (ChapterRoomZone.RoomId)(-1);
+    private static Sprite LoadBg(string fileName) =>
+        Resources.Load<Sprite>($"Art/Backgrounds/{fileName}");
 
     private void Update()
     {
-        if (roomDirector == null) return;
-
         var mapDest = ChapterSaveManager.Instance?.ActiveMapDestination ?? ChapterMapDestination.Foyer;
         if (mapDest == ChapterMapDestination.Wellhouse)
         {
-            ApplyWellhouseBackdrop();
+            if (lastMapDest != mapDest)
+            {
+                lastMapDest = mapDest;
+                ApplySprite(wellhouseSprite ?? foyerSprite);
+            }
             return;
         }
 
-        if (roomDirector.CurrentRoom != lastRoomLog)
-        {
-            Debug.Log($"[Backgrounds] Current Room changed to: {roomDirector.CurrentRoom}");
-            lastRoomLog = roomDirector.CurrentRoom;
-        }
+        lastMapDest = mapDest;
+        if (roomDirector == null) return;
 
-        switch (roomDirector.CurrentRoom)
-        {
-            case ChapterRoomZone.RoomId.ExteriorEntrance:
-            case ChapterRoomZone.RoomId.Foyer:
-                ApplySet(foyer);
-                break;
-            case ChapterRoomZone.RoomId.Library:
-            case ChapterRoomZone.RoomId.MemoryPortrait:
-                ApplySet(library);
-                break;
-            case ChapterRoomZone.RoomId.SealedPassage:
-                ApplySet(sealedPassage);
-                break;
-        }
+        if (roomDirector.CurrentRoom != lastRoom)
+            ApplyRoom(roomDirector.CurrentRoom, force: true);
     }
 
-    private static LayerSet BuildFoyerSet()
+    private void ApplyRoom(ChapterRoomZone.RoomId room, bool force)
     {
-        var portrait = Resources.Load<Sprite>(ArtPaths.BgFoyerPortrait);
-        return new LayerSet
+        if (!force && room == lastRoom) return;
+        lastRoom = room;
+
+        Sprite sprite = room switch
         {
-            far = portrait != null ? portrait : Load("foyer_far"),
-            mid = portrait != null ? null : Load("foyer_mid"),
-            near = portrait != null ? null : Load("foyer_near"),
-            farScroll = 0.04f,
-            midScroll = 0.1f,
-            nearScroll = 0.2f
+            ChapterRoomZone.RoomId.ExteriorEntrance => exteriorSprite,
+            ChapterRoomZone.RoomId.Foyer => foyerSprite,
+            ChapterRoomZone.RoomId.Library => librarySprite,
+            ChapterRoomZone.RoomId.MemoryPortrait => librarySprite,
+            ChapterRoomZone.RoomId.SealedPassage => sealedSprite,
+            _ => foyerSprite
         };
+
+        ApplySprite(sprite);
     }
-
-    private static LayerSet BuildSet(string prefix, float farScroll, float midScroll, float nearScroll) =>
-        new()
-        {
-            far = Load($"{prefix}_far"),
-            mid = Load($"{prefix}_mid"),
-            near = Load($"{prefix}_near"),
-            farScroll = farScroll,
-            midScroll = midScroll,
-            nearScroll = nearScroll
-        };
-
-    private static Sprite Load(string name) => Resources.Load<Sprite>($"Art/Parallax/{name}");
 
     private void CreateLayers()
     {
-        farRenderer = CreateLayer("ParallaxFar", -40, 0.08f, 1f, out farParallax);
-        midRenderer = CreateLayer("ParallaxMid", -25, 0.18f, 0.5f, out midParallax);
-        nearRenderer = CreateLayer("ParallaxNear", -8, 0.32f, -0.25f, out nearParallax);
+        backdrop = CreateLayer("RoomBackdrop", -50, 1f, 2f, out backdropParallax);
+        depthLayer = CreateLayer("RoomDepthTint", -45, 0.92f, 1.5f, out depthParallax);
+        depthLayer.color = new Color(0.15f, 0.12f, 0.2f, 0.18f);
+        depthLayer.enabled = false; // reserved; keep backdrop clean
     }
 
     private static SpriteRenderer CreateLayer(string name, int sortOrder, float scroll, float z, out ParallaxLayer parallax)
@@ -131,68 +101,60 @@ public class ChapterRoomBackgrounds : MonoBehaviour
         renderer.sortingLayerName = "Background";
         renderer.sortingOrder = sortOrder;
         renderer.color = Color.white;
-
-        var pos = go.transform.position;
-        go.transform.position = new Vector3(pos.x, pos.y, z);
+        go.transform.position = new Vector3(0f, 0f, z);
 
         parallax = go.GetComponent<ParallaxLayer>();
         if (parallax == null)
             parallax = go.AddComponent<ParallaxLayer>();
-
-        parallax.Configure(scroll);
+        parallax.Configure(scroll, followCameraY: true, verticalOffset: 0f);
         return renderer;
     }
 
-    private void ApplyWellhouseBackdrop()
+    private void ApplySprite(Sprite sprite)
     {
-        var wellhouse = Resources.Load<Sprite>(ArtPaths.BgWellhouse);
-        if (wellhouse == null) return;
+        if (backdrop == null || sprite == null) return;
 
-        ApplyLayer(farRenderer, wellhouse, 0f, -4.2f, 1f);
-        if (midRenderer != null) midRenderer.enabled = false;
-        if (nearRenderer != null) nearRenderer.enabled = false;
+        backdrop.enabled = true;
+        backdrop.sprite = sprite;
+        backdrop.color = Color.white;
+        FitCoverCamera(backdrop.transform, sprite);
+        backdropParallax?.Configure(1f, true, 0f);
+
+        // Hide legacy translucent parallax stacks that wash out the scene.
+        DisableLegacyParallaxStacks();
     }
 
-    private void ApplySet(LayerSet set)
+    private static void DisableLegacyParallaxStacks()
     {
-        ApplyLayer(farRenderer, set.far, set.farScroll, -4.2f, 1f);
-        ApplyLayer(midRenderer, set.mid, set.midScroll, -3.8f, 0.55f);
-        ApplyLayer(nearRenderer, set.near, set.nearScroll, -3.4f, 0.35f);
-    }
-
-    private static void ApplyLayer(SpriteRenderer renderer, Sprite sprite, float scroll, float baseBottomY, float alpha)
-    {
-        if (renderer == null) return;
-
-        if (sprite == null)
+        foreach (var name in new[] { "ParallaxFar", "ParallaxMid", "ParallaxNear" })
         {
-            renderer.sprite = null;
-            renderer.enabled = false;
-            return;
+            var go = GameObject.Find(name);
+            if (go == null) continue;
+            var sr = go.GetComponent<SpriteRenderer>();
+            if (sr != null) sr.enabled = false;
         }
-
-        renderer.enabled = true;
-        renderer.sprite = sprite;
-        renderer.color = new Color(1f, 1f, 1f, alpha);
-        FitSpriteToCameraHeight(renderer.transform, sprite, baseBottomY);
-
-        var parallax = renderer.GetComponent<ParallaxLayer>();
-        parallax?.Configure(scroll);
     }
 
-    private static void FitSpriteToCameraHeight(Transform t, Sprite sprite, float baseBottomY)
+    /// <summary>
+    /// Scale sprite to fully cover the orthographic camera view (no letterboxing, no stretch).
+    /// </summary>
+    private static void FitCoverCamera(Transform t, Sprite sprite)
     {
         var cam = Camera.main;
-        float targetHeight = cam != null ? cam.orthographicSize * 2.05f : 8.5f;
+        if (cam == null || sprite == null) return;
 
-        var spriteHeight = sprite.bounds.size.y;
-        if (spriteHeight <= 0.001f) return;
+        float worldH = cam.orthographicSize * 2f;
+        float worldW = worldH * cam.aspect;
 
-        var scale = targetHeight / spriteHeight;
+        var size = sprite.bounds.size;
+        if (size.x < 0.001f || size.y < 0.001f) return;
+
+        // Cover: scale so both dimensions fill (may crop edges).
+        float scale = Mathf.Max(worldW / size.x, worldH / size.y) * 1.02f;
         t.localScale = new Vector3(scale, scale, 1f);
 
-        var actualHeight = spriteHeight * scale;
-        var pos = t.position;
-        t.position = new Vector3(pos.x, baseBottomY + actualHeight * 0.5f, pos.z);
+        // Center on camera each apply; parallax keeps it locked afterward.
+        var camPos = cam.transform.position;
+        t.position = new Vector3(camPos.x, camPos.y, t.position.z);
     }
 }

@@ -39,6 +39,7 @@ public static class ArtPaths
     // ── Key catalog: keyId → sprite path ─────────────────────────────────
     public static string KeySpriteForId(string keyId) => keyId switch
     {
+        "house"     => "Art/Sprites/Keys/house_key",
         "anywhere"  => KeyAnywhere,
         "head"      => KeyHead,
         "mending"   => KeyMending,
@@ -64,6 +65,7 @@ public static class ArtPaths
 
     public static string KeyDisplayName(string keyId) => keyId switch
     {
+        "house"      => "House Key",
         "anywhere"   => "Anywhere Key",
         "head"       => "Head Key",
         "mending"    => "Mending Key",

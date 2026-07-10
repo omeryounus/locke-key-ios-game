@@ -2,28 +2,26 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// Production 2.5D player movement: coyote time, jump buffer, accel/decel,
-/// variable jump cut, and Ghost Key phasing for touch-first iOS gameplay.
+/// Snappy side-scroller movement for a narrative puzzle adventure.
+/// Digital touch input feels immediate on ground; light air control in jumps.
 /// </summary>
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerController : MonoBehaviour
 {
     [Header("Movement")]
-    public float moveSpeed = 4.4f;
-    public float jumpForce = 8.8f;
-    public float acceleration = 22f;
-    public float deceleration = 28f;
-    public float airControlReduction = 0.58f;
-    public float turnBoost = 1.55f;
-    public float maxFallSpeed = 16f;
+    public float moveSpeed = 5.6f;
+    public float jumpForce = 6.4f;
+    public float airControl = 0.75f;
+    public float maxFallSpeed = 14f;
+    public float gravityScale = 3.1f;
 
     [Header("Jump Assist")]
-    public float coyoteTime = 0.1f;
-    public float jumpBufferTime = 0.12f;
-    public float jumpCutMultiplier = 0.45f;
+    public float coyoteTime = 0.12f;
+    public float jumpBufferTime = 0.14f;
+    public float jumpCutMultiplier = 0.55f;
 
     [Header("Ghost Key")]
-    public float ghostPhaseDuration = 5f;
+    public float ghostPhaseDuration = 5.5f;
     public LayerMask solidLayers;
 
     private Rigidbody2D rb;
@@ -33,15 +31,16 @@ public class PlayerController : MonoBehaviour
     private bool isGhostPhasing;
     private Coroutine ghostPhaseRoutine;
     private EventBus eventBus;
-    private float ghostMoveMultiplier = 0.88f;
-    private float noiseStepInterval = 0.48f;
+    private float ghostMoveMultiplier = 0.9f;
+    private float noiseStepInterval = 0.45f;
     private float noiseTimer;
-    private float targetHorizontalVelocity;
+    private float moveInput;
     private float coyoteCounter;
     private float jumpBufferCounter;
     private bool jumpHeld;
     private bool jumpCutApplied;
     private float landTimer;
+    private int groundMask;
 
     public bool IsGhostPhasing => isGhostPhasing;
     public bool IsGrounded => isGrounded;
@@ -55,40 +54,48 @@ public class PlayerController : MonoBehaviour
         bodyCollider = GetComponent<Collider2D>();
         eventBus = Resources.Load<EventBus>("EventBus");
 
-        // Stable mobile physics defaults if scene leaves defaults loose.
         rb.interpolation = RigidbodyInterpolation2D.Interpolate;
         rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         rb.freezeRotation = true;
-        rb.gravityScale = Mathf.Max(rb.gravityScale, 2.4f);
+        rb.gravityScale = gravityScale;
+        rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+
+        // Always have a usable ground mask (scene often leaves LayerMask empty).
+        groundMask = solidLayers.value != 0
+            ? solidLayers.value
+            : Physics2D.DefaultRaycastLayers;
+        groundMask &= ~(1 << gameObject.layer);
     }
 
     private void Update()
     {
-        if (isGhostPhasing) return;
+        if (coyoteCounter > 0f) coyoteCounter -= Time.deltaTime;
+        if (jumpBufferCounter > 0f) jumpBufferCounter -= Time.deltaTime;
+        if (landTimer > 0f) landTimer -= Time.deltaTime;
 
-        if (coyoteCounter > 0f)
-            coyoteCounter -= Time.deltaTime;
-        if (jumpBufferCounter > 0f)
-            jumpBufferCounter -= Time.deltaTime;
-        if (landTimer > 0f)
-            landTimer -= Time.deltaTime;
-
-        // Variable jump: release early for shorter hop.
-        if (!jumpHeld && !jumpCutApplied && rb.linearVelocity.y > 0.1f)
+        if (!isGhostPhasing)
         {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * jumpCutMultiplier);
-            jumpCutApplied = true;
+            // Variable jump cut
+            if (!jumpHeld && !jumpCutApplied && rb.linearVelocity.y > 1f)
+            {
+                rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * jumpCutMultiplier);
+                jumpCutApplied = true;
+            }
+
+            TryConsumeJumpBuffer();
+            TickFootstepNoise();
         }
+    }
 
-        TryConsumeJumpBuffer();
-
-        if (isGrounded && Mathf.Abs(rb.linearVelocity.x) > 0.12f)
+    private void TickFootstepNoise()
+    {
+        if (isGrounded && Mathf.Abs(rb.linearVelocity.x) > 0.4f)
         {
             noiseTimer += Time.deltaTime;
             if (noiseTimer >= noiseStepInterval)
             {
                 noiseTimer = 0f;
-                eventBus?.NoiseHeard(transform.position, 2.5f);
+                eventBus?.NoiseHeard(transform.position, 2.2f);
             }
         }
         else
@@ -99,8 +106,7 @@ public class PlayerController : MonoBehaviour
 
     public void Move(float horizontalInput)
     {
-        var speed = isGhostPhasing ? moveSpeed * ghostMoveMultiplier : moveSpeed;
-        targetHorizontalVelocity = Mathf.Clamp(horizontalInput, -1f, 1f) * speed;
+        moveInput = Mathf.Clamp(horizontalInput, -1f, 1f);
     }
 
     public void SetJumpHeld(bool held) => jumpHeld = held;
@@ -108,34 +114,30 @@ public class PlayerController : MonoBehaviour
     private void FixedUpdate()
     {
         wasGrounded = isGrounded;
-        isGrounded = CheckGrounded();
+        isGrounded = !isGhostPhasing && CheckGrounded();
 
         if (isGrounded)
             coyoteCounter = coyoteTime;
 
-        if (isGrounded && !wasGrounded && rb.linearVelocity.y <= 0.05f)
-        {
-            landTimer = 0.14f;
-            FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.08f, 0.12f);
-            GameHaptics.TriggerHapticLight();
-        }
+        if (isGrounded && !wasGrounded && rb.linearVelocity.y <= 0.2f)
+            landTimer = 0.12f;
 
+        float speed = isGhostPhasing ? moveSpeed * ghostMoveMultiplier : moveSpeed;
+        float targetX = moveInput * speed;
         float currentX = rb.linearVelocity.x;
-        float targetX = targetHorizontalVelocity;
+        float newX;
 
-        float rate;
-        if (Mathf.Abs(targetX) > 0.01f)
+        if (isGrounded || isGhostPhasing)
         {
-            rate = isGrounded ? acceleration : acceleration * airControlReduction;
-            if (Mathf.Sign(targetX) != Mathf.Sign(currentX) && Mathf.Abs(currentX) > 0.15f)
-                rate *= turnBoost;
+            // Instant digital response on ground — no sluggish accel curve.
+            newX = targetX;
         }
         else
         {
-            rate = isGrounded ? deceleration : deceleration * airControlReduction;
+            // Light air steering only.
+            newX = Mathf.Lerp(currentX, targetX, airControl * 12f * Time.fixedDeltaTime);
         }
 
-        float newX = Mathf.MoveTowards(currentX, targetX, rate * Time.fixedDeltaTime);
         float newY = Mathf.Max(rb.linearVelocity.y, -maxFallSpeed);
         rb.linearVelocity = new Vector2(newX, newY);
     }
@@ -143,17 +145,17 @@ public class PlayerController : MonoBehaviour
     private bool CheckGrounded()
     {
         if (bodyCollider == null) return false;
-        if (isGhostPhasing) return false;
 
         var bounds = bodyCollider.bounds;
+        // Slightly inset so wall contacts don't count as ground.
         Vector2 origin = new Vector2(bounds.center.x, bounds.min.y + 0.02f);
-        Vector2 size = new Vector2(bounds.size.x * 0.78f, 0.06f);
-        int mask = solidLayers.value != 0
-            ? solidLayers.value & ~(1 << gameObject.layer)
-            : Physics2D.DefaultRaycastLayers & ~(1 << gameObject.layer);
+        Vector2 size = new Vector2(Mathf.Max(0.08f, bounds.size.x * 0.7f), 0.08f);
 
-        var hit = Physics2D.BoxCast(origin, size, 0f, Vector2.down, 0.06f, mask);
-        return hit.collider != null && !hit.collider.isTrigger;
+        var hit = Physics2D.BoxCast(origin, size, 0f, Vector2.down, 0.08f, groundMask);
+        if (hit.collider == null || hit.collider.isTrigger) return false;
+        if (hit.collider.attachedRigidbody == rb) return false;
+        // Reject near-vertical surfaces.
+        return hit.normal.y > 0.4f;
     }
 
     public void Jump()
@@ -174,8 +176,7 @@ public class PlayerController : MonoBehaviour
         jumpCutApplied = false;
 
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
-        eventBus?.NoiseHeard(transform.position, 6.0f);
-        FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.05f, 0.1f);
+        eventBus?.NoiseHeard(transform.position, 5f);
     }
 
     public void ActivateGhostPhase(float duration)
@@ -209,9 +210,8 @@ public class PlayerController : MonoBehaviour
         var hud = FindFirstObjectByType<GameplayHUD>();
         if (nearestMirror != null)
         {
-            var dest = nearestMirror.destinationMirror;
-            transform.position = dest.GetTravelPosition();
-            FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.45f, 0.35f);
+            transform.position = nearestMirror.destinationMirror.GetTravelPosition();
+            FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.35f, 0.3f);
             FindFirstObjectByType<GameAudioController>()?.PlayMemoryTransition();
             GameHaptics.TriggerHapticLight();
             hud?.ShowToast("Teleported through reflection.", 3f);
@@ -234,23 +234,15 @@ public class PlayerController : MonoBehaviour
         eventBus?.GhostPhaseStarted();
         GameHaptics.PhaseStart();
 
-        if (bodyCollider != null)
-            bodyCollider.isTrigger = true;
-
-        // Soft upward drift so phasing feels ethereal without breaking layout.
-        if (rb != null && rb.linearVelocity.y < 0.5f)
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, Mathf.Max(rb.linearVelocity.y, 0.4f));
-
-        FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.22f, 0.35f);
+        // SealedDoorPuzzle disables its own collider while phasing in range.
+        // Keep the player solid so they still stand on floors.
+        FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.18f, 0.3f);
 
         yield return new WaitForSeconds(duration);
-
-        if (bodyCollider != null)
-            bodyCollider.isTrigger = false;
 
         isGhostPhasing = false;
         ghostPhaseRoutine = null;
         eventBus?.GhostPhaseEnded();
-        FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.12f, 0.2f);
+        FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.1f, 0.15f);
     }
 }

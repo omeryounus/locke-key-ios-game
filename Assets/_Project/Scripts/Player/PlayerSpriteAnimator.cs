@@ -7,7 +7,7 @@ using UnityEngine;
 [RequireComponent(typeof(SpriteRenderer))]
 public class PlayerSpriteAnimator : MonoBehaviour
 {
-    [SerializeField] private float walkFrameRate = 9f;
+    [SerializeField] private float walkFrameRate = 11f;
     [SerializeField] private float idleBreatheAmount = 0.018f;
     [SerializeField] private float idleBreatheSpeed = 2.2f;
     [SerializeField] private float landSquash = 0.12f;

@@ -86,16 +86,16 @@ public class TouchGameplayController : MonoBehaviour
         {
             return beat.CurrentBeat switch
             {
-                ChapterBeatDirector.Beat.Arrival => "Move toward the glinting house key",
+                ChapterBeatDirector.Beat.Arrival => "→ Walk left to the glowing House Key, then tap Interact",
                 ChapterBeatDirector.Beat.StuckDoor => inventory != null && inventory.HasHouseKey
-                    ? "Unlock the stuck foyer door"
-                    : "Find the glinting house key outside",
+                    ? "→ Walk to the front door and tap Interact to unlock it"
+                    : "→ Pick up the glowing House Key first",
                 ChapterBeatDirector.Beat.Library => keyManager?.ownedKeys.Exists(k => k.abilityType == KeyManager.KeyAbilityType.GhostPhase) == true
-                    ? "Head to the sealed door"
-                    : "Push the collapsed bookshelf, then claim the Ghost Key",
-                ChapterBeatDirector.Beat.GhostKeyUse => "Stand at the sealed door and tap Use Key",
-                ChapterBeatDirector.Beat.EchoEncounter => "Hide behind the arch or escape through the passage",
-                _ => "Claim the Head Key and study the family portrait"
+                    ? "→ Walk right to the sealed door with the Ghost Key"
+                    : "→ Tap Interact on the collapsed bookshelf to clear it",
+                ChapterBeatDirector.Beat.GhostKeyUse => "→ At the sealed door: tap Use Key, then walk through",
+                ChapterBeatDirector.Beat.EchoEncounter => "→ Hide in the arch or run through the passage",
+                _ => "→ Claim the Head Key, then Interact with the portrait"
             };
         }
 

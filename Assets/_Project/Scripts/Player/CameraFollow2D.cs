@@ -9,11 +9,11 @@ public class CameraFollow2D : MonoBehaviour
 {
     public Transform target;
     public Vector3 offset = new Vector3(0f, 1.05f, -10f);
-    public float smoothSpeed = 7.5f;
-    public float arrivalIntroOffsetX = -2.5f;
-    public float lookAheadDistance = 1.15f;
-    public float lookAheadSmooth = 4.5f;
-    public float verticalSmooth = 5.5f;
+    public float smoothSpeed = 10f;
+    public float arrivalIntroOffsetX = -1.8f;
+    public float lookAheadDistance = 0.85f;
+    public float lookAheadSmooth = 6f;
+    public float verticalSmooth = 8f;
 
     [SerializeField] private bool fitPortraitViewport = true;
     [SerializeField] private float portraitOrthoSize = 4.2f;

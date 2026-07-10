@@ -2,8 +2,8 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// Beat 3 — three-push bookshelf that reveals the Ghost Key alcove.
-/// Smooth push animation, debris, audio, camera, and haptics.
+/// Library obstacle: ONE clear action — Interact to clear the wreckage.
+/// Plays a multi-step collapse animation, then reveals the Ghost Key alcove.
 /// </summary>
 public class CollapsedBookshelfPuzzle : PuzzleBase
 {
@@ -11,22 +11,17 @@ public class CollapsedBookshelfPuzzle : PuzzleBase
     [SerializeField] private Transform shelfTransform;
     [SerializeField] private SpriteRenderer shelfRenderer;
     [SerializeField] private Transform debrisParent;
-    [SerializeField] private float pushDistance = 0.85f;
-    [SerializeField] private int pushesRequired = 3;
-    [SerializeField] private float pushDuration = 0.28f;
+    [SerializeField] private float clearDuration = 1.15f;
 
-    private int pushesDone;
     private bool animating;
     private Vector3 shelfBasePos;
+
+    public override bool CanInteract => !isSolved && !animating;
 
     public override string InteractionHint =>
         isSolved
             ? string.Empty
-            : pushesDone == 0
-                ? "Collapsed bookshelf — tap Interact to push"
-                : $"Bookshelf — push again ({pushesRequired - pushesDone} left)";
-
-    public override bool CanInteract => !isSolved && !animating;
+            : "Collapsed bookshelf — tap Interact to clear the wreckage";
 
     protected override void Awake()
     {
@@ -49,71 +44,62 @@ public class CollapsedBookshelfPuzzle : PuzzleBase
     protected override void TrySolve()
     {
         if (animating || isSolved) return;
-        StartCoroutine(PushRoutine());
+        StartCoroutine(ClearWreckageRoutine());
     }
 
-    private IEnumerator PushRoutine()
+    private IEnumerator ClearWreckageRoutine()
     {
         animating = true;
-        pushesDone++;
-
+        var hud = FindFirstObjectByType<GameplayHUD>();
+        hud?.ShowToast("You brace and shove the wreckage aside…", 2.2f);
         FindFirstObjectByType<GameAudioController>()?.PlayDoorRattle();
         GameHaptics.TriggerHapticLight();
-        FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.12f, 0.18f);
+        FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.14f, 0.25f);
 
         var start = shelfTransform.position;
-        var end = start + Vector3.right * pushDistance;
+        var end = start + new Vector3(1.1f, -0.15f, 0f);
+        var startRot = shelfTransform.eulerAngles.z;
         var elapsed = 0f;
 
-        while (elapsed < pushDuration)
+        // Stage 1: shake
+        while (elapsed < 0.28f)
         {
             elapsed += Time.deltaTime;
-            var t = Mathf.SmoothStep(0f, 1f, elapsed / pushDuration);
-            // Slight overshoot for weight
-            var overshoot = Mathf.Sin(t * Mathf.PI) * 0.04f;
-            shelfTransform.position = Vector3.Lerp(start, end, t) + Vector3.right * overshoot;
-            if (shelfRenderer != null)
-            {
-                var shake = Mathf.Sin(elapsed * 55f) * 0.015f * (1f - t);
-                shelfTransform.position += Vector3.up * shake;
-            }
-
+            var shake = Mathf.Sin(elapsed * 60f) * 0.04f;
+            shelfTransform.position = start + Vector3.right * shake;
             yield return null;
         }
 
-        shelfTransform.position = end;
-        SpawnDebrisBurst();
+        SpawnDebrisBurst(6);
+        FindFirstObjectByType<GameAudioController>()?.PlayDoorRattle();
 
-        var remaining = pushesRequired - pushesDone;
-        var hud = FindFirstObjectByType<GameplayHUD>();
-        if (remaining > 0)
+        // Stage 2: topple aside
+        elapsed = 0f;
+        while (elapsed < clearDuration)
         {
-            hud?.ShowToast(remaining == 1
-                ? "Almost free — one more push."
-                : $"Dust and books tumble free — {remaining} pushes left.", 2.4f);
-            animating = false;
-            yield break;
+            elapsed += Time.deltaTime;
+            var t = Mathf.SmoothStep(0f, 1f, elapsed / clearDuration);
+            shelfTransform.position = Vector3.Lerp(start, end, t);
+            shelfTransform.rotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(startRot, startRot - 18f, t));
+
+            if (shelfRenderer != null)
+            {
+                var c = shelfRenderer.color;
+                shelfRenderer.color = new Color(c.r, c.g, c.b, Mathf.Lerp(1f, 0.55f, t));
+            }
+
+            if (elapsed > clearDuration * 0.4f && elapsed < clearDuration * 0.45f)
+                SpawnDebrisBurst(4);
+
+            yield return null;
         }
 
         if (blockingCollider != null)
             blockingCollider.enabled = false;
 
-        if (shelfRenderer != null)
-        {
-            var startColor = shelfRenderer.color;
-            var endColor = new Color(0.35f, 0.28f, 0.2f, 0.55f);
-            elapsed = 0f;
-            while (elapsed < 0.35f)
-            {
-                elapsed += Time.deltaTime;
-                shelfRenderer.color = Color.Lerp(startColor, endColor, elapsed / 0.35f);
-                yield return null;
-            }
-        }
-
-        FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.2f, 0.28f);
         GameHaptics.Unlock();
-        hud?.ShowToast("A hidden alcove opens — something glimmers inside.", 3.5f);
+        FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.2f, 0.28f);
+        hud?.ShowToast("An alcove opens — a key glimmers inside.", 3.5f);
         MarkAsSolved();
         animating = false;
     }
@@ -121,34 +107,39 @@ public class CollapsedBookshelfPuzzle : PuzzleBase
     public override void RestoreSolvedState()
     {
         base.RestoreSolvedState();
-        pushesDone = pushesRequired;
         if (blockingCollider != null)
             blockingCollider.enabled = false;
         if (shelfTransform != null)
-            shelfTransform.position = shelfBasePos + Vector3.right * (pushDistance * pushesRequired);
+        {
+            shelfTransform.position = shelfBasePos + new Vector3(1.1f, -0.15f, 0f);
+            shelfTransform.rotation = Quaternion.Euler(0f, 0f, -18f);
+        }
         if (shelfRenderer != null)
-            shelfRenderer.color = new Color(0.35f, 0.28f, 0.2f, 0.55f);
+        {
+            var c = shelfRenderer.color;
+            shelfRenderer.color = new Color(c.r, c.g, c.b, 0.55f);
+        }
     }
 
-    private void SpawnDebrisBurst()
+    private void SpawnDebrisBurst(int count)
     {
-        for (var i = 0; i < 5; i++)
+        for (var i = 0; i < count; i++)
         {
-            var bit = new GameObject($"Debris_{pushesDone}_{i}", typeof(SpriteRenderer));
+            var bit = new GameObject($"Debris_{i}", typeof(SpriteRenderer));
             bit.transform.SetParent(debrisParent);
             bit.transform.position = shelfTransform.position + new Vector3(
-                Random.Range(-0.25f, 0.7f), Random.Range(-0.35f, 0.35f), 0f);
-            bit.transform.localScale = Vector3.one * Random.Range(0.07f, 0.15f);
+                Random.Range(-0.3f, 0.8f), Random.Range(-0.2f, 0.5f), 0f);
+            bit.transform.localScale = Vector3.one * Random.Range(0.07f, 0.16f);
             var sr = bit.GetComponent<SpriteRenderer>();
             sr.color = new Color(
-                Random.Range(0.35f, 0.55f),
-                Random.Range(0.24f, 0.36f),
-                Random.Range(0.14f, 0.22f),
-                0.85f);
+                Random.Range(0.32f, 0.55f),
+                Random.Range(0.22f, 0.36f),
+                Random.Range(0.12f, 0.22f),
+                0.9f);
             sr.sortingOrder = 4;
             bit.AddComponent<DebrisDrift>().Init(
-                new Vector2(Random.Range(0.4f, 1.4f), Random.Range(0.6f, 1.8f)),
-                Random.Range(1.6f, 2.6f));
+                new Vector2(Random.Range(0.5f, 1.6f), Random.Range(0.8f, 2.2f)),
+                Random.Range(1.4f, 2.4f));
         }
     }
 
@@ -169,13 +160,13 @@ public class CollapsedBookshelfPuzzle : PuzzleBase
         private void Update()
         {
             age += Time.deltaTime;
-            velocity.y -= 4.5f * Time.deltaTime;
+            velocity.y -= 5f * Time.deltaTime;
             transform.position += (Vector3)(velocity * Time.deltaTime);
-            transform.Rotate(0f, 0f, velocity.x * 40f * Time.deltaTime);
+            transform.Rotate(0f, 0f, velocity.x * 50f * Time.deltaTime);
             if (sr != null)
             {
                 var c = sr.color;
-                c.a = Mathf.Lerp(0.85f, 0f, age / life);
+                c.a = Mathf.Lerp(0.9f, 0f, age / life);
                 sr.color = c;
             }
 
