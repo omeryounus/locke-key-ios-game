@@ -147,22 +147,23 @@ public class ObjectiveGuideController : MonoBehaviour
             footRoot.gameObject.SetActive(true);
             var from = player.position;
             var to = target.position;
-            var dist = Vector2.Distance(from, to);
-            // Hide footprints when very close
-            bool show = dist > 1.4f;
+            var footDist = Vector2.Distance(from, to);
+            // Hide footprints when very close (keep running rest of visuals)
+            bool show = footDist > 1.4f;
             footRoot.gameObject.SetActive(show);
-            if (!show) return;
-
-            for (var i = 0; i < footRenderers.Length; i++)
+            if (show)
             {
-                float t = (i + 1f) / (footRenderers.Length + 1f);
-                var p = Vector3.Lerp(from, to, t);
-                p.y = Mathf.Min(from.y, to.y) - 0.55f;
-                // Marching opacity
-                float march = Mathf.Repeat(Time.time * 0.55f + t, 1f);
-                footRenderers[i].transform.position = p;
-                footRenderers[i].color = new Color(accent.r, accent.g, accent.b, 0.12f + march * 0.28f);
-                footRenderers[i].transform.localScale = Vector3.one * (0.18f + (i % 2) * 0.03f);
+                for (var i = 0; i < footRenderers.Length; i++)
+                {
+                    float t = (i + 1f) / (footRenderers.Length + 1f);
+                    var p = Vector3.Lerp(from, to, t);
+                    p.y = Mathf.Min(from.y, to.y) - 0.55f;
+                    // Marching opacity
+                    float march = Mathf.Repeat(Time.time * 0.55f + t, 1f);
+                    footRenderers[i].transform.position = p;
+                    footRenderers[i].color = new Color(accent.r, accent.g, accent.b, 0.12f + march * 0.28f);
+                    footRenderers[i].transform.localScale = Vector3.one * (0.18f + (i % 2) * 0.03f);
+                }
             }
         }
 

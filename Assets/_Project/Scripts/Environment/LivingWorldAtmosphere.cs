@@ -243,7 +243,7 @@ public class LivingWorldAtmosphere : MonoBehaviour
         {
             if (l.lightType != Light2D.LightType.Point) continue;
             if (l.pointLightOuterRadius > 3.5f) continue; // skip big room lights
-            float n = Mathf.PerlinNoise(Time.time * 4.2f + l.GetInstanceID() * 0.01f, 0.3f);
+            float n = Mathf.PerlinNoise(Time.time * 4.2f + l.GetEntityId().GetHashCode() * 0.01f, 0.3f);
             // Store base via intensity oscillation around current
             l.intensity = Mathf.Lerp(l.intensity, 0.45f + n * 0.55f, Time.deltaTime * 8f);
         }
