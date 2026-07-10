@@ -39,10 +39,12 @@ public class InteractionController : MonoBehaviour
     {
         if (NearestInteractable != null && NearestInteractable.CanInteract)
         {
+            FindFirstObjectByType<PlayerSpriteAnimator>()?.PlayInteractPose(0.4f);
             NearestInteractable.Interact();
             GameHaptics.TriggerHapticLight();
             FindFirstObjectByType<CameraFollow2D>()?.Shake(0.07f, 0.18f);
             FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.06f, 0.15f);
+            FindFirstObjectByType<GameAudioController>()?.PlayDoorRattle(); // soft feedback click-adjacent
             return;
         }
 

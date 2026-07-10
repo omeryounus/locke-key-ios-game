@@ -1,21 +1,22 @@
 using UnityEngine;
 
 /// <summary>
-/// Idle breathe, hood-friendly squash, walk cycle, jump/land, +20% base brightness.
+/// Expanded presentation state machine: idle / walk / run / jump / land / interact pose
+/// with smooth visual blending (scale/breathe) — sprite set limited so we interpolate feel.
 /// </summary>
 [RequireComponent(typeof(SpriteRenderer))]
 public class PlayerSpriteAnimator : MonoBehaviour
 {
+    public enum AnimState { Idle, Walk, Run, Jump, Fall, Land, Interact }
+
     [SerializeField] private float walkFrameRate = 11f;
-    [SerializeField] private float idleBreatheAmount = 0.035f;
+    [SerializeField] private float runFrameRate = 14f;
+    [SerializeField] private float idleBreatheAmount = 0.038f;
     [SerializeField] private float idleBreatheSpeed = 1.85f;
-    [SerializeField] private float landSquash = 0.12f;
+    [SerializeField] private float landSquash = 0.14f;
     [SerializeField] private float squashRecoverSpeed = 10f;
 
-    private Sprite idleSprite;
-    private Sprite walkASprite;
-    private Sprite walkBSprite;
-    private Sprite jumpSprite;
+    private Sprite idleSprite, walkASprite, walkBSprite, jumpSprite;
     private SpriteRenderer spriteRenderer;
     private Rigidbody2D rb;
     private PlayerController playerController;
@@ -24,10 +25,15 @@ public class PlayerSpriteAnimator : MonoBehaviour
     private Vector3 baseScale = new(1.55f, 1.55f, 1f);
     private float squash;
     private float hoodTilt;
-    private Color baseColor = new(1.2f, 1.2f, 1.2f, 1f); // +20% brightness
-    private Color ghostTint = new(0.62f, 0.88f, 1f, 0.55f);
+    private Color baseColor = new(1.2f, 1.2f, 1.2f, 1f);
+    private Color ghostTint = new(0.35f, 0.95f, 0.65f, 0.55f);
     private EventBus eventBus;
     private bool ghostVisual;
+    private AnimState state = AnimState.Idle;
+    private float landHold;
+    private float interactPoseTimer;
+
+    public AnimState State => state;
 
     private void Awake()
     {
@@ -36,7 +42,6 @@ public class PlayerSpriteAnimator : MonoBehaviour
         playerController = GetComponent<PlayerController>();
         eventBus = Resources.Load<EventBus>("EventBus");
         LoadSprites();
-
         if (eventBus != null)
         {
             eventBus.OnGhostPhaseStarted += OnGhostStart;
@@ -59,7 +64,6 @@ public class PlayerSpriteAnimator : MonoBehaviour
         jumpSprite = LoadFrame("player_jump") ?? idleSprite;
         spriteRenderer.sprite = idleSprite;
         spriteRenderer.color = baseColor;
-
         var scale = transform.localScale;
         if (Mathf.Abs(scale.x) < 1.45f || Mathf.Abs(scale.y) < 1.45f)
             transform.localScale = baseScale;
@@ -67,11 +71,15 @@ public class PlayerSpriteAnimator : MonoBehaviour
             baseScale = new Vector3(Mathf.Abs(scale.x), Mathf.Abs(scale.y), 1f);
     }
 
-    private static Sprite LoadFrame(string name) =>
-        Resources.Load<Sprite>($"Art/Characters/{name}");
-
+    private static Sprite LoadFrame(string name) => Resources.Load<Sprite>($"Art/Characters/{name}");
     private void OnGhostStart() => ghostVisual = true;
     private void OnGhostEnd() => ghostVisual = false;
+
+    public void PlayInteractPose(float duration = 0.35f)
+    {
+        interactPoseTimer = duration;
+        state = AnimState.Interact;
+    }
 
     private void Update()
     {
@@ -80,48 +88,67 @@ public class PlayerSpriteAnimator : MonoBehaviour
         var vx = rb.linearVelocity.x;
         var vy = rb.linearVelocity.y;
         var absVx = Mathf.Abs(vx);
-        var grounded = IsGrounded();
+        var grounded = playerController != null ? playerController.IsGrounded : true;
 
         if (absVx > 0.08f)
             spriteRenderer.flipX = vx < 0f;
 
-        if (!grounded)
+        if (interactPoseTimer > 0f)
+        {
+            interactPoseTimer -= Time.deltaTime;
+            spriteRenderer.sprite = idleSprite;
+            squash = Mathf.Lerp(squash, 0.04f, Time.deltaTime * 8f);
+            state = AnimState.Interact;
+        }
+        else if (!grounded)
         {
             spriteRenderer.sprite = jumpSprite;
-            squash = Mathf.Lerp(squash, vy > 0.2f ? 0.06f : -0.04f, Time.deltaTime * 8f);
-            hoodTilt = Mathf.Lerp(hoodTilt, -vx * 0.8f, Time.deltaTime * 5f);
+            if (vy > 0.15f) state = AnimState.Jump;
+            else state = AnimState.Fall;
+            squash = Mathf.Lerp(squash, vy > 0.2f ? 0.07f : -0.05f, Time.deltaTime * 8f);
+            hoodTilt = Mathf.Lerp(hoodTilt, -vx * 0.9f, Time.deltaTime * 5f);
         }
         else if (playerController != null && playerController.JustLanded)
         {
+            state = AnimState.Land;
+            landHold = 0.12f;
             spriteRenderer.sprite = idleSprite;
             squash = -landSquash;
         }
-        else if (absVx < 0.08f)
+        else if (landHold > 0f)
         {
+            landHold -= Time.deltaTime;
             spriteRenderer.sprite = idleSprite;
-            // Stronger idle breathing
+            state = AnimState.Land;
+            squash = Mathf.Lerp(squash, 0f, Time.deltaTime * 12f);
+        }
+        else if (absVx < 0.1f)
+        {
+            state = AnimState.Idle;
+            spriteRenderer.sprite = idleSprite;
             var breathe = Mathf.Sin(Time.time * idleBreatheSpeed) * idleBreatheAmount;
-            var breathe2 = Mathf.Sin(Time.time * idleBreatheSpeed * 0.5f) * idleBreatheAmount * 0.35f;
+            var breathe2 = Mathf.Sin(Time.time * idleBreatheSpeed * 0.5f) * idleBreatheAmount * 0.4f;
             squash = Mathf.Lerp(squash, breathe + breathe2, Time.deltaTime * 5f);
-            // Hood sway while idle
-            hoodTilt = Mathf.Sin(Time.time * 1.6f) * 3.2f;
+            hoodTilt = Mathf.Sin(Time.time * 1.6f) * 3.5f;
         }
         else
         {
-            walkTimer += Time.deltaTime * walkFrameRate * Mathf.Clamp(absVx / 3.5f, 0.55f, 1.35f);
+            bool run = absVx > moveSpeedThreshold();
+            state = run ? AnimState.Run : AnimState.Walk;
+            float rate = run ? runFrameRate : walkFrameRate;
+            walkTimer += Time.deltaTime * rate * Mathf.Clamp(absVx / 3.5f, 0.55f, 1.4f);
             if (walkTimer >= 1f)
             {
                 walkTimer = 0f;
                 useWalkA = !useWalkA;
-                squash = -0.04f;
+                squash = run ? -0.05f : -0.035f;
             }
-
             spriteRenderer.sprite = useWalkA ? walkASprite : walkBSprite;
             squash = Mathf.Lerp(squash, 0f, Time.deltaTime * squashRecoverSpeed);
-            hoodTilt = Mathf.Lerp(hoodTilt, -Mathf.Sign(vx) * 2.5f, Time.deltaTime * 6f);
+            hoodTilt = Mathf.Lerp(hoodTilt, -Mathf.Sign(vx) * (run ? 4f : 2.5f), Time.deltaTime * 6f);
         }
 
-        squash = Mathf.Lerp(squash, 0f, Time.deltaTime * squashRecoverSpeed * 0.25f);
+        squash = Mathf.Lerp(squash, 0f, Time.deltaTime * squashRecoverSpeed * 0.2f);
         ApplyScale(squash);
 
         var targetColor = ghostVisual ? ghostTint : baseColor;
@@ -133,10 +160,14 @@ public class PlayerSpriteAnimator : MonoBehaviour
             spriteRenderer.color = new Color(c.r, c.g, c.b, flicker);
         }
 
-        // Drive hood visual if present
         var hood = transform.Find("HoodSway");
         if (hood != null)
             hood.localRotation = Quaternion.Euler(0f, 0f, hoodTilt);
+    }
+
+    private float moveSpeedThreshold()
+    {
+        return playerController != null ? playerController.moveSpeed * 0.72f : 4f;
     }
 
     private void ApplyScale(float squashAmount)
@@ -145,7 +176,4 @@ public class PlayerSpriteAnimator : MonoBehaviour
         var x = baseScale.x * (1f - squashAmount * 0.7f);
         transform.localScale = new Vector3(Mathf.Abs(x), Mathf.Abs(y), 1f);
     }
-
-    private bool IsGrounded() =>
-        playerController != null ? playerController.IsGrounded : true;
 }

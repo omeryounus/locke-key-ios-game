@@ -38,6 +38,7 @@ public class GameAudioController : MonoBehaviour
     private float footstepCooldown;
     private float creakTimer;
     private float thunderTimer;
+    private ChapterRoomZone.RoomId currentRoom;
 
     private void Awake()
     {
@@ -181,10 +182,41 @@ public class GameAudioController : MonoBehaviour
         if (tensionSource != null)
             tensionSource.pitch = enabled ? 0.68f : 1f;
         if (ambientSource != null)
-            ambientSource.volume = enabled ? 0.05f : 0.14f;
+            ambientSource.volume = enabled ? 0.05f : RoomAmbientVolume(currentRoom);
         if (whisperSource != null)
-            whisperSource.volume = enabled ? 0.04f : 0.09f;
+            whisperSource.volume = enabled ? 0.04f : RoomWhisperVolume(currentRoom);
     }
+
+    /// <summary>Location-aware ambience blend — keeps immersion as rooms change.</summary>
+    public void SetRoomAmbience(ChapterRoomZone.RoomId room)
+    {
+        currentRoom = room;
+        if (muffled) return;
+        if (ambientSource != null)
+            ambientSource.volume = RoomAmbientVolume(room);
+        if (whisperSource != null)
+            whisperSource.volume = RoomWhisperVolume(room);
+        // Occasional location sting
+        if (room is ChapterRoomZone.RoomId.SealedPassage or ChapterRoomZone.RoomId.MemoryPortrait)
+            PlayEchoWhisper();
+    }
+
+    private static float RoomAmbientVolume(ChapterRoomZone.RoomId room) => room switch
+    {
+        ChapterRoomZone.RoomId.ExteriorEntrance => 0.18f,
+        ChapterRoomZone.RoomId.Library => 0.12f,
+        ChapterRoomZone.RoomId.SealedPassage => 0.1f,
+        ChapterRoomZone.RoomId.MemoryPortrait => 0.11f,
+        _ => 0.14f
+    };
+
+    private static float RoomWhisperVolume(ChapterRoomZone.RoomId room) => room switch
+    {
+        ChapterRoomZone.RoomId.SealedPassage => 0.14f,
+        ChapterRoomZone.RoomId.MemoryPortrait => 0.12f,
+        ChapterRoomZone.RoomId.Library => 0.07f,
+        _ => 0.09f
+    };
 
     private void HandleGhostPhaseStarted()
     {

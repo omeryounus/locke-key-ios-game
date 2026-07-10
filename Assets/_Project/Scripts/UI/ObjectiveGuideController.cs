@@ -166,14 +166,25 @@ public class ObjectiveGuideController : MonoBehaviour
             }
         }
 
+        float dist = Vector2.Distance(player.position, target.position);
         // Camera zoom when near objective
-        if (distNear(player.position, target.position) < 2.4f)
-            FindFirstObjectByType<CameraFollow2D>()?.SetInterestZoom(0.92f);
+        if (dist < 2.8f)
+            FindFirstObjectByType<CameraFollow2D>()?.SetInterestZoom(Mathf.Lerp(0.86f, 0.95f, dist / 2.8f));
         else
             FindFirstObjectByType<CameraFollow2D>()?.SetInterestZoom(1f);
-    }
 
-    private static float distNear(Vector3 a, Vector3 b) => Vector2.Distance(a, b);
+        // Distance hint on objective tracker title via toast is too noisy; drive HUD distance pip
+        var tracker = FindFirstObjectByType<ObjectiveTrackerHUD>();
+        // footprints denser when farther
+        if (footRenderers != null)
+        {
+            int showCount = dist > 6f ? footRenderers.Length : dist > 3f ? 4 : 2;
+            for (var i = 0; i < footRenderers.Length; i++)
+                if (footRenderers[i] != null)
+                    footRenderers[i].enabled = i < showCount && dist > 1.4f;
+        }
+        _ = tracker;
+    }
 
     private void BuildVisuals()
     {

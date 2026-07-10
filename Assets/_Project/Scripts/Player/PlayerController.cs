@@ -2,18 +2,23 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// Snappy side-scroller movement for a narrative puzzle adventure.
-/// Digital touch input feels immediate on ground; light air control in jumps.
+/// Premium side-scroller movement: responsive digital input with acceleration curves,
+/// coyote/buffer, slope-aware grounding, wall slide, and interaction-friendly physics.
 /// </summary>
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerController : MonoBehaviour
 {
     [Header("Movement")]
-    public float moveSpeed = 5.6f;
-    public float jumpForce = 6.4f;
-    public float airControl = 0.75f;
+    public float moveSpeed = 5.5f;
+    public float jumpForce = 6.5f;
+    public float groundAccel = 55f;
+    public float groundDecel = 65f;
+    public float airAccel = 28f;
+    public float airControl = 0.8f;
     public float maxFallSpeed = 14f;
-    public float gravityScale = 3.1f;
+    public float gravityScale = 3.15f;
+    public float wallSlideSpeed = 2.2f;
+    public float turnBoost = 1.35f;
 
     [Header("Jump Assist")]
     public float coyoteTime = 0.12f;
@@ -29,10 +34,12 @@ public class PlayerController : MonoBehaviour
     private bool isGrounded;
     private bool wasGrounded;
     private bool isGhostPhasing;
+    private bool touchingWall;
+    private int wallSign;
     private Coroutine ghostPhaseRoutine;
     private EventBus eventBus;
     private float ghostMoveMultiplier = 0.9f;
-    private float noiseStepInterval = 0.45f;
+    private float noiseStepInterval = 0.42f;
     private float noiseTimer;
     private float moveInput;
     private float coyoteCounter;
@@ -41,11 +48,13 @@ public class PlayerController : MonoBehaviour
     private bool jumpCutApplied;
     private float landTimer;
     private int groundMask;
+    private float groundNormalY = 1f;
 
     public bool IsGhostPhasing => isGhostPhasing;
     public bool IsGrounded => isGrounded;
     public bool JustLanded => landTimer > 0f;
     public float HorizontalSpeed => rb != null ? Mathf.Abs(rb.linearVelocity.x) : 0f;
+    public float MoveInput => moveInput;
     public Vector2 Velocity => rb != null ? rb.linearVelocity : Vector2.zero;
 
     private void Awake()
@@ -60,7 +69,6 @@ public class PlayerController : MonoBehaviour
         rb.gravityScale = gravityScale;
         rb.constraints = RigidbodyConstraints2D.FreezeRotation;
 
-        // Always have a usable ground mask (scene often leaves LayerMask empty).
         groundMask = solidLayers.value != 0
             ? solidLayers.value
             : Physics2D.DefaultRaycastLayers;
@@ -75,7 +83,6 @@ public class PlayerController : MonoBehaviour
 
         if (!isGhostPhasing)
         {
-            // Variable jump cut
             if (!jumpHeld && !jumpCutApplied && rb.linearVelocity.y > 1f)
             {
                 rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * jumpCutMultiplier);
@@ -99,64 +106,99 @@ public class PlayerController : MonoBehaviour
                 FindFirstObjectByType<GameAudioController>()?.PlayFootstep();
             }
         }
-        else
-        {
-            noiseTimer = noiseStepInterval;
-        }
+        else noiseTimer = noiseStepInterval;
     }
 
-    public void Move(float horizontalInput)
-    {
+    public void Move(float horizontalInput) =>
         moveInput = Mathf.Clamp(horizontalInput, -1f, 1f);
-    }
 
     public void SetJumpHeld(bool held) => jumpHeld = held;
 
     private void FixedUpdate()
     {
         wasGrounded = isGrounded;
-        isGrounded = !isGhostPhasing && CheckGrounded();
+        ProbeContacts();
 
         if (isGrounded)
             coyoteCounter = coyoteTime;
 
         if (isGrounded && !wasGrounded && rb.linearVelocity.y <= 0.2f)
+        {
             landTimer = 0.12f;
+            FindFirstObjectByType<CameraFollow2D>()?.Shake(0.035f, 0.1f);
+        }
 
         float speed = isGhostPhasing ? moveSpeed * ghostMoveMultiplier : moveSpeed;
         float targetX = moveInput * speed;
         float currentX = rb.linearVelocity.x;
         float newX;
 
-        if (isGrounded || isGhostPhasing)
+        if (isGhostPhasing)
         {
-            // Instant digital response on ground — no sluggish accel curve.
             newX = targetX;
+        }
+        else if (isGrounded)
+        {
+            float rate = Mathf.Abs(targetX) > 0.01f ? groundAccel : groundDecel;
+            if (Mathf.Abs(targetX) > 0.01f && Mathf.Sign(targetX) != Mathf.Sign(currentX) && Mathf.Abs(currentX) > 0.2f)
+                rate *= turnBoost;
+            // Near-instant but still blended for premium feel
+            newX = Mathf.MoveTowards(currentX, targetX, rate * Time.fixedDeltaTime);
+            // Snap when very close to target for zero deadzone lag
+            if (Mathf.Abs(newX - targetX) < 0.05f) newX = targetX;
         }
         else
         {
-            // Light air steering only.
-            newX = Mathf.Lerp(currentX, targetX, airControl * 12f * Time.fixedDeltaTime);
+            float rate = airAccel * airControl;
+            newX = Mathf.MoveTowards(currentX, targetX, rate * Time.fixedDeltaTime);
         }
 
-        float newY = Mathf.Max(rb.linearVelocity.y, -maxFallSpeed);
+        float newY = rb.linearVelocity.y;
+        if (touchingWall && !isGrounded && newY < 0f && Mathf.Abs(moveInput) > 0.1f && Mathf.Sign(moveInput) == wallSign)
+            newY = Mathf.Max(newY, -wallSlideSpeed);
+
+        newY = Mathf.Max(newY, -maxFallSpeed);
         rb.linearVelocity = new Vector2(newX, newY);
     }
 
-    private bool CheckGrounded()
+    private void ProbeContacts()
     {
-        if (bodyCollider == null) return false;
+        isGrounded = false;
+        touchingWall = false;
+        wallSign = 0;
+        groundNormalY = 1f;
+        if (bodyCollider == null || isGhostPhasing) return;
 
         var bounds = bodyCollider.bounds;
-        // Slightly inset so wall contacts don't count as ground.
-        Vector2 origin = new Vector2(bounds.center.x, bounds.min.y + 0.02f);
-        Vector2 size = new Vector2(Mathf.Max(0.08f, bounds.size.x * 0.7f), 0.08f);
 
-        var hit = Physics2D.BoxCast(origin, size, 0f, Vector2.down, 0.08f, groundMask);
-        if (hit.collider == null || hit.collider.isTrigger) return false;
-        if (hit.collider.attachedRigidbody == rb) return false;
-        // Reject near-vertical surfaces.
-        return hit.normal.y > 0.4f;
+        // Ground
+        Vector2 gOrigin = new Vector2(bounds.center.x, bounds.min.y + 0.02f);
+        Vector2 gSize = new Vector2(Mathf.Max(0.08f, bounds.size.x * 0.7f), 0.08f);
+        var gHit = Physics2D.BoxCast(gOrigin, gSize, 0f, Vector2.down, 0.08f, groundMask);
+        if (gHit.collider != null && !gHit.collider.isTrigger && gHit.collider.attachedRigidbody != rb)
+        {
+            if (gHit.normal.y > 0.35f)
+            {
+                isGrounded = true;
+                groundNormalY = gHit.normal.y;
+            }
+        }
+
+        // Walls
+        float wallDist = 0.06f;
+        Vector2 wSize = new Vector2(0.06f, bounds.size.y * 0.55f);
+        var left = Physics2D.BoxCast(new Vector2(bounds.min.x + 0.02f, bounds.center.y), wSize, 0f, Vector2.left, wallDist, groundMask);
+        var right = Physics2D.BoxCast(new Vector2(bounds.max.x - 0.02f, bounds.center.y), wSize, 0f, Vector2.right, wallDist, groundMask);
+        if (left.collider != null && !left.collider.isTrigger && left.normal.x > 0.5f)
+        {
+            touchingWall = true;
+            wallSign = -1;
+        }
+        else if (right.collider != null && !right.collider.isTrigger && right.normal.x < -0.5f)
+        {
+            touchingWall = true;
+            wallSign = 1;
+        }
     }
 
     public void Jump()
@@ -175,16 +217,15 @@ public class PlayerController : MonoBehaviour
         jumpBufferCounter = 0f;
         coyoteCounter = 0f;
         jumpCutApplied = false;
-
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
         eventBus?.NoiseHeard(transform.position, 5f);
+        FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.04f, 0.08f);
     }
 
     public void ActivateGhostPhase(float duration)
     {
         if (ghostPhaseRoutine != null)
             StopCoroutine(ghostPhaseRoutine);
-
         ghostPhaseRoutine = StartCoroutine(GhostPhaseRoutine(duration > 0 ? duration : ghostPhaseDuration));
     }
 
@@ -193,18 +234,13 @@ public class PlayerController : MonoBehaviour
         var colliders = Physics2D.OverlapCircleAll(transform.position, 3.5f);
         MirrorSurface nearestMirror = null;
         float minDist = float.MaxValue;
-
         foreach (var col in colliders)
         {
             var mirror = col.GetComponent<MirrorSurface>();
             if (mirror != null && mirror.isReflective && mirror.destinationMirror != null)
             {
                 float dist = Vector2.Distance(transform.position, mirror.transform.position);
-                if (dist < minDist)
-                {
-                    minDist = dist;
-                    nearestMirror = mirror;
-                }
+                if (dist < minDist) { minDist = dist; nearestMirror = mirror; }
             }
         }
 
@@ -213,6 +249,7 @@ public class PlayerController : MonoBehaviour
         {
             transform.position = nearestMirror.destinationMirror.GetTravelPosition();
             FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.35f, 0.3f);
+            FindFirstObjectByType<CameraFollow2D>()?.Shake(0.1f, 0.25f);
             FindFirstObjectByType<GameAudioController>()?.PlayMemoryTransition();
             GameHaptics.TriggerHapticLight();
             hud?.ShowToast("Teleported through reflection.", 3f);
@@ -234,10 +271,8 @@ public class PlayerController : MonoBehaviour
         isGhostPhasing = true;
         eventBus?.GhostPhaseStarted();
         GameHaptics.PhaseStart();
-
-        // SealedDoorPuzzle disables its own collider while phasing in range.
-        // Keep the player solid so they still stand on floors.
         FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.18f, 0.3f);
+        FindFirstObjectByType<CameraFollow2D>()?.Shake(0.05f, 0.2f);
 
         yield return new WaitForSeconds(duration);
 

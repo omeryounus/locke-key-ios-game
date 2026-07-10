@@ -56,6 +56,10 @@ public class GameBootstrap : MonoBehaviour
             gameObject.AddComponent<TutorialCoach>();
         if (GetComponent<FoyerEnvironmentBuilder>() == null)
             gameObject.AddComponent<FoyerEnvironmentBuilder>();
+        if (GetComponent<RoomEnvironmentDirector>() == null)
+            gameObject.AddComponent<RoomEnvironmentDirector>();
+        if (GetComponent<CinematicPostProcessOverlay>() == null)
+            gameObject.AddComponent<CinematicPostProcessOverlay>();
         if (FindFirstObjectByType<HideSpot>() == null)
             CreateHideArch();
 
