@@ -1,9 +1,11 @@
+using System;
 using UnityEngine;
 
 /// <summary>
 /// Production 2.5D animation director tuned to PlayerController physics and Keyhouse abilities.
 /// Locomotion atlases + Ghost/Head/Hide/Echo/Mirror/WallSlide states, footstep-frame sync,
 /// jump-cut awareness, and brave-but-vulnerable emotional beats.
+/// Dual-path: fires AnimEvents for Animator graph bridge + foot-contact VFX.
 /// </summary>
 [RequireComponent(typeof(SpriteRenderer))]
 [RequireComponent(typeof(PlayerController))]
@@ -21,6 +23,8 @@ public class PlayerSpriteAnimator : MonoBehaviour
         Mindscape, Hide, MirrorTravel,
         Happy, Injured
     }
+
+    public enum AnimEventKind { FootPlant, LandImpact, JumpTakeoff, Interact, Hit }
 
     [Header("Frame rates")]
     [SerializeField] private float idleFps = 10f;
@@ -78,6 +82,8 @@ public class PlayerSpriteAnimator : MonoBehaviour
     private Color baseColor = new(1.12f, 1.12f, 1.12f, 1f);
 
     public AnimState State => state;
+    /// <summary>Contact / impact events for dual-path Animator + VFX listeners.</summary>
+    public event Action<AnimEventKind> OnAnimEvent;
 
     private void Awake()
     {
@@ -298,6 +304,7 @@ public class PlayerSpriteAnimator : MonoBehaviour
             state = AnimState.Land;
             frameIndex = 0;
             airTime = 0f;
+            OnAnimEvent?.Invoke(AnimEventKind.LandImpact);
         }
         wasGrounded = grounded;
         if (!grounded) airTime += dt;
@@ -691,6 +698,7 @@ public class PlayerSpriteAnimator : MonoBehaviour
         lastFootstepFrame = contact;
         float radius = state == AnimState.Run ? 2.8f : 2.2f;
         player.EmitFootstepNoise(radius);
+        OnAnimEvent?.Invoke(AnimEventKind.FootPlant);
     }
 
     private void UpdateCyclePhase(float phase)

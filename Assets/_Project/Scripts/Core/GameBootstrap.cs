@@ -94,6 +94,14 @@ public class GameBootstrap : MonoBehaviour
         if (player.GetComponent<PlayerSpriteAnimator>() == null)
             player.gameObject.AddComponent<PlayerSpriteAnimator>();
 
+        // Dual-path Unity Animator graph bridge (parameters mirror runtime director)
+        if (player.GetComponent<PlayerAnimatorGraphDriver>() == null)
+            player.gameObject.AddComponent<PlayerAnimatorGraphDriver>();
+
+        // Foot-plant dust / soft plant settle
+        if (player.GetComponent<PlayerFootContactVFX>() == null)
+            player.gameObject.AddComponent<PlayerFootContactVFX>();
+
         // Visibility boost still adds fill light; secondary motion owned by rig
         if (player.GetComponent<PlayerVisibilityBoost>() == null)
             player.gameObject.AddComponent<PlayerVisibilityBoost>();
