@@ -64,7 +64,7 @@ public class ChapterBeatDirector : MonoBehaviour
         {
             playerHasMoved = true;
             cameraFollow?.EndArrivalIntro();
-            hud?.SetControlVisibility(interact: true, jump: true);
+            hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: false);
             hud?.ShowToast("Tap Interact near glowing objects.", 3.5f);
         }
     }
@@ -143,30 +143,32 @@ public class ChapterBeatDirector : MonoBehaviour
         switch (beat)
         {
             case Beat.Arrival:
-                hud?.SetControlVisibility(interact: false, jump: false, useKey: false);
+                hud?.SetControlVisibility(move: true, interact: false, jump: true, useKey: false);
                 hud?.ShowToast("Keyhouse — move toward the glinting key.", 4f);
                 break;
             case Beat.StuckDoor:
-                hud?.SetControlVisibility(useKey: false);
+                hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: false);
                 if (announce)
                     hud?.ShowToast("Unlock the stuck door with the house key.", 3.5f);
                 break;
             case Beat.Library:
+                hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: false);
                 if (announce)
                     hud?.ShowToast("Push the collapsed bookshelf to reveal the alcove.", 4f);
                 break;
             case Beat.GhostKeyUse:
-                hud?.SetControlVisibility(useKey: true);
+                hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: true);
                 if (announce)
                     hud?.ShowToast("Sealed door ahead — tap Use Key to phase through.", 4f);
                 break;
             case Beat.EchoEncounter:
-                hud?.SetControlVisibility(useKey: true);
+                hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: true);
                 if (announce)
                     hud?.ShowToast("The Echo is drawn to you — hide behind the arch or run.", 4.5f);
                 eventBus?.SetTension(0.9f);
                 break;
             case Beat.Aftermath:
+                hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: true);
                 if (announce)
                     hud?.ShowToast("You escaped the Echo... for now.", 3.5f);
                 eventBus?.SetTension(0.2f);

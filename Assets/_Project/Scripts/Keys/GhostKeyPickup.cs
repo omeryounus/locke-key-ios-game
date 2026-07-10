@@ -15,6 +15,8 @@ public class GhostKeyPickup : MonoBehaviour, IInteractable
     private bool isAvailable;
     private bool collected;
     private EventBus eventBus;
+    private Vector3 basePos;
+    private float bobPhase;
 
     public bool CanInteract => isAvailable && !collected;
 
@@ -36,7 +38,16 @@ public class GhostKeyPickup : MonoBehaviour, IInteractable
         if (eventBus != null)
             eventBus.OnPuzzleSolved += HandlePuzzleSolved;
 
+        basePos = transform.position;
         SetVisible(false);
+    }
+
+    private void Update()
+    {
+        if (!isAvailable || collected) return;
+        bobPhase += Time.deltaTime * 2.6f;
+        transform.position = basePos + Vector3.up * (Mathf.Sin(bobPhase) * 0.08f);
+        transform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(bobPhase * 0.9f) * 8f);
     }
 
     public void RestoreFromSave(ChapterSaveManager save)
@@ -75,7 +86,9 @@ public class GhostKeyPickup : MonoBehaviour, IInteractable
         if (GetComponent<InteractGlow>() == null)
             gameObject.AddComponent<InteractGlow>();
         FindFirstObjectByType<ParticleVFXController>()?.PlayGhostRevealBurst(transform.position);
-        Debug.Log("The Ghost Key gleams in the revealed alcove...");
+        FindFirstObjectByType<GameplayHUD>()?.ShowToast("The Ghost Key gleams in the alcove.", 3.5f);
+        FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.2f, 0.3f);
+        GameHaptics.KeyPickup();
     }
 
     public void Interact()

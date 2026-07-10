@@ -31,6 +31,12 @@ public class GameplayHUD : MonoBehaviour
     private GameObject interactButton;
     private GameObject useKeyButton;
     private Text roomTitleText;
+    private ToastPresenter toastPresenter;
+    private Image hintPanel;
+    private Image interactButtonImage;
+    private Color interactBaseColor = new(0.12f, 0.14f, 0.22f, 0.95f);
+    private Color interactHotColor = new(0.22f, 0.28f, 0.18f, 0.98f);
+    private float interactPulse;
 
     private void Awake()
     {
@@ -49,9 +55,36 @@ public class GameplayHUD : MonoBehaviour
         if (!TryLoadAuthoredHud())
             BuildCanvas();
 
+        EnsureToastPresenter();
+        EnsureButtonFeedback();
         EnsureS3Header();
         SyncRoomTitleFromScene();
         EnsureSaveDebugMenu();
+    }
+
+    private void EnsureToastPresenter()
+    {
+        if (toastText == null) return;
+        toastPresenter = toastText.GetComponent<ToastPresenter>();
+        if (toastPresenter == null)
+            toastPresenter = toastText.gameObject.AddComponent<ToastPresenter>();
+        toastPresenter.Bind(toastText);
+    }
+
+    private void EnsureButtonFeedback()
+    {
+        UIButtonFeedback.Ensure(leftButton);
+        UIButtonFeedback.Ensure(rightButton);
+        UIButtonFeedback.Ensure(jumpButton);
+        UIButtonFeedback.Ensure(interactButton);
+        UIButtonFeedback.Ensure(useKeyButton);
+
+        if (interactButton != null)
+        {
+            interactButtonImage = interactButton.GetComponent<Image>();
+            if (interactButtonImage != null)
+                interactBaseColor = interactButtonImage.color;
+        }
     }
 
     public void SetRoomTitle(string title)
@@ -94,6 +127,13 @@ public class GameplayHUD : MonoBehaviour
 
     public void ShowToast(string message, float duration = 3f)
     {
+        if (toastPresenter != null)
+        {
+            toastPresenter.Show(message, duration);
+            toastTimer = 0f;
+            return;
+        }
+
         if (toastText == null) return;
         toastText.text = message;
         toastText.gameObject.SetActive(true);
@@ -184,6 +224,26 @@ public class GameplayHUD : MonoBehaviour
             houseKeyIcon.gameObject.SetActive(gameplay.HasHouseKey);
             houseKeyIcon.sprite = iconLibrary.houseKeyIcon;
         }
+
+        // Pulse Interact button when something is in range.
+        var interaction = gameplay.interaction;
+        var canInteract = interaction != null
+            && interaction.NearestInteractable != null
+            && interaction.NearestInteractable.CanInteract;
+
+        if (interactButtonImage != null && interactButton != null && interactButton.activeSelf)
+        {
+            if (canInteract)
+            {
+                interactPulse += Time.deltaTime * 4.5f;
+                var k = 0.55f + Mathf.Sin(interactPulse) * 0.45f;
+                interactButtonImage.color = Color.Lerp(interactBaseColor, interactHotColor, k);
+            }
+            else
+            {
+                interactButtonImage.color = Color.Lerp(interactButtonImage.color, interactBaseColor, Time.deltaTime * 8f);
+            }
+        }
     }
 
     private Sprite ResolveActiveKeyIcon()
@@ -260,7 +320,7 @@ public class GameplayHUD : MonoBehaviour
         if (rightButton != null)
             WireHoldButton(rightButton, () => gameplay?.SetMoveInput(1f), () => gameplay?.SetMoveInput(0f));
         if (jumpButton != null)
-            WireTapButton(jumpButton, () => gameplay?.RequestJump());
+            WireJumpHold(jumpButton);
         if (interactButton != null)
             WireTapButton(interactButton, () => gameplay?.RequestInteract());
         if (useKeyButton != null)
@@ -284,6 +344,8 @@ public class GameplayHUD : MonoBehaviour
         if (button == null) return;
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(onTap);
+        UIButtonFeedback.Ensure(buttonGo);
+        ApplyButtonColors(button);
     }
 
     private static void WireHoldButton(GameObject buttonGo, UnityEngine.Events.UnityAction onDown,
@@ -296,6 +358,21 @@ public class GameplayHUD : MonoBehaviour
         hold.onUp.RemoveAllListeners();
         hold.onDown.AddListener(onDown);
         hold.onUp.AddListener(onUp);
+        UIButtonFeedback.Ensure(buttonGo);
+    }
+
+    private static void ApplyButtonColors(Button button)
+    {
+        if (button == null) return;
+        var colors = button.colors;
+        colors.normalColor = Color.white;
+        colors.highlightedColor = new Color(1f, 0.97f, 0.88f, 1f);
+        colors.pressedColor = new Color(0.85f, 0.82f, 0.7f, 1f);
+        colors.selectedColor = colors.highlightedColor;
+        colors.disabledColor = new Color(0.5f, 0.5f, 0.55f, 0.55f);
+        colors.fadeDuration = 0.08f;
+        button.colors = colors;
+        button.transition = Selectable.Transition.ColorTint;
     }
 
     private void BuildCanvas()
@@ -344,19 +421,44 @@ public class GameplayHUD : MonoBehaviour
             new Vector2(80f, -58f), new Vector2(contentW * 0.5f, 24f), LockeKeyUITheme.CaptionText);
         houseKeyText.gameObject.SetActive(false);
 
-        hintText = CreateText(canvasRoot, "Hint", font, LockeKeyUITheme.BodySize, TextAnchor.UpperCenter,
+        // Hint plate behind objective text
+        var hintPlate = CreatePanel(canvasRoot, "HintPlate", new Color(0.04f, 0.05f, 0.09f, 0.72f),
             new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-            new Vector2(0f, LockeKeyUITheme.ControlBarHeight + 12f),
-            new Vector2(contentW, 48f), LockeKeyUITheme.BodyText);
+            new Vector2(0f, LockeKeyUITheme.ControlBarHeight + 8f),
+            new Vector2(contentW, 52f));
+        var hintPlateRect = hintPlate.GetComponent<RectTransform>();
+        hintPlateRect.pivot = new Vector2(0.5f, 0f);
+        hintPanel = hintPlate.GetComponent<Image>();
+        var hintOutline = hintPlate.AddComponent<Outline>();
+        hintOutline.effectColor = new Color(LockeKeyUITheme.LKGold.r, LockeKeyUITheme.LKGold.g, LockeKeyUITheme.LKGold.b, 0.25f);
+        hintOutline.effectDistance = new Vector2(1f, -1f);
+
+        hintText = CreateText(hintPlate.transform, "Hint", font, LockeKeyUITheme.BodySize, TextAnchor.MiddleCenter,
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+            Vector2.zero, new Vector2(contentW - 16f, 48f), LockeKeyUITheme.BodyText);
+        var hintRect = hintText.GetComponent<RectTransform>();
+        hintRect.pivot = new Vector2(0.5f, 0.5f);
 
         toastText = CreateText(canvasRoot, "Toast", font, LockeKeyUITheme.BodySize, TextAnchor.MiddleCenter,
             new Vector2(0.5f, 0.72f), new Vector2(0.5f, 0.72f),
-            Vector2.zero, new Vector2(contentW - 24f, 44f), LockeKeyUITheme.LKGold);
-        toastText.gameObject.SetActive(false);
+            Vector2.zero, new Vector2(contentW - 24f, 48f), LockeKeyUITheme.LKGold);
+        toastText.gameObject.SetActive(true);
+        var toastBg = toastText.gameObject.AddComponent<Outline>();
+        toastBg.effectColor = new Color(0f, 0f, 0f, 0.65f);
+        toastBg.effectDistance = new Vector2(1.2f, -1.2f);
 
         var controlBar = CreatePanel(canvasRoot, "ControlBar", panelColor,
             new Vector2(0f, 0f), new Vector2(1f, 0f), Vector2.zero,
             new Vector2(0f, LockeKeyUITheme.ControlBarHeight));
+        var barTopLine = new GameObject("BarTopLine", typeof(RectTransform), typeof(Image));
+        barTopLine.transform.SetParent(controlBar.transform, false);
+        var lineRect = barTopLine.GetComponent<RectTransform>();
+        lineRect.anchorMin = new Vector2(0f, 1f);
+        lineRect.anchorMax = new Vector2(1f, 1f);
+        lineRect.pivot = new Vector2(0.5f, 1f);
+        lineRect.sizeDelta = new Vector2(0f, 2f);
+        barTopLine.GetComponent<Image>().color = new Color(LockeKeyUITheme.LKGold.r, LockeKeyUITheme.LKGold.g, LockeKeyUITheme.LKGold.b, 0.35f);
+        barTopLine.GetComponent<Image>().raycastTarget = false;
 
         float btn = LockeKeyUITheme.TouchButtonSize;
         float y = 18f;
@@ -379,10 +481,39 @@ public class GameplayHUD : MonoBehaviour
         useKeyButton = CreatePortraitTapButton(controlBar.transform, "UseKey", iconLibrary?.useKey, font,
             buttonColor, accentColor, anchors[4], y, btn, () => gameplay?.RequestUseKey());
 
+        // Jump held for variable jump cut
+        WireJumpHold(jumpButton);
+
         SetControlVisibility(interact: false, jump: false, useKey: false);
 
         memoryOverlay = BuildMemoryOverlay(canvasRoot, font, panelColor, accentColor);
         memoryOverlay.SetActive(false);
+
+        EnsureToastPresenter();
+        EnsureButtonFeedback();
+    }
+
+    private void WireJumpHold(GameObject jumpGo)
+    {
+        if (jumpGo == null) return;
+
+        // Prefer hold events so variable jump cut works; clear tap-to-jump to avoid double fire.
+        var button = jumpGo.GetComponent<Button>();
+        if (button != null)
+            button.onClick.RemoveAllListeners();
+
+        var hold = jumpGo.GetComponent<HoldButton>();
+        if (hold == null)
+            hold = jumpGo.AddComponent<HoldButton>();
+        hold.onDown.RemoveAllListeners();
+        hold.onUp.RemoveAllListeners();
+        hold.onDown.AddListener(() =>
+        {
+            gameplay?.RequestJump();
+            gameplay?.player?.SetJumpHeld(true);
+        });
+        hold.onUp.AddListener(() => gameplay?.player?.SetJumpHeld(false));
+        UIButtonFeedback.Ensure(jumpGo);
     }
 
     private static GameObject CreatePortraitTapButton(Transform parent, string label, Sprite icon, Font font,
@@ -554,8 +685,20 @@ public class GameplayHUD : MonoBehaviour
     private static void StyleTouchButton(Transform button, string label, Sprite icon, Font font, Color textColor)
     {
         var outline = button.gameObject.GetComponent<Outline>() ?? button.gameObject.AddComponent<Outline>();
-        outline.effectColor = new Color(LockeKeyUITheme.LKGold.r, LockeKeyUITheme.LKGold.g, LockeKeyUITheme.LKGold.b, 0.45f);
-        outline.effectDistance = new Vector2(1.5f, -1.5f);
+        outline.effectColor = new Color(LockeKeyUITheme.LKGold.r, LockeKeyUITheme.LKGold.g, LockeKeyUITheme.LKGold.b, 0.55f);
+        outline.effectDistance = new Vector2(1.8f, -1.8f);
+
+        // Soft inner plate so icons read clearly on dark bars
+        var plate = new GameObject("InnerPlate", typeof(RectTransform), typeof(Image));
+        plate.transform.SetParent(button, false);
+        plate.transform.SetAsFirstSibling();
+        var plateImg = plate.GetComponent<Image>();
+        plateImg.color = new Color(1f, 1f, 1f, 0.06f);
+        plateImg.raycastTarget = false;
+        var plateRect = plate.GetComponent<RectTransform>();
+        plateRect.anchorMin = new Vector2(0.08f, 0.08f);
+        plateRect.anchorMax = new Vector2(0.92f, 0.92f);
+        plateRect.offsetMin = plateRect.offsetMax = Vector2.zero;
 
         if (icon != null)
         {
@@ -565,10 +708,11 @@ public class GameplayHUD : MonoBehaviour
             iconImg.sprite = icon;
             iconImg.preserveAspect = true;
             iconImg.color = Color.white;
+            iconImg.raycastTarget = false;
 
             var iconRect = iconGo.GetComponent<RectTransform>();
-            iconRect.anchorMin = new Vector2(0.14f, 0.14f);
-            iconRect.anchorMax = new Vector2(0.86f, 0.86f);
+            iconRect.anchorMin = new Vector2(0.16f, 0.16f);
+            iconRect.anchorMax = new Vector2(0.84f, 0.84f);
             iconRect.offsetMin = iconRect.offsetMax = Vector2.zero;
         }
         else
@@ -577,6 +721,11 @@ public class GameplayHUD : MonoBehaviour
             CreateText(button, "Label", font, LockeKeyUITheme.CaptionSize + 1, TextAnchor.MiddleCenter,
                 Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, textColor).text = shortLabel;
         }
+
+        UIButtonFeedback.Ensure(button.gameObject);
+        var btn = button.GetComponent<Button>();
+        if (btn != null)
+            ApplyButtonColors(btn);
     }
 
     private static void SetStretch(RectTransform r)

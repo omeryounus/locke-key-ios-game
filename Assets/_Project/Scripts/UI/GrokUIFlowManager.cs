@@ -155,11 +155,37 @@ public class GrokUIFlowManager : MonoBehaviour
 
     public void ShowToast(string message)
     {
+        if (toastText == null || toastGroup == null) return;
         if (toastCoroutine != null) StopCoroutine(toastCoroutine);
         toastText.text = message;
-        toastGroup.alpha = 1f;
+        toastGroup.alpha = 0f;
         toastGroup.blocksRaycasts = false;
-        toastCoroutine = StartCoroutine(FadeOutToast(2.2f));
+        toastCoroutine = StartCoroutine(FadeInOutToast(2.4f));
+        GameHaptics.TriggerHapticLight();
+    }
+
+    private IEnumerator FadeInOutToast(float hold)
+    {
+        var t = 0f;
+        while (t < 0.18f)
+        {
+            t += Time.unscaledDeltaTime;
+            toastGroup.alpha = Mathf.SmoothStep(0f, 1f, t / 0.18f);
+            yield return null;
+        }
+
+        toastGroup.alpha = 1f;
+        yield return new WaitForSecondsRealtime(hold);
+        t = 0f;
+        while (t < 0.28f)
+        {
+            t += Time.unscaledDeltaTime;
+            toastGroup.alpha = Mathf.SmoothStep(1f, 0f, t / 0.28f);
+            yield return null;
+        }
+
+        toastGroup.alpha = 0f;
+        toastCoroutine = null;
     }
 
     public bool IsEquipped(string keyId) =>

@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Displays the premium key inventory slot with state-driven art.
+/// Displays the premium key inventory slot with state-driven art and active pulse.
 /// </summary>
 public class KeySlotHUD : MonoBehaviour
 {
@@ -21,6 +21,8 @@ public class KeySlotHUD : MonoBehaviour
 
     private SlotState state = SlotState.Empty;
     private float discoveredTimer;
+    private Vector3 baseScale = Vector3.one;
+    private Outline glow;
 
     private void Awake()
     {
@@ -30,6 +32,12 @@ public class KeySlotHUD : MonoBehaviour
             keyManager = FindFirstObjectByType<KeyManager>();
         if (slotImage == null)
             slotImage = GetComponent<Image>();
+        baseScale = transform.localScale;
+        glow = GetComponent<Outline>();
+        if (glow == null)
+            glow = gameObject.AddComponent<Outline>();
+        glow.effectColor = new Color(LockeKeyUITheme.LKGold.r, LockeKeyUITheme.LKGold.g, LockeKeyUITheme.LKGold.b, 0.35f);
+        glow.effectDistance = new Vector2(2f, -2f);
     }
 
     private void Update()
@@ -37,8 +45,27 @@ public class KeySlotHUD : MonoBehaviour
         if (discoveredTimer > 0f)
         {
             discoveredTimer -= Time.deltaTime;
+            var pulse = 1f + Mathf.Sin(Time.time * 10f) * 0.08f;
+            transform.localScale = baseScale * pulse;
             if (discoveredTimer <= 0f)
+            {
+                transform.localScale = baseScale;
                 Refresh();
+            }
+        }
+        else if (state is SlotState.GhostActive or SlotState.HeadActive)
+        {
+            var pulse = 1f + Mathf.Sin(Time.time * 3.2f) * 0.035f;
+            transform.localScale = baseScale * pulse;
+            if (glow != null)
+            {
+                var a = 0.35f + Mathf.Sin(Time.time * 3.2f) * 0.2f;
+                glow.effectColor = new Color(LockeKeyUITheme.LKGold.r, LockeKeyUITheme.LKGold.g, LockeKeyUITheme.LKGold.b, a);
+            }
+        }
+        else
+        {
+            transform.localScale = Vector3.Lerp(transform.localScale, baseScale, Time.deltaTime * 10f);
         }
     }
 
@@ -46,6 +73,7 @@ public class KeySlotHUD : MonoBehaviour
     {
         discoveredTimer = duration;
         Apply(SlotState.Discovered);
+        GameHaptics.KeyPickup();
     }
 
     public void SetCooldown(bool onCooldown)
@@ -93,5 +121,6 @@ public class KeySlotHUD : MonoBehaviour
             _ => library.empty
         };
         slotImage.enabled = slotImage.sprite != null;
+        slotImage.color = Color.white;
     }
 }

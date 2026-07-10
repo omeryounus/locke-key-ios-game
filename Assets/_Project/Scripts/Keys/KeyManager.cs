@@ -127,15 +127,18 @@ public class KeyManager : MonoBehaviour
     /// </summary>
     public void UseActiveKey()
     {
+        var hud = FindFirstObjectByType<GameplayHUD>();
+
         if (currentActiveKey == null)
         {
-            Debug.LogWarning("No key selected!");
+            hud?.ShowToast("No key equipped. Open Key Ring to equip one.", 2.8f);
+            GameHaptics.TriggerHapticLight();
             return;
         }
 
         if (currentActiveKey.usesRemaining == 0)
         {
-            Debug.Log("This key has no uses left.");
+            hud?.ShowToast("This key has no uses left.", 2.5f);
             return;
         }
 
@@ -144,15 +147,15 @@ public class KeyManager : MonoBehaviour
             var sealedDoor = FindFirstObjectByType<SealedDoorPuzzle>();
             if (sealedDoor != null && !sealedDoor.isSolved && !sealedDoor.IsPlayerInRange())
             {
-                Debug.Log("Move closer to the sealed door before using the Ghost Key.");
+                hud?.ShowToast("Move closer to the sealed door, then Use Key.", 3f);
+                FindFirstObjectByType<GameAudioController>()?.PlayDoorRattle();
                 return;
             }
         }
 
-        // Trigger the specific ability
         ActivateAbility(currentActiveKey.abilityType);
+        GameHaptics.TriggerHapticLight();
 
-        // Handle uses and risk
         if (currentActiveKey.usesRemaining > 0)
             currentActiveKey.usesRemaining--;
 
@@ -160,10 +163,7 @@ public class KeyManager : MonoBehaviour
         if (currentActiveKey.hasRisk && currentActiveKey.abilityType != KeyAbilityType.GhostPhase)
             CheckForHorrorConsequence(currentActiveKey.riskLevel);
 
-        // Notify listeners (puzzle system, horror manager, etc.)
         OnKeyUsed?.Invoke(currentActiveKey);
-
-        // Cooldown handling would go here in a full implementation
     }
 
     private void ActivateAbility(KeyAbilityType ability)

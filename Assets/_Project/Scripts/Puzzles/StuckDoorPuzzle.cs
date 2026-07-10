@@ -11,10 +11,12 @@ public class StuckDoorPuzzle : PuzzleBase
     [SerializeField] private SpriteRenderer doorRenderer;
     [SerializeField] private PlayerInventory playerInventory;
     [SerializeField] private Light2D warmLeakLight;
-    [SerializeField] private float unlockDuration = 0.9f;
+    [SerializeField] private float unlockDuration = 0.95f;
 
     private bool animating;
     private Vector3 doorBasePos;
+
+    public override bool CanInteract => !isSolved && !animating;
 
     public override string InteractionHint =>
         isSolved
@@ -50,7 +52,6 @@ public class StuckDoorPuzzle : PuzzleBase
         if (isSolved || animating) return;
 
         // If FlowManager present: always open the S5 lock sheet.
-        // The sheet handles State A (no/wrong key) and State B (correct key) internally.
         if (GrokUIFlowManager.Instance != null)
         {
             GrokUIFlowManager.Instance.ShowLock(
@@ -59,11 +60,11 @@ public class StuckDoorPuzzle : PuzzleBase
             return;
         }
 
-        // Fallback: legacy behaviour (no FlowManager, e.g. unit tests).
         if (playerInventory == null || !playerInventory.HasHouseKey)
         {
             StartCoroutine(RattleDoor());
             FindFirstObjectByType<GameAudioController>()?.PlayDoorRattle();
+            FindFirstObjectByType<GameplayHUD>()?.ShowToast("The door won't budge without a key.", 2.5f);
             return;
         }
 
@@ -80,17 +81,28 @@ public class StuckDoorPuzzle : PuzzleBase
         if (warmLeakLight != null)
             warmLeakLight.intensity = 0.75f;
         transform.position = doorBasePos + Vector3.right * 0.18f;
+        if (doorRenderer != null)
+            doorRenderer.color = new Color(0.55f, 0.42f, 0.3f, 0.45f);
     }
 
     private IEnumerator RattleDoor()
     {
         animating = true;
+        GameHaptics.TriggerHapticLight();
+        FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.1f, 0.2f);
+
         var elapsed = 0f;
-        while (elapsed < 0.35f)
+        while (elapsed < 0.4f)
         {
             elapsed += Time.deltaTime;
-            var shake = Mathf.Sin(elapsed * 42f) * 0.04f;
+            var shake = Mathf.Sin(elapsed * 48f) * 0.05f * (1f - elapsed / 0.4f);
             transform.position = doorBasePos + Vector3.right * shake;
+            if (doorRenderer != null)
+            {
+                var c = doorRenderer.color;
+                doorRenderer.color = new Color(c.r, c.g * 0.95f, c.b * 0.9f, c.a);
+            }
+
             yield return null;
         }
 
@@ -101,22 +113,26 @@ public class StuckDoorPuzzle : PuzzleBase
     private IEnumerator UnlockSequence()
     {
         animating = true;
+        FindFirstObjectByType<GameAudioController>()?.PlayDoorUnlock();
+        GameHaptics.Unlock();
+        FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.18f, 0.35f);
+
         var startColor = doorRenderer != null ? doorRenderer.color : Color.white;
         var elapsed = 0f;
 
         while (elapsed < unlockDuration)
         {
             elapsed += Time.deltaTime;
-            var t = elapsed / unlockDuration;
-            transform.position = doorBasePos + Vector3.right * Mathf.Lerp(0f, 0.18f, t);
+            var t = Mathf.SmoothStep(0f, 1f, elapsed / unlockDuration);
+            // Ease-out slide with soft settle
+            var slide = Mathf.Lerp(0f, 0.2f, t) - Mathf.Sin(t * Mathf.PI) * 0.02f;
+            transform.position = doorBasePos + Vector3.right * slide;
 
             if (doorRenderer != null)
-            {
                 doorRenderer.color = Color.Lerp(startColor, new Color(0.55f, 0.42f, 0.3f, 0.45f), t);
-            }
 
             if (warmLeakLight != null)
-                warmLeakLight.intensity = Mathf.Lerp(0f, 0.75f, t);
+                warmLeakLight.intensity = Mathf.Lerp(0f, 0.85f, t);
 
             yield return null;
         }
@@ -124,8 +140,8 @@ public class StuckDoorPuzzle : PuzzleBase
         if (doorCollider != null)
             doorCollider.enabled = false;
 
+        FindFirstObjectByType<GameplayHUD>()?.ShowToast("Warm light spills from the library beyond.", 3.2f);
         MarkAsSolved();
         animating = false;
-        Debug.Log("Warm light spills from the library beyond.");
     }
 }

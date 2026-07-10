@@ -120,7 +120,13 @@ public class TouchGameplayController : MonoBehaviour
         }
 
         if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
+        {
             jumpRequested = true;
+            player?.SetJumpHeld(true);
+        }
+
+        if (Input.GetKeyUp(KeyCode.Space) || Input.GetKeyUp(KeyCode.W) || Input.GetKeyUp(KeyCode.UpArrow))
+            player?.SetJumpHeld(false);
 
         if (Input.GetKeyDown(KeyCode.E))
             interactRequested = true;

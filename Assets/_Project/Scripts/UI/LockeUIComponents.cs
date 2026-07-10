@@ -63,6 +63,7 @@ public static class LockeUIComponents
         var btn = go.GetComponent<Button>();
         btn.targetGraphic = img;
         if (onClick != null) btn.onClick.AddListener(onClick);
+        ApplyProductionButton(btn, go);
         AddButtonLabel(go.transform, font, label, LockeKeyUITheme.ButtonOnGold);
         return btn;
     }
@@ -78,17 +79,33 @@ public static class LockeUIComponents
         rect.pivot = new Vector2(0.5f, 0.5f);
         rect.sizeDelta = new Vector2(width, LockeKeyUITheme.PrimaryButtonHeight);
         var img = go.GetComponent<Image>();
-        img.color = new Color(0f, 0f, 0f, 0.15f);
+        img.color = new Color(0.08f, 0.09f, 0.14f, 0.92f);
         var btn = go.GetComponent<Button>();
         btn.targetGraphic = img;
         if (onClick != null) btn.onClick.AddListener(onClick);
 
         var outline = go.AddComponent<Outline>();
         outline.effectColor = LockeKeyUITheme.LKGold;
-        outline.effectDistance = new Vector2(1f, -1f);
+        outline.effectDistance = new Vector2(1.5f, -1.5f);
 
+        ApplyProductionButton(btn, go);
         AddButtonLabel(go.transform, font, label, LockeKeyUITheme.LKGold);
         return btn;
+    }
+
+    private static void ApplyProductionButton(Button btn, GameObject go)
+    {
+        if (btn == null) return;
+        var colors = btn.colors;
+        colors.normalColor = Color.white;
+        colors.highlightedColor = new Color(1f, 0.97f, 0.9f, 1f);
+        colors.pressedColor = new Color(0.82f, 0.78f, 0.65f, 1f);
+        colors.selectedColor = colors.highlightedColor;
+        colors.disabledColor = new Color(0.45f, 0.45f, 0.5f, 0.5f);
+        colors.fadeDuration = 0.08f;
+        btn.colors = colors;
+        btn.transition = Selectable.Transition.ColorTint;
+        UIButtonFeedback.Ensure(go);
     }
 
     public static (Button cardBtn, GameObject lockIcon, Image border) CreateChapterCard(
@@ -148,6 +165,7 @@ public static class LockeUIComponents
         var btn = cardGo.GetComponent<Button>();
         btn.interactable = unlocked;
         if (onClick != null) btn.onClick.AddListener(onClick);
+        ApplyProductionButton(btn, cardGo);
         return (btn, lockGo, border);
     }
 
@@ -263,7 +281,9 @@ public static class LockeUIComponents
         rect.sizeDelta = new Vector2(72f, 0f);
         rect.anchoredPosition = new Vector2(left ? 8f : -8f, 0f);
         go.GetComponent<Image>().color = new Color(0.14f, 0.16f, 0.24f, 0.9f);
-        go.GetComponent<Button>().onClick.AddListener(onClick);
+        var navBtn = go.GetComponent<Button>();
+        navBtn.onClick.AddListener(onClick);
+        ApplyProductionButton(navBtn, go);
         AddText(go.transform, "Label", font, 15, FontStyle.Bold,
             left ? LockeKeyUITheme.BodyText : LockeKeyUITheme.LKGold,
             new Vector2(0.5f, 0.5f), label, new Vector2(64f, 32f), TextAnchor.MiddleCenter);

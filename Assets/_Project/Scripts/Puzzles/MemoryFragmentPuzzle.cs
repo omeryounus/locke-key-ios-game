@@ -33,14 +33,31 @@ public class MemoryFragmentPuzzle : PuzzleBase
 
     protected override void TrySolve()
     {
+        var hud = FindFirstObjectByType<GameplayHUD>();
+        var keyManager = FindFirstObjectByType<KeyManager>();
+        var hasHead = keyManager != null && keyManager.ownedKeys
+            .Exists(k => k.abilityType == KeyManager.KeyAbilityType.HeadMemory);
+
+        if (!hasHead)
+        {
+            hud?.ShowToast("The portrait hums... it wants the Head Key.", 3f);
+            FindFirstObjectByType<GameAudioController>()?.PlayDoorRattle();
+            OnPuzzleFailed();
+            return;
+        }
+
         var headKey = FindFirstObjectByType<HeadKey>();
         if (headKey == null || !headKey.CanActivate())
         {
+            hud?.ShowToast("The Head Key is cooling down.", 2.5f);
             OnPuzzleFailed();
             return;
         }
 
         headKey.Activate();
+        FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.3f, 0.4f);
+        GameHaptics.PhaseStart();
+        FindFirstObjectByType<GameAudioController>()?.PlayMemoryTransition();
 
         var touchController = FindFirstObjectByType<TouchGameplayController>();
         if (touchController != null)
@@ -56,6 +73,8 @@ public class MemoryFragmentPuzzle : PuzzleBase
         if (portraitRenderer != null)
             portraitRenderer.color = new Color(0.75f, 0.55f, 0.95f, 1f);
 
+        FindFirstObjectByType<GameplayHUD>()?.ShowToast("A memory locks into place.", 3f);
+        FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.18f, 0.25f);
         MarkAsSolved();
     }
 }

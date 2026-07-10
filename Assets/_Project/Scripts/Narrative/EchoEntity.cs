@@ -77,7 +77,9 @@ public class EchoEntity : MonoBehaviour
     {
         if (!active) return;
 
-        transform.localScale = Vector3.Lerp(transform.localScale, Vector3.one * 0.9f, Time.deltaTime * 3f);
+        // Materialize with ease-out scale, slight chase swell
+        var targetScale = currentState == AIState.Chase ? 1.05f : 0.92f;
+        transform.localScale = Vector3.Lerp(transform.localScale, Vector3.one * targetScale, Time.deltaTime * 3.5f);
         lifeTimer -= Time.deltaTime;
 
         if (player == null || lifeTimer <= 0f)
@@ -122,15 +124,24 @@ public class EchoEntity : MonoBehaviour
 
         if (spriteRenderer != null)
         {
-            float alpha = 0.18f;
+            float alpha = 0.22f;
+            Color tint = new(0.55f, 0.12f, 0.2f, 1f);
             if (currentState == AIState.Chase)
-                alpha = 0.35f + Mathf.PingPong(Time.time * 2f, 0.25f);
+            {
+                alpha = 0.42f + Mathf.PingPong(Time.time * 3.2f, 0.35f);
+                tint = new Color(0.75f, 0.08f, 0.14f, 1f);
+            }
             else if (currentState == AIState.Investigate)
-                alpha = 0.25f + Mathf.PingPong(Time.time * 0.8f, 0.15f);
+            {
+                alpha = 0.3f + Mathf.PingPong(Time.time * 1.1f, 0.18f);
+                tint = new Color(0.6f, 0.15f, 0.28f, 1f);
+            }
             else if (currentState == AIState.Stunned)
-                alpha = 0.12f;
+                alpha = 0.14f;
 
-            spriteRenderer.color = new Color(0.55f, 0.1f, 0.18f, alpha);
+            spriteRenderer.color = new Color(tint.r, tint.g, tint.b, alpha);
+            if (player != null)
+                spriteRenderer.flipX = player.position.x < transform.position.x;
         }
 
         if (!hasCaughtPlayer

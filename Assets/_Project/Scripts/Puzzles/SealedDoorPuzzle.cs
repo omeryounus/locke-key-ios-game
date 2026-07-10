@@ -64,7 +64,15 @@ public class SealedDoorPuzzle : PuzzleBase
     public override void Interact()
     {
         if (isSolved) return;
-        Debug.Log("The door is sealed by old magic. Stand close and tap Use Key.");
+        var hud = FindFirstObjectByType<GameplayHUD>();
+        var hasGhost = FindFirstObjectByType<KeyManager>()?.ownedKeys
+            .Exists(k => k.abilityType == KeyManager.KeyAbilityType.GhostPhase) == true;
+        if (!hasGhost)
+            hud?.ShowToast("Sealed by old magic. Something that phases might pass...", 3f);
+        else
+            hud?.ShowToast("Stand close and tap Use Key to phase through.", 3f);
+        FindFirstObjectByType<GameAudioController>()?.PlayDoorRattle();
+        GameHaptics.TriggerHapticLight();
     }
 
     protected override void TrySolve() { }
@@ -115,7 +123,8 @@ public class SealedDoorPuzzle : PuzzleBase
         if (passageTrigger != null)
             passageTrigger.SetActive(true);
 
-        Debug.Log("You phase through the sealed door...");
+        FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.25f, 0.4f);
+        FindFirstObjectByType<GameplayHUD>()?.ShowToast("The seal softens — step through now!", 2.8f);
     }
 
     private void HandleGhostPhaseEnded()
@@ -128,12 +137,18 @@ public class SealedDoorPuzzle : PuzzleBase
             MarkAsSolved();
             if (doorRenderer != null)
                 doorRenderer.color = new Color(0.3f, 0.55f, 0.42f, 0.35f);
+            GameHaptics.Unlock();
+            FindFirstObjectByType<GameplayHUD>()?.ShowToast("You pass through the sealed door.", 3f);
+            FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.2f, 0.3f);
             return;
         }
 
         EndShimmer();
         ResealDoor();
-        Debug.Log("The sealed door snaps shut — you must phase all the way through.");
+        FindFirstObjectByType<GameplayHUD>()?.ShowToast("The seal snaps shut — phase all the way through.", 3.2f);
+        FindFirstObjectByType<GameAudioController>()?.PlayDoorRattle();
+        GameHaptics.TriggerHapticStall();
+        FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.15f, 0.22f);
     }
 
     public override void RestoreSolvedState()

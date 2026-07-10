@@ -14,6 +14,8 @@ public class HeadKeyPickup : MonoBehaviour, IInteractable
     private bool isAvailable;
     private bool collected;
     private EventBus eventBus;
+    private Vector3 basePos;
+    private float bobPhase;
 
     public bool CanInteract => isAvailable && !collected;
 
@@ -31,7 +33,16 @@ public class HeadKeyPickup : MonoBehaviour, IInteractable
         if (eventBus != null)
             eventBus.OnPuzzleSolved += HandlePuzzleSolved;
 
+        basePos = transform.position;
         SetVisible(false);
+    }
+
+    private void Update()
+    {
+        if (!isAvailable || collected) return;
+        bobPhase += Time.deltaTime * 2.4f;
+        transform.position = basePos + Vector3.up * (Mathf.Sin(bobPhase) * 0.07f);
+        transform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(bobPhase * 0.85f) * 7f);
     }
 
     public void RestoreFromSave(ChapterSaveManager save)
@@ -65,7 +76,11 @@ public class HeadKeyPickup : MonoBehaviour, IInteractable
 
         isAvailable = true;
         SetVisible(true);
-        Debug.Log("The Head Key glimmers beyond the sealed passage...");
+        if (GetComponent<InteractGlow>() == null)
+            gameObject.AddComponent<InteractGlow>();
+        FindFirstObjectByType<GameplayHUD>()?.ShowToast("The Head Key glimmers beyond the passage.", 3.5f);
+        FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.18f, 0.28f);
+        GameHaptics.KeyPickup();
     }
 
     public void Interact()

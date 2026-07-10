@@ -1,18 +1,23 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Screen-edge desaturation and player transparency during Ghost Key phase (Beat 4).
+/// Screen vignette + player transparency during Ghost Key phase.
 /// </summary>
 public class GhostPhaseVFX : MonoBehaviour
 {
     [SerializeField] private PlayerController player;
     [SerializeField] private SpriteRenderer playerRenderer;
     [SerializeField] private Color ghostTint = new(0.65f, 0.85f, 1f, 0.45f);
+    [SerializeField] private float fadeSpeed = 5f;
 
     private EventBus eventBus;
     private Image vignette;
+    private CanvasGroup vignetteGroup;
     private Color normalPlayerColor = Color.white;
+    private bool active;
+    private Coroutine fadeRoutine;
 
     private void Awake()
     {
@@ -32,7 +37,7 @@ public class GhostPhaseVFX : MonoBehaviour
         }
 
         BuildVignette();
-        DisableVfx();
+        SetVignetteAlpha(0f);
     }
 
     private void OnDestroy()
@@ -44,20 +49,67 @@ public class GhostPhaseVFX : MonoBehaviour
 
     private void EnableVfx()
     {
+        active = true;
         if (vignette != null)
             vignette.gameObject.SetActive(true);
 
-        if (playerRenderer != null)
-            playerRenderer.color = ghostTint;
+        if (fadeRoutine != null)
+            StopCoroutine(fadeRoutine);
+        fadeRoutine = StartCoroutine(FadeVignette(0.62f));
     }
 
     private void DisableVfx()
     {
+        active = false;
+        if (fadeRoutine != null)
+            StopCoroutine(fadeRoutine);
+        fadeRoutine = StartCoroutine(FadeOutAndHide());
+
+        // Let PlayerSpriteAnimator own final color if present.
+        if (playerRenderer != null && (player == null || player.GetComponent<PlayerSpriteAnimator>() == null))
+            playerRenderer.color = normalPlayerColor;
+    }
+
+    private void Update()
+    {
+        if (!active || playerRenderer == null) return;
+        // Soft ethereal flicker (animator also tints; this reinforces if animator missing)
+        if (player != null && player.GetComponent<PlayerSpriteAnimator>() != null) return;
+        var flicker = 0.48f + Mathf.Sin(Time.time * 8f) * 0.12f;
+        playerRenderer.color = new Color(ghostTint.r, ghostTint.g, ghostTint.b, flicker);
+    }
+
+    private IEnumerator FadeVignette(float target)
+    {
+        var start = vignetteGroup != null ? vignetteGroup.alpha : 0f;
+        var t = 0f;
+        while (t < 1f)
+        {
+            t += Time.deltaTime * fadeSpeed;
+            SetVignetteAlpha(Mathf.Lerp(start, target, Mathf.SmoothStep(0f, 1f, t)));
+            yield return null;
+        }
+
+        SetVignetteAlpha(target);
+        fadeRoutine = null;
+    }
+
+    private IEnumerator FadeOutAndHide()
+    {
+        yield return FadeVignette(0f);
         if (vignette != null)
             vignette.gameObject.SetActive(false);
+    }
 
-        if (playerRenderer != null)
-            playerRenderer.color = normalPlayerColor;
+    private void SetVignetteAlpha(float a)
+    {
+        if (vignetteGroup != null)
+            vignetteGroup.alpha = a;
+        else if (vignette != null)
+        {
+            var c = vignette.color;
+            vignette.color = new Color(c.r, c.g, c.b, a);
+        }
     }
 
     private void BuildVignette()
@@ -65,11 +117,16 @@ public class GhostPhaseVFX : MonoBehaviour
         var canvas = FindFirstObjectByType<Canvas>();
         if (canvas == null) return;
 
-        var go = new GameObject("GhostPhaseVignette", typeof(RectTransform), typeof(Image));
+        var go = new GameObject("GhostPhaseVignette", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
         go.transform.SetParent(canvas.transform, false);
+        go.transform.SetAsLastSibling();
         vignette = go.GetComponent<Image>();
-        vignette.color = new Color(0.02f, 0.04f, 0.08f, 0.55f);
+        vignette.color = new Color(0.02f, 0.05f, 0.1f, 1f);
         vignette.raycastTarget = false;
+        vignetteGroup = go.GetComponent<CanvasGroup>();
+        vignetteGroup.blocksRaycasts = false;
+        vignetteGroup.interactable = false;
+        vignetteGroup.alpha = 0f;
 
         var rect = go.GetComponent<RectTransform>();
         rect.anchorMin = Vector2.zero;

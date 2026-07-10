@@ -60,9 +60,24 @@ public class GameBootstrap : MonoBehaviour
     private static void EnsurePlayerAnimator()
     {
         var player = FindFirstObjectByType<PlayerController>();
-        if (player == null || player.GetComponent<PlayerSpriteAnimator>() != null)
-            return;
-        player.gameObject.AddComponent<PlayerSpriteAnimator>();
+        if (player == null) return;
+
+        if (player.GetComponent<PlayerSpriteAnimator>() == null)
+            player.gameObject.AddComponent<PlayerSpriteAnimator>();
+
+        if (player.GetComponent<GhostPhaseVFX>() == null)
+            player.gameObject.AddComponent<GhostPhaseVFX>();
+
+        // Tighten rigidbody defaults for mobile feel
+        var rb = player.GetComponent<Rigidbody2D>();
+        if (rb != null)
+        {
+            rb.interpolation = RigidbodyInterpolation2D.Interpolate;
+            rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+            rb.freezeRotation = true;
+            if (rb.gravityScale < 2f)
+                rb.gravityScale = 2.4f;
+        }
     }
 
     private static void EnsureRoomZones()
@@ -101,24 +116,29 @@ public class GameBootstrap : MonoBehaviour
     private void Start()
     {
         Debug.Log("Locke & Key: Chapter 1 — Welcome to Keyhouse");
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        // Diagnostics only in editor/dev builds — avoid log spam on production devices.
         StartCoroutine(LogDiagnosticsRoutine());
+#endif
     }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
     private System.Collections.IEnumerator LogDiagnosticsRoutine()
     {
         while (true)
         {
-            yield return new WaitForSecondsRealtime(1.0f);
-            
+            yield return new WaitForSecondsRealtime(5.0f);
+
             var player = FindFirstObjectByType<PlayerController>();
             var gameplay = FindFirstObjectByType<TouchGameplayController>();
             if (player != null && gameplay != null)
             {
                 var rb = player.GetComponent<Rigidbody2D>();
-                Debug.Log($"[DiagLoop] Player Pos: {player.transform.position}, Vel: {(rb != null ? rb.linearVelocity.ToString() : "null")}, MoveInput: {gameplay.MoveInput}, InputLocked: {gameplay.GetKeyStatusLabel()} / {gameplay.GetHouseKeyLabel()}");
+                Debug.Log($"[Diag] pos={player.transform.position} vel={(rb != null ? rb.linearVelocity.ToString() : "null")} move={gameplay.MoveInput}");
             }
         }
     }
+#endif
 
     private void OnDestroy()
     {
