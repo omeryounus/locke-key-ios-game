@@ -39,8 +39,9 @@ public class PlayerVisibilityBoost : MonoBehaviour
 
     private void LateUpdate()
     {
+        var pcMain = GetComponent<PlayerController>();
         // Keep brightness unless ghosting
-        if (body != null && !GetComponent<PlayerController>().IsGhostPhasing)
+        if (body != null && (pcMain == null || !pcMain.IsGhostPhasing))
         {
             var c = body.color;
             if (c.r < 0.9f || c.g < 0.9f || c.b < 0.9f)
