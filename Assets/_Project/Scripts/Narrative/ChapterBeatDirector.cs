@@ -144,12 +144,17 @@ public class ChapterBeatDirector : MonoBehaviour
         {
             case Beat.Arrival:
                 hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: false);
-                hud?.ShowToast("Walk to the glowing House Key and tap Interact.", 4.5f);
+                // Objective tracker + world guide handle permanent guidance; short toast only.
+                if (announce)
+                    hud?.ShowToast("Follow the trail to the House Key.", 2.8f);
                 break;
             case Beat.StuckDoor:
                 hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: false);
                 if (announce)
-                    hud?.ShowToast("Now walk to the front door and tap Interact.", 4f);
+                {
+                    hud?.ShowToast("Walk to the highlighted Front Door.", 3f);
+                    hud?.FlashInteractButton(1.5f);
+                }
                 break;
             case Beat.Library:
                 hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: false);

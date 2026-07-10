@@ -2,13 +2,13 @@ using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
 /// <summary>
-/// Soft glow pulse on the nearest interactable (color + optional Light2D).
+/// Soft glow pulse on the nearest interactable (color + Light2D).
 /// Does not fight host scale animations (keys already bob).
 /// </summary>
 public class InteractableHighlight : MonoBehaviour
 {
-    [SerializeField] private float pulseSpeed = 4.2f;
-    [SerializeField] private Color highlightTint = new(1f, 0.94f, 0.72f, 1f);
+    [SerializeField] private float pulseSpeed = 4.8f;
+    [SerializeField] private Color highlightTint = new(1f, 0.92f, 0.55f, 1f);
 
     private SpriteRenderer spriteRenderer;
     private Color baseColor = Color.white;
@@ -45,7 +45,7 @@ public class InteractableHighlight : MonoBehaviour
             boostLight.lightType = Light2D.LightType.Point;
             boostLight.color = highlightTint;
             boostLight.pointLightInnerRadius = 0.05f;
-            boostLight.pointLightOuterRadius = 1.4f;
+            boostLight.pointLightOuterRadius = 1.8f;
             boostLight.intensity = 0f;
         }
     }
@@ -55,13 +55,13 @@ public class InteractableHighlight : MonoBehaviour
         if (!active) return;
 
         phase += Time.deltaTime * pulseSpeed;
-        var mix = 0.45f + Mathf.Sin(phase) * 0.35f;
+        var mix = 0.55f + Mathf.Sin(phase) * 0.4f;
 
         if (spriteRenderer != null)
             spriteRenderer.color = Color.Lerp(baseColor, highlightTint, mix);
 
         if (boostLight != null)
-            boostLight.intensity = 0.35f + Mathf.Sin(phase * 1.2f) * 0.35f;
+            boostLight.intensity = 0.55f + Mathf.Sin(phase * 1.2f) * 0.45f;
     }
 
     private void OnDisable() => Restore();
@@ -70,12 +70,8 @@ public class InteractableHighlight : MonoBehaviour
     {
         if (spriteRenderer != null)
             spriteRenderer.color = baseColor;
-        if (boostLight != null)
-        {
-            if (ownsBoostLight)
-                boostLight.intensity = 0f;
-        }
-
+        if (boostLight != null && ownsBoostLight)
+            boostLight.intensity = 0f;
         phase = 0f;
     }
 

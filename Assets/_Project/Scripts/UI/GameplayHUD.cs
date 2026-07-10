@@ -34,9 +34,13 @@ public class GameplayHUD : MonoBehaviour
     private ToastPresenter toastPresenter;
     private Image hintPanel;
     private Image interactButtonImage;
-    private Color interactBaseColor = new(0.12f, 0.14f, 0.22f, 0.95f);
-    private Color interactHotColor = new(0.22f, 0.28f, 0.18f, 0.98f);
+    private Color interactBaseColor = new(0.12f, 0.14f, 0.22f, 0.72f);
+    private Color interactHotColor = new(0.85f, 0.72f, 0.28f, 0.95f);
     private float interactPulse;
+    private float interactFlashTimer;
+    private AccessibilitySettingsPanel settingsPanel;
+    private Text worldTooltip;
+    private Transform canvasContentRoot;
 
     private void Awake()
     {
@@ -58,8 +62,92 @@ public class GameplayHUD : MonoBehaviour
         EnsureToastPresenter();
         EnsureButtonFeedback();
         EnsureS3Header();
+        EnsureModernOverlays();
         SyncRoomTitleFromScene();
         EnsureSaveDebugMenu();
+        ApplyLeftHandedLayout();
+    }
+
+    private void EnsureModernOverlays()
+    {
+        var canvas = GameObject.Find("GameplayCanvas");
+        if (canvas == null) return;
+        var content = canvas.transform.Find("Viewport/Content");
+        canvasContentRoot = content != null ? content : canvas.transform;
+        var font = LockeUILayout.GetUIFont();
+
+        ObjectiveTrackerHUD.Ensure(canvasContentRoot, font);
+        InventoryStripHUD.Ensure(canvasContentRoot, font);
+        MiniMapHUD.Ensure(canvasContentRoot, font);
+        settingsPanel = AccessibilitySettingsPanel.Ensure(canvasContentRoot, font);
+
+        // Hide legacy yellow-ish bottom hint plate — objective tracker replaces it.
+        if (hintPanel != null)
+            hintPanel.gameObject.SetActive(false);
+        if (hintText != null)
+            hintText.gameObject.SetActive(false);
+
+        // Gear button for settings
+        EnsureSettingsButton(canvasContentRoot, font);
+
+        // World tooltip host
+        if (worldTooltip == null)
+        {
+            worldTooltip = CreateText(canvasContentRoot, "WorldTooltip", font, 13, TextAnchor.MiddleCenter,
+                new Vector2(0.5f, 0.42f), new Vector2(0.5f, 0.42f),
+                Vector2.zero, new Vector2(280f, 36f), Color.white);
+            worldTooltip.gameObject.SetActive(false);
+        }
+    }
+
+    private void EnsureSettingsButton(Transform root, Font font)
+    {
+        if (root.Find("SettingsBtn") != null) return;
+        var btn = LockeUIComponents.CreateSecondaryButton(root, font, "⚙",
+            new Vector2(0.08f, 0.94f), () => settingsPanel?.Show(), 44f);
+        btn.name = "SettingsBtn";
+    }
+
+    public void FlashInteractButton(float duration = 1.5f)
+    {
+        interactFlashTimer = duration;
+        if (interactButton != null)
+            interactButton.SetActive(true);
+    }
+
+    public void ApplyLeftHandedLayout()
+    {
+        if (leftButton == null || rightButton == null) return;
+        // Swap move cluster and action cluster sides for left-handed thumbs.
+        bool left = GameSettings.LeftHanded;
+        SetButtonAnchor(leftButton, left ? 0.9f : 0.12f);
+        SetButtonAnchor(rightButton, left ? 0.72f : 0.28f);
+        SetButtonAnchor(jumpButton, left ? 0.28f : 0.55f);
+        SetButtonAnchor(interactButton, left ? 0.12f : 0.75f);
+        SetButtonAnchor(useKeyButton, left ? 0.12f : 0.92f, yExtra: 78f);
+    }
+
+    private static void SetButtonAnchor(GameObject go, float x, float yExtra = 22f)
+    {
+        if (go == null) return;
+        var rect = go.GetComponent<RectTransform>();
+        if (rect == null) return;
+        rect.anchorMin = rect.anchorMax = new Vector2(x, 0f);
+        rect.pivot = new Vector2(0.5f, 0f);
+        rect.anchoredPosition = new Vector2(0f, yExtra);
+    }
+
+    public void SetWorldTooltip(string text)
+    {
+        if (worldTooltip == null) return;
+        if (string.IsNullOrEmpty(text))
+        {
+            worldTooltip.gameObject.SetActive(false);
+            return;
+        }
+
+        worldTooltip.text = text;
+        worldTooltip.gameObject.SetActive(true);
     }
 
     private void EnsureToastPresenter()
@@ -225,24 +313,40 @@ public class GameplayHUD : MonoBehaviour
             houseKeyIcon.sprite = iconLibrary.houseKeyIcon;
         }
 
-        // Pulse Interact button when something is in range.
+        // Pulse Interact button when something is in range or tutorial flash.
         var interaction = gameplay.interaction;
         var canInteract = interaction != null
             && interaction.NearestInteractable != null
             && interaction.NearestInteractable.CanInteract;
 
+        if (interactFlashTimer > 0f)
+            interactFlashTimer -= Time.deltaTime;
+
         if (interactButtonImage != null && interactButton != null && interactButton.activeSelf)
         {
-            if (canInteract)
+            if (canInteract || interactFlashTimer > 0f)
             {
-                interactPulse += Time.deltaTime * 4.5f;
+                interactPulse += Time.deltaTime * 6f;
                 var k = 0.55f + Mathf.Sin(interactPulse) * 0.45f;
                 interactButtonImage.color = Color.Lerp(interactBaseColor, interactHotColor, k);
+                interactButton.transform.localScale = Vector3.one * (1f + Mathf.Sin(interactPulse) * 0.08f);
             }
             else
             {
                 interactButtonImage.color = Color.Lerp(interactButtonImage.color, interactBaseColor, Time.deltaTime * 8f);
+                interactButton.transform.localScale = Vector3.Lerp(interactButton.transform.localScale, Vector3.one, Time.deltaTime * 10f);
             }
+        }
+
+        // Floating tooltip for nearest interactable
+        if (canInteract && interaction.NearestInteractable != null)
+        {
+            var hint = interaction.NearestInteractable.InteractionHint;
+            SetWorldTooltip(string.IsNullOrEmpty(hint) ? "Tap Interact" : hint);
+        }
+        else
+        {
+            SetWorldTooltip(null);
         }
     }
 
@@ -421,76 +525,87 @@ public class GameplayHUD : MonoBehaviour
             new Vector2(80f, -58f), new Vector2(contentW * 0.5f, 24f), LockeKeyUITheme.CaptionText);
         houseKeyText.gameObject.SetActive(false);
 
-        // Hint plate behind objective text
-        var hintPlate = CreatePanel(canvasRoot, "HintPlate", new Color(0.04f, 0.05f, 0.09f, 0.72f),
+        // Legacy hint plate kept but hidden — ObjectiveTrackerHUD is the modern quest card.
+        var hintPlate = CreatePanel(canvasRoot, "HintPlate", new Color(0.04f, 0.05f, 0.09f, 0f),
             new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
             new Vector2(0f, LockeKeyUITheme.ControlBarHeight + 8f),
             new Vector2(contentW, 52f));
-        var hintPlateRect = hintPlate.GetComponent<RectTransform>();
-        hintPlateRect.pivot = new Vector2(0.5f, 0f);
+        hintPlate.SetActive(false);
         hintPanel = hintPlate.GetComponent<Image>();
-        var hintOutline = hintPlate.AddComponent<Outline>();
-        hintOutline.effectColor = new Color(LockeKeyUITheme.LKGold.r, LockeKeyUITheme.LKGold.g, LockeKeyUITheme.LKGold.b, 0.25f);
-        hintOutline.effectDistance = new Vector2(1f, -1f);
-
         hintText = CreateText(hintPlate.transform, "Hint", font, LockeKeyUITheme.BodySize, TextAnchor.MiddleCenter,
             new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
             Vector2.zero, new Vector2(contentW - 16f, 48f), LockeKeyUITheme.BodyText);
-        var hintRect = hintText.GetComponent<RectTransform>();
-        hintRect.pivot = new Vector2(0.5f, 0.5f);
 
         toastText = CreateText(canvasRoot, "Toast", font, LockeKeyUITheme.BodySize, TextAnchor.MiddleCenter,
-            new Vector2(0.5f, 0.72f), new Vector2(0.5f, 0.72f),
+            new Vector2(0.5f, 0.68f), new Vector2(0.5f, 0.68f),
             Vector2.zero, new Vector2(contentW - 24f, 48f), LockeKeyUITheme.LKGold);
         toastText.gameObject.SetActive(true);
         var toastBg = toastText.gameObject.AddComponent<Outline>();
         toastBg.effectColor = new Color(0f, 0f, 0f, 0.65f);
         toastBg.effectDistance = new Vector2(1.2f, -1.2f);
 
-        var controlBar = CreatePanel(canvasRoot, "ControlBar", panelColor,
-            new Vector2(0f, 0f), new Vector2(1f, 0f), Vector2.zero,
-            new Vector2(0f, LockeKeyUITheme.ControlBarHeight));
-        var barTopLine = new GameObject("BarTopLine", typeof(RectTransform), typeof(Image));
-        barTopLine.transform.SetParent(controlBar.transform, false);
-        var lineRect = barTopLine.GetComponent<RectTransform>();
-        lineRect.anchorMin = new Vector2(0f, 1f);
-        lineRect.anchorMax = new Vector2(1f, 1f);
-        lineRect.pivot = new Vector2(0.5f, 1f);
-        lineRect.sizeDelta = new Vector2(0f, 2f);
-        barTopLine.GetComponent<Image>().color = new Color(LockeKeyUITheme.LKGold.r, LockeKeyUITheme.LKGold.g, LockeKeyUITheme.LKGold.b, 0.35f);
-        barTopLine.GetComponent<Image>().raycastTarget = false;
+        // Transparent floating control layer (no solid bar) — modern mobile adventure style.
+        var controlBar = new GameObject("ControlBar", typeof(RectTransform));
+        controlBar.transform.SetParent(canvasRoot, false);
+        var barRect = controlBar.GetComponent<RectTransform>();
+        barRect.anchorMin = new Vector2(0f, 0f);
+        barRect.anchorMax = new Vector2(1f, 0f);
+        barRect.pivot = new Vector2(0.5f, 0f);
+        barRect.sizeDelta = new Vector2(0f, 130f);
+        barRect.anchoredPosition = Vector2.zero;
 
-        float btn = LockeKeyUITheme.TouchButtonSize;
-        float y = 18f;
-        float[] anchors = { 0.1f, 0.3f, 0.5f, 0.7f, 0.9f };
+        // Circular semi-transparent buttons with soft shadow feel
+        var circleColor = new Color(0.08f, 0.09f, 0.14f, 0.62f);
+        float btn = 72f;
+        float y = 22f;
 
         leftButton = CreatePortraitHoldButton(controlBar.transform, "Left", iconLibrary?.moveLeft, font,
-            buttonColor, accentColor, anchors[0], y, btn,
+            circleColor, accentColor, 0.12f, y, btn,
             () => gameplay?.SetMoveInput(-1f), () => gameplay?.SetMoveInput(0f));
 
         rightButton = CreatePortraitHoldButton(controlBar.transform, "Right", iconLibrary?.moveRight, font,
-            buttonColor, accentColor, anchors[1], y, btn,
+            circleColor, accentColor, 0.30f, y, btn,
             () => gameplay?.SetMoveInput(1f), () => gameplay?.SetMoveInput(0f));
 
         jumpButton = CreatePortraitTapButton(controlBar.transform, "Jump", iconLibrary?.jump, font,
-            buttonColor, accentColor, anchors[2], y, btn, () => gameplay?.RequestJump());
+            circleColor, accentColor, 0.55f, y, btn, () => gameplay?.RequestJump());
 
         interactButton = CreatePortraitTapButton(controlBar.transform, "Interact", iconLibrary?.interact, font,
-            buttonColor, accentColor, anchors[3], y, btn, () => gameplay?.RequestInteract());
+            circleColor, accentColor, 0.75f, y, btn, () => gameplay?.RequestInteract());
 
         useKeyButton = CreatePortraitTapButton(controlBar.transform, "UseKey", iconLibrary?.useKey, font,
-            buttonColor, accentColor, anchors[4], y, btn, () => gameplay?.RequestUseKey());
+            circleColor, accentColor, 0.92f, y + 56f, 64f, () => gameplay?.RequestUseKey());
 
-        // Jump held for variable jump cut
         WireJumpHold(jumpButton);
+        MakeCircular(leftButton);
+        MakeCircular(rightButton);
+        MakeCircular(jumpButton);
+        MakeCircular(interactButton);
+        MakeCircular(useKeyButton);
 
-        SetControlVisibility(interact: false, jump: false, useKey: false);
+        SetControlVisibility(interact: true, jump: true, useKey: false);
 
         memoryOverlay = BuildMemoryOverlay(canvasRoot, font, panelColor, accentColor);
         memoryOverlay.SetActive(false);
 
         EnsureToastPresenter();
         EnsureButtonFeedback();
+        canvasContentRoot = canvasRoot;
+    }
+
+    private static void MakeCircular(GameObject go)
+    {
+        if (go == null) return;
+        // Soft outer glow as shadow substitute
+        var shadow = go.GetComponent<Shadow>() ?? go.AddComponent<Shadow>();
+        shadow.effectColor = new Color(0f, 0f, 0f, 0.45f);
+        shadow.effectDistance = new Vector2(0f, -3f);
+        var outline = go.GetComponent<Outline>();
+        if (outline != null)
+        {
+            outline.effectColor = new Color(1f, 1f, 1f, 0.18f);
+            outline.effectDistance = new Vector2(1.2f, -1.2f);
+        }
     }
 
     private void WireJumpHold(GameObject jumpGo)

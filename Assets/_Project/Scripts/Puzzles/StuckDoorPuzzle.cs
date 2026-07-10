@@ -103,6 +103,8 @@ public class StuckDoorPuzzle : PuzzleBase
         FindFirstObjectByType<GameAudioController>()?.PlayDoorUnlock();
         GameHaptics.Unlock();
         FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.16f, 0.3f);
+        FindFirstObjectByType<CameraFollow2D>()?.Shake(0.12f, 0.35f);
+        FindFirstObjectByType<ParticleVFXController>()?.PlayMemoryBurst(transform.position);
         FindFirstObjectByType<GameplayHUD>()?.ShowToast("House Key turns… the door opens.", 2.8f);
 
         var startColor = doorRenderer != null ? doorRenderer.color : Color.white;

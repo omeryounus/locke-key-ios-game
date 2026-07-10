@@ -96,6 +96,7 @@ public class PlayerController : MonoBehaviour
             {
                 noiseTimer = 0f;
                 eventBus?.NoiseHeard(transform.position, 2.2f);
+                FindFirstObjectByType<GameAudioController>()?.PlayFootstep();
             }
         }
         else

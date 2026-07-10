@@ -20,9 +20,13 @@ public class GameAudioController : MonoBehaviour
     private AudioClip echoContactClip;
     private AudioClip tensionLoopClip;
     private AudioClip echoWhisperClip;
+    private AudioClip footstepClip;
+    private AudioClip ambientClip;
+    private AudioSource ambientSource;
     private bool tensionPlaying;
     private bool muffled;
     private float baseMasterVolume;
+    private float footstepCooldown;
 
     private void Awake()
     {
@@ -39,7 +43,20 @@ public class GameAudioController : MonoBehaviour
         tensionSource.spatialBlend = 0f;
         tensionSource.volume = tensionLoopVolume;
 
+        var ambGo = new GameObject("AmbientMansion");
+        ambGo.transform.SetParent(transform);
+        ambientSource = ambGo.AddComponent<AudioSource>();
+        ambientSource.playOnAwake = false;
+        ambientSource.loop = true;
+        ambientSource.spatialBlend = 0f;
+        ambientSource.volume = 0.12f;
+
         BuildClips();
+        if (ambientClip != null)
+        {
+            ambientSource.clip = ambientClip;
+            ambientSource.Play();
+        }
 
         eventBus = Resources.Load<EventBus>("EventBus");
         if (eventBus == null) return;
@@ -74,6 +91,19 @@ public class GameAudioController : MonoBehaviour
     public void PlayMemoryTransition() => PlayOneShot(memoryTransitionClip);
     public void PlayEchoContact() => PlayOneShot(echoContactClip);
     public void PlayEchoWhisper() => PlayOneShot(echoWhisperClip, volumeScale: 0.42f);
+
+    public void PlayFootstep()
+    {
+        if (footstepCooldown > 0f) return;
+        footstepCooldown = 0.28f;
+        PlayOneShot(footstepClip, volumeScale: 0.35f);
+    }
+
+    private void Update()
+    {
+        if (footstepCooldown > 0f)
+            footstepCooldown -= Time.deltaTime;
+    }
 
     public void SetMuffled(bool enabled)
     {
@@ -164,6 +194,8 @@ public class GameAudioController : MonoBehaviour
         echoContactClip = CreateNoiseBurst(0.14f, 0.5f);
         tensionLoopClip = CreateLoopPad(110f, 2.4f);
         echoWhisperClip = CreateWhisper(0.85f);
+        footstepClip = CreateNoiseBurst(0.06f, 0.28f);
+        ambientClip = CreateLoopPad(55f, 4f);
     }
 
     private static AudioClip CreateWhisper(float duration)

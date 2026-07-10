@@ -2,8 +2,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Production 2D camera: smooth follow, look-ahead, soft vertical lag,
-/// screen pulse, and portrait viewport letterboxing.
+/// Smooth follow camera with look-ahead, interest zoom near objectives,
+/// screen pulse/shake, and portrait viewport letterboxing.
 /// </summary>
 public class CameraFollow2D : MonoBehaviour
 {
@@ -16,7 +16,7 @@ public class CameraFollow2D : MonoBehaviour
     public float verticalSmooth = 8f;
 
     [SerializeField] private bool fitPortraitViewport = true;
-    [SerializeField] private float portraitOrthoSize = 4.2f;
+    [SerializeField] private float portraitOrthoSize = 4.15f;
 
     private bool introActive;
     private Vector3 introOffset;
@@ -29,6 +29,10 @@ public class CameraFollow2D : MonoBehaviour
     private Rect lastViewportRect;
     private Vector2Int lastScreen;
     private Rigidbody2D targetBody;
+    private float interestZoom = 1f;
+    private float shakeTimer;
+    private float shakeStrength;
+    private Vector3 shakeOffset;
 
     private void Awake()
     {
@@ -55,6 +59,18 @@ public class CameraFollow2D : MonoBehaviour
     {
         pulseStrength = Mathf.Max(pulseStrength, strength);
         pulseTimer = Mathf.Max(pulseTimer, duration);
+    }
+
+    public void Shake(float strength, float duration)
+    {
+        shakeStrength = Mathf.Max(shakeStrength, strength);
+        shakeTimer = Mathf.Max(shakeTimer, duration);
+    }
+
+    /// <summary>1 = normal, &lt;1 = zoom in toward subject.</summary>
+    public void SetInterestZoom(float zoom)
+    {
+        interestZoom = Mathf.Clamp(zoom, 0.82f, 1.15f);
     }
 
     private void LateUpdate()
@@ -86,6 +102,21 @@ public class CameraFollow2D : MonoBehaviour
 
             desired.y = currentY;
 
+            if (shakeTimer > 0f)
+            {
+                shakeTimer -= Time.deltaTime;
+                shakeOffset = new Vector3(
+                    (Mathf.PerlinNoise(Time.time * 28f, 0.1f) - 0.5f) * 2f,
+                    (Mathf.PerlinNoise(0.2f, Time.time * 28f) - 0.5f) * 2f,
+                    0f) * shakeStrength * Mathf.Clamp01(shakeTimer);
+            }
+            else
+            {
+                shakeOffset = Vector3.Lerp(shakeOffset, Vector3.zero, Time.deltaTime * 12f);
+            }
+
+            desired += shakeOffset;
+
             var speed = introActive ? smoothSpeed * 0.65f : smoothSpeed;
             transform.position = Vector3.Lerp(transform.position, desired, speed * Time.deltaTime);
 
@@ -95,7 +126,7 @@ public class CameraFollow2D : MonoBehaviour
 
         if (cam == null) return;
 
-        var baseSize = fitPortraitViewport ? portraitOrthoSize : 5f;
+        var baseSize = (fitPortraitViewport ? portraitOrthoSize : 5f) * interestZoom;
         if (pulseTimer > 0f)
         {
             pulseTimer -= Time.deltaTime;
@@ -104,7 +135,7 @@ public class CameraFollow2D : MonoBehaviour
         }
         else if (fitPortraitViewport)
         {
-            cam.orthographicSize = Mathf.Lerp(cam.orthographicSize, baseSize, Time.deltaTime * 10f);
+            cam.orthographicSize = Mathf.Lerp(cam.orthographicSize, baseSize, Time.deltaTime * 8f);
         }
     }
 

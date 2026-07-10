@@ -46,6 +46,12 @@ public class GameBootstrap : MonoBehaviour
             gameObject.AddComponent<EchoTensionController>();
         if (GetComponent<ChapterEndScreen>() == null)
             gameObject.AddComponent<ChapterEndScreen>();
+        if (GetComponent<SceneAtmosphereController>() == null)
+            gameObject.AddComponent<SceneAtmosphereController>();
+        if (GetComponent<ObjectiveGuideController>() == null)
+            gameObject.AddComponent<ObjectiveGuideController>();
+        if (GetComponent<TutorialCoach>() == null)
+            gameObject.AddComponent<TutorialCoach>();
         if (FindFirstObjectByType<HideSpot>() == null)
             CreateHideArch();
 
@@ -55,6 +61,38 @@ public class GameBootstrap : MonoBehaviour
 
         EnsureRoomZones();
         EnsurePlayerAnimator();
+        EnsureFoyerProps();
+    }
+
+    /// <summary>Lightweight decorative props so the foyer doesn't feel empty.</summary>
+    private static void EnsureFoyerProps()
+    {
+        if (GameObject.Find("FoyerProps") != null) return;
+        var root = new GameObject("FoyerProps");
+        SpawnProp(root.transform, "Rug", new Vector3(0.2f, -1.35f, 0.2f), new Vector3(2.8f, 0.35f, 1f),
+            new Color(0.35f, 0.18f, 0.14f, 0.55f), 2);
+        SpawnProp(root.transform, "PaintingA", new Vector3(-1.8f, 1.1f, 0.3f), new Vector3(0.7f, 0.9f, 1f),
+            new Color(0.25f, 0.22f, 0.18f, 0.85f), 3);
+        SpawnProp(root.transform, "PaintingB", new Vector3(1.6f, 1.25f, 0.3f), new Vector3(0.55f, 0.7f, 1f),
+            new Color(0.22f, 0.2f, 0.28f, 0.85f), 3);
+        SpawnProp(root.transform, "Cabinet", new Vector3(2.4f, -0.55f, 0.25f), new Vector3(0.9f, 1.1f, 1f),
+            new Color(0.28f, 0.18f, 0.12f, 0.9f), 4);
+        SpawnProp(root.transform, "WindowGlow", new Vector3(-2.6f, 1.4f, 0.1f), new Vector3(0.9f, 1.4f, 1f),
+            new Color(1f, 0.85f, 0.55f, 0.18f), 1);
+    }
+
+    private static void SpawnProp(Transform parent, string name, Vector3 pos, Vector3 scale, Color color, int order)
+    {
+        var go = new GameObject(name, typeof(SpriteRenderer));
+        go.transform.SetParent(parent);
+        go.transform.position = pos;
+        go.transform.localScale = scale;
+        var sr = go.GetComponent<SpriteRenderer>();
+        sr.color = color;
+        sr.sortingOrder = order;
+        // 1x1 white sprite
+        var tex = Texture2D.whiteTexture;
+        sr.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 16f);
     }
 
     private static void EnsurePlayerAnimator()
