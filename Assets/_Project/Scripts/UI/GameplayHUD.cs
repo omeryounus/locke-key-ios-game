@@ -120,7 +120,7 @@ public class GameplayHUD : MonoBehaviour
             {
                 r.anchorMin = r.anchorMax = new Vector2(0f, 1f);
                 r.pivot = new Vector2(0f, 1f);
-                r.anchoredPosition = new Vector2(TopHudLayout.EdgePad, -(TopHudLayout.TopInset + TopHudLayout.InvSize + 6f));
+                r.anchoredPosition = new Vector2(TopHudLayout.EdgePad, -(TopHudLayout.TopInset + TopHudLayout.InvPanelH + 6f));
                 r.sizeDelta = new Vector2(32f, 28f);
             }
             return;
@@ -132,7 +132,7 @@ public class GameplayHUD : MonoBehaviour
         var rect = btn.GetComponent<RectTransform>();
         rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
         rect.pivot = new Vector2(0f, 1f);
-        rect.anchoredPosition = new Vector2(TopHudLayout.EdgePad, -(TopHudLayout.TopInset + TopHudLayout.InvSize + 6f));
+        rect.anchoredPosition = new Vector2(TopHudLayout.EdgePad, -(TopHudLayout.TopInset + TopHudLayout.InvPanelH + 6f));
         rect.sizeDelta = new Vector2(32f, 28f);
         var img = btn.GetComponent<Image>();
         TopHudLayout.ApplyGlass(img);

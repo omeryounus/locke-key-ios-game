@@ -10,7 +10,9 @@ using UnityEngine.UI;
 public static class TopHudLayout
 {
     public const float BarHeight = 44f;
-    public const float InvSize = 40f;
+    public const float InvSize = 40f; // legacy single-icon size
+    public const float InvPanelW = 132f;
+    public const float InvPanelH = 72f;
     public const float MiniW = 96f;
     public const float MiniH = 56f;
     public const float ObjectiveW = 260f;
@@ -50,7 +52,7 @@ public static class TopHudLayout
         rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
         rect.pivot = new Vector2(0f, 1f);
         rect.anchoredPosition = new Vector2(EdgePad, -TopInset);
-        rect.sizeDelta = new Vector2(InvSize, InvSize);
+        rect.sizeDelta = new Vector2(InvPanelW, InvPanelH);
     }
 
     public static void PlaceMinimap(RectTransform rect)

@@ -48,6 +48,8 @@ public class GameBootstrap : MonoBehaviour
             gameObject.AddComponent<ChapterEndScreen>();
         if (GetComponent<SceneAtmosphereController>() == null)
             gameObject.AddComponent<SceneAtmosphereController>();
+        if (GetComponent<LivingWorldAtmosphere>() == null)
+            gameObject.AddComponent<LivingWorldAtmosphere>();
         if (GetComponent<ObjectiveGuideController>() == null)
             gameObject.AddComponent<ObjectiveGuideController>();
         if (GetComponent<TutorialCoach>() == null)

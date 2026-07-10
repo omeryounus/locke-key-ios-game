@@ -41,6 +41,8 @@ public class InteractionController : MonoBehaviour
         {
             NearestInteractable.Interact();
             GameHaptics.TriggerHapticLight();
+            FindFirstObjectByType<CameraFollow2D>()?.Shake(0.07f, 0.18f);
+            FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.06f, 0.15f);
             return;
         }
 

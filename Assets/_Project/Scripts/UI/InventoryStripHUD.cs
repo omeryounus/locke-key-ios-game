@@ -2,14 +2,18 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Top-left compact inventory: icon + numeric badge. Taps open key ring.
+/// Top-left inventory panel:
+///   Inventory
+///   🗝 House Key   (or ✓ House Key when collected)
+///   0 / 6
 /// </summary>
 public class InventoryStripHUD : MonoBehaviour
 {
-    private Image icon;
     private Image card;
-    private Text badgeText;
-    private GameObject badgeGo;
+    private Text headerText;
+    private Text itemText;
+    private Text countText;
+    private Image keyIcon;
     private Font font;
     private Vector3 baseScale = Vector3.one;
     private float popTimer;
@@ -20,8 +24,17 @@ public class InventoryStripHUD : MonoBehaviour
         var existing = Object.FindFirstObjectByType<InventoryStripHUD>();
         if (existing != null)
         {
-            existing.Relayout();
-            return existing;
+            // Rebuild if still old compact icon-only size
+            var r = existing.GetComponent<RectTransform>();
+            if (r != null && r.sizeDelta.x < 100f)
+            {
+                Object.Destroy(existing.gameObject);
+            }
+            else
+            {
+                existing.Relayout();
+                return existing;
+            }
         }
 
         var go = new GameObject("InventoryStrip", typeof(RectTransform), typeof(InventoryStripHUD), typeof(Button));
@@ -47,48 +60,49 @@ public class InventoryStripHUD : MonoBehaviour
         btn.onClick.AddListener(() => GrokUIFlowManager.Instance?.ShowKeyRing());
         UIButtonFeedback.Ensure(gameObject);
 
-        icon = new GameObject("Icon", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
-        icon.transform.SetParent(transform, false);
-        icon.preserveAspect = true;
-        icon.raycastTarget = false;
-        var iRect = icon.rectTransform;
-        iRect.anchorMin = new Vector2(0.15f, 0.15f);
-        iRect.anchorMax = new Vector2(0.85f, 0.85f);
-        iRect.offsetMin = iRect.offsetMax = Vector2.zero;
+        headerText = MakeText("Header", "Inventory", 10, FontStyle.Bold, LockeKeyUITheme.CaptionText,
+            new Vector2(0.5f, 0.82f), new Vector2(120f, 14f));
 
-        // Badge (top-right of icon)
-        badgeGo = new GameObject("Badge", typeof(RectTransform), typeof(Image));
-        badgeGo.transform.SetParent(transform, false);
-        var bImg = badgeGo.GetComponent<Image>();
-        bImg.color = GameSettings.AccentColor;
-        bImg.raycastTarget = false;
-        var bRect = badgeGo.GetComponent<RectTransform>();
-        bRect.anchorMin = bRect.anchorMax = new Vector2(1f, 1f);
-        bRect.pivot = new Vector2(0.5f, 0.5f);
-        bRect.anchoredPosition = new Vector2(-2f, -2f);
-        bRect.sizeDelta = new Vector2(16f, 16f);
+        keyIcon = new GameObject("KeyIcon", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
+        keyIcon.transform.SetParent(transform, false);
+        keyIcon.preserveAspect = true;
+        keyIcon.raycastTarget = false;
+        var iRect = keyIcon.rectTransform;
+        iRect.anchorMin = iRect.anchorMax = new Vector2(0.14f, 0.42f);
+        iRect.pivot = new Vector2(0.5f, 0.5f);
+        iRect.sizeDelta = new Vector2(22f, 22f);
 
-        var bTextGo = new GameObject("Num", typeof(RectTransform), typeof(Text));
-        bTextGo.transform.SetParent(badgeGo.transform, false);
-        badgeText = bTextGo.GetComponent<Text>();
-        badgeText.font = font;
-        badgeText.fontSize = 10;
-        badgeText.fontStyle = FontStyle.Bold;
-        badgeText.color = Color.black;
-        badgeText.alignment = TextAnchor.MiddleCenter;
-        badgeText.raycastTarget = false;
-        var btRect = bTextGo.GetComponent<RectTransform>();
-        btRect.anchorMin = Vector2.zero;
-        btRect.anchorMax = Vector2.one;
-        btRect.offsetMin = btRect.offsetMax = Vector2.zero;
+        itemText = MakeText("Item", "— empty —", 11, FontStyle.Normal, LockeKeyUITheme.BodyText,
+            new Vector2(0.62f, 0.45f), new Vector2(90f, 28f));
+        itemText.alignment = TextAnchor.MiddleLeft;
 
-        badgeGo.SetActive(false);
+        countText = MakeText("Count", "0 / 6", 11, FontStyle.Bold, GameSettings.AccentColor,
+            new Vector2(0.5f, 0.14f), new Vector2(120f, 16f));
     }
 
     public void Relayout()
     {
         TopHudLayout.PlaceInventory(GetComponent<RectTransform>());
         if (card != null) TopHudLayout.ApplyGlass(card);
+    }
+
+    private Text MakeText(string name, string text, int size, FontStyle style, Color color, Vector2 anchor, Vector2 sizeDelta)
+    {
+        var go = new GameObject(name, typeof(RectTransform), typeof(Text));
+        go.transform.SetParent(transform, false);
+        var t = go.GetComponent<Text>();
+        t.font = font;
+        t.fontSize = size;
+        t.fontStyle = style;
+        t.color = color;
+        t.text = text;
+        t.alignment = TextAnchor.MiddleCenter;
+        t.raycastTarget = false;
+        var r = go.GetComponent<RectTransform>();
+        r.anchorMin = r.anchorMax = anchor;
+        r.pivot = new Vector2(0.5f, 0.5f);
+        r.sizeDelta = sizeDelta;
+        return t;
     }
 
     private void Update()
@@ -102,33 +116,34 @@ public class InventoryStripHUD : MonoBehaviour
         bool hasHead = km != null && km.ownedKeys.Exists(k => k.abilityType == KeyManager.KeyAbilityType.HeadMemory);
         int count = (hasHouse ? 1 : 0) + (hasGhost ? 1 : 0) + (hasHead ? 1 : 0);
 
-        if (icon != null)
-        {
-            Sprite spr = null;
-            if (hasHouse) spr = lib != null ? lib.houseKeyIcon : Resources.Load<Sprite>(ArtPaths.KeySpriteForId("house"));
-            else if (hasGhost) spr = lib?.ghostKeyIcon;
-            else if (hasHead) spr = lib?.headKeyIcon;
+        if (countText != null)
+            countText.text = $"{count} / 6";
 
-            if (spr != null)
-            {
-                icon.sprite = spr;
-                icon.enabled = true;
-                icon.color = Color.white;
-            }
-            else
-            {
-                // Empty bag glyph
-                icon.enabled = true;
-                icon.sprite = null;
-                icon.color = new Color(1f, 1f, 1f, 0.25f);
-            }
+        if (hasHouse)
+        {
+            SetItem("✓ House Key", LockeKeyUITheme.Success,
+                lib != null ? lib.houseKeyIcon : Resources.Load<Sprite>(ArtPaths.KeySpriteForId("house")));
         }
-
-        if (badgeGo != null)
+        else if (hasGhost)
         {
-            badgeGo.SetActive(count > 0);
-            if (badgeText != null)
-                badgeText.text = count.ToString();
+            SetItem("✓ Ghost Key", LockeKeyUITheme.Success, lib?.ghostKeyIcon);
+        }
+        else if (hasHead)
+        {
+            SetItem("✓ Head Key", LockeKeyUITheme.Success, lib?.headKeyIcon);
+        }
+        else
+        {
+            // Empty state still shows key glyph + label so it never looks like a blank box
+            SetItem("🗝  House Key", LockeKeyUITheme.CaptionText, null);
+            if (keyIcon != null)
+            {
+                keyIcon.enabled = true;
+                keyIcon.sprite = lib != null ? lib.houseKeyIcon : Resources.Load<Sprite>(ArtPaths.KeySpriteForId("house"));
+                keyIcon.color = new Color(1f, 1f, 1f, 0.28f);
+            }
+            if (itemText != null)
+                itemText.text = "🗝  House Key";
         }
 
         if (count != lastCount && count > lastCount && lastCount >= 0)
@@ -138,7 +153,7 @@ public class InventoryStripHUD : MonoBehaviour
         if (popTimer > 0f)
         {
             popTimer -= Time.deltaTime;
-            float k = 1f + Mathf.Sin((1f - popTimer) * Mathf.PI) * 0.14f;
+            float k = 1f + Mathf.Sin((1f - popTimer) * Mathf.PI) * 0.12f;
             transform.localScale = baseScale * k;
         }
         else
@@ -147,9 +162,34 @@ public class InventoryStripHUD : MonoBehaviour
         }
     }
 
+    private void SetItem(string label, Color color, Sprite sprite)
+    {
+        if (itemText != null)
+        {
+            itemText.text = label;
+            itemText.color = color;
+        }
+
+        if (keyIcon != null)
+        {
+            if (sprite != null)
+            {
+                keyIcon.sprite = sprite;
+                keyIcon.enabled = true;
+                keyIcon.color = Color.white;
+            }
+        }
+    }
+
     public void PlayCollectPop()
     {
-        popTimer = 0.35f;
+        popTimer = 0.4f;
         GameHaptics.KeyPickup();
+        if (itemText != null)
+        {
+            // Flash collected state
+            itemText.text = "✓ House Key";
+            itemText.color = LockeKeyUITheme.Success;
+        }
     }
 }

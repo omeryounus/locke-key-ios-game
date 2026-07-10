@@ -65,10 +65,9 @@ public class SceneAtmosphereController : MonoBehaviour
         var backdrop = GameObject.Find("RoomBackdrop")?.GetComponent<SpriteRenderer>();
         if (backdrop != null)
         {
-            // Mild lift — preserves contrast in dark art.
-            var lift = Mathf.Lerp(1.0f, 1.28f, Mathf.InverseLerp(0.7f, 1.5f, brightness));
-            // Slight warm grade for mansion feel
-            backdrop.color = new Color(lift, lift * 0.98f, lift * 0.94f, 1f);
+            // Higher contrast grade: lifted brights, cooler deeps, warm midtones.
+            var lift = Mathf.Lerp(1.05f, 1.32f, Mathf.InverseLerp(0.7f, 1.5f, brightness));
+            backdrop.color = new Color(lift * 1.04f, lift * 0.97f, lift * 0.9f, 1f);
         }
     }
 

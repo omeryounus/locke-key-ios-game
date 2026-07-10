@@ -2,18 +2,20 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Smooth follow camera with look-ahead, interest zoom near objectives,
-/// screen pulse/shake, and portrait viewport letterboxing.
+/// Cinematic 2D camera: smooth follow, idle sway, look-ahead, interest zoom,
+/// interaction shake, and portrait viewport letterboxing.
 /// </summary>
 public class CameraFollow2D : MonoBehaviour
 {
     public Transform target;
     public Vector3 offset = new Vector3(0f, 1.05f, -10f);
-    public float smoothSpeed = 10f;
+    public float smoothSpeed = 7.5f;
     public float arrivalIntroOffsetX = -1.8f;
-    public float lookAheadDistance = 0.85f;
-    public float lookAheadSmooth = 6f;
-    public float verticalSmooth = 8f;
+    public float lookAheadDistance = 1.05f;
+    public float lookAheadSmooth = 4.5f;
+    public float verticalSmooth = 5.5f;
+    public float idleSwayAmount = 0.045f;
+    public float idleSwaySpeed = 0.55f;
 
     [SerializeField] private bool fitPortraitViewport = true;
     [SerializeField] private float portraitOrthoSize = 4.15f;
@@ -30,9 +32,13 @@ public class CameraFollow2D : MonoBehaviour
     private Vector2Int lastScreen;
     private Rigidbody2D targetBody;
     private float interestZoom = 1f;
+    private float interestZoomVel;
     private float shakeTimer;
     private float shakeStrength;
     private Vector3 shakeOffset;
+    private Vector3 smoothPos;
+    private bool hasSmoothPos;
+    private float autoZoom = 1f;
 
     private void Awake()
     {
@@ -70,12 +76,13 @@ public class CameraFollow2D : MonoBehaviour
     /// <summary>1 = normal, &lt;1 = zoom in toward subject.</summary>
     public void SetInterestZoom(float zoom)
     {
-        interestZoom = Mathf.Clamp(zoom, 0.82f, 1.15f);
+        interestZoom = Mathf.Clamp(zoom, 0.78f, 1.18f);
     }
 
     private void LateUpdate()
     {
         ApplyPortraitViewport();
+        UpdateAutoInterestZoom();
 
         if (target != null)
         {
@@ -84,11 +91,21 @@ public class CameraFollow2D : MonoBehaviour
 
             var vx = targetBody != null ? targetBody.linearVelocity.x : 0f;
             var desiredLook = Mathf.Clamp(vx / 4.2f, -1f, 1f) * lookAheadDistance;
+            // Extra cinematic lead when moving fast
+            desiredLook *= 1f + Mathf.Clamp01(Mathf.Abs(vx) / 5f) * 0.25f;
             lookAheadX = Mathf.Lerp(lookAheadX, desiredLook, lookAheadSmooth * Time.deltaTime);
 
             var desired = target.position + offset + introOffset;
             desired.x += lookAheadX;
             desired.z = offset.z;
+
+            // Idle camera sway (living lens)
+            float swayX = Mathf.Sin(Time.time * idleSwaySpeed) * idleSwayAmount;
+            float swayY = Mathf.Sin(Time.time * idleSwaySpeed * 0.73f + 1.2f) * idleSwayAmount * 0.65f;
+            // Reduce sway when moving
+            float swayMul = 1f - Mathf.Clamp01(Mathf.Abs(vx) / 3.5f) * 0.7f;
+            desired.x += swayX * swayMul;
+            desired.y += swayY * swayMul;
 
             if (!hasY)
             {
@@ -105,20 +122,31 @@ public class CameraFollow2D : MonoBehaviour
             if (shakeTimer > 0f)
             {
                 shakeTimer -= Time.deltaTime;
+                float env = Mathf.Clamp01(shakeTimer);
                 shakeOffset = new Vector3(
-                    (Mathf.PerlinNoise(Time.time * 28f, 0.1f) - 0.5f) * 2f,
-                    (Mathf.PerlinNoise(0.2f, Time.time * 28f) - 0.5f) * 2f,
-                    0f) * shakeStrength * Mathf.Clamp01(shakeTimer);
+                    (Mathf.PerlinNoise(Time.time * 32f, 0.1f) - 0.5f) * 2f,
+                    (Mathf.PerlinNoise(0.2f, Time.time * 32f) - 0.5f) * 2f,
+                    0f) * shakeStrength * env;
             }
             else
             {
-                shakeOffset = Vector3.Lerp(shakeOffset, Vector3.zero, Time.deltaTime * 12f);
+                shakeOffset = Vector3.Lerp(shakeOffset, Vector3.zero, Time.deltaTime * 10f);
             }
 
             desired += shakeOffset;
 
-            var speed = introActive ? smoothSpeed * 0.65f : smoothSpeed;
-            transform.position = Vector3.Lerp(transform.position, desired, speed * Time.deltaTime);
+            // Critically damped-ish smooth follow (feels more cinematic than raw Lerp)
+            if (!hasSmoothPos)
+            {
+                smoothPos = desired;
+                hasSmoothPos = true;
+            }
+
+            var speed = introActive ? smoothSpeed * 0.55f : smoothSpeed;
+            // Frame-rate independent exponential smooth
+            float k = 1f - Mathf.Exp(-speed * Time.deltaTime);
+            smoothPos = Vector3.Lerp(smoothPos, desired, k);
+            transform.position = smoothPos;
 
             if (introActive)
                 introOffset = Vector3.Lerp(introOffset, Vector3.zero, Time.deltaTime * 0.85f);
@@ -126,7 +154,12 @@ public class CameraFollow2D : MonoBehaviour
 
         if (cam == null) return;
 
-        var baseSize = (fitPortraitViewport ? portraitOrthoSize : 5f) * interestZoom;
+        float targetZoom = interestZoom * autoZoom;
+        float zoomK = 1f - Mathf.Exp(-6f * Time.deltaTime);
+        float currentZoomFactor = cam.orthographicSize / (fitPortraitViewport ? portraitOrthoSize : 5f);
+        // blend toward target
+        var baseSize = (fitPortraitViewport ? portraitOrthoSize : 5f) * Mathf.Lerp(currentZoomFactor, targetZoom, zoomK);
+
         if (pulseTimer > 0f)
         {
             pulseTimer -= Time.deltaTime;
@@ -135,8 +168,27 @@ public class CameraFollow2D : MonoBehaviour
         }
         else if (fitPortraitViewport)
         {
-            cam.orthographicSize = Mathf.Lerp(cam.orthographicSize, baseSize, Time.deltaTime * 8f);
+            cam.orthographicSize = Mathf.Lerp(cam.orthographicSize, baseSize, Time.deltaTime * 6f);
         }
+    }
+
+    private void UpdateAutoInterestZoom()
+    {
+        // Zoom when near highlighted objective / interactables
+        float desired = 1f;
+        var guide = FindFirstObjectByType<ObjectiveGuideController>();
+        if (target != null && guide != null && guide.CurrentTarget != null)
+        {
+            float d = Vector2.Distance(target.position, guide.CurrentTarget.position);
+            if (d < 3.2f)
+                desired = Mathf.Lerp(0.86f, 1f, d / 3.2f);
+        }
+
+        var interaction = FindFirstObjectByType<InteractionController>();
+        if (interaction != null && interaction.NearestInteractable != null && interaction.NearestInteractable.CanInteract)
+            desired = Mathf.Min(desired, 0.9f);
+
+        autoZoom = Mathf.Lerp(autoZoom, desired, Time.deltaTime * 2.5f);
     }
 
     private void ApplyPortraitViewport()
