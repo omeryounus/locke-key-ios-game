@@ -38,17 +38,26 @@ public class PlayerIdleDetail : MonoBehaviour
         }
         else blink = b.GetComponent<SpriteRenderer>();
 
-        // Extra cloak layer
+        // Extra cloak layer — prefer production hood/cape art
         var c = transform.Find("CloakFlutter");
         if (c == null)
         {
             var go = new GameObject("CloakFlutter");
             go.transform.SetParent(transform, false);
-            go.transform.localPosition = new Vector3(0f, 0.05f, 0f);
-            go.transform.localScale = new Vector3(0.7f, 0.85f, 1f);
+            go.transform.localPosition = new Vector3(0f, 0.08f, 0f);
+            go.transform.localScale = new Vector3(0.85f, 0.95f, 1f);
             cloak = go.AddComponent<SpriteRenderer>();
-            cloak.sprite = SoftDisc(24);
-            cloak.color = new Color(0.18f, 0.12f, 0.28f, 0.28f); // purple-ish cloak tint
+            var hoodSpr = Resources.Load<Sprite>("Art/Characters/Layers/player_hood_cape");
+            if (hoodSpr != null)
+            {
+                cloak.sprite = hoodSpr;
+                cloak.color = new Color(1f, 1f, 1f, 0.55f);
+            }
+            else
+            {
+                cloak.sprite = SoftDisc(24);
+                cloak.color = new Color(0.18f, 0.12f, 0.28f, 0.28f);
+            }
             cloak.sortingOrder = (body != null ? body.sortingOrder : 20) - 1;
         }
         else cloak = c.GetComponent<SpriteRenderer>();

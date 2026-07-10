@@ -1,5 +1,5 @@
 {
-  "version": "2.0",
+  "version": "3.0",
   "generated_at": "2026-07-10T06:01:05.829501+00:00",
   "style": "Art Bible v1.0 \u2014 dark fantasy gothic painterly, Little Nightmares / The Room / Locke & Key",
   "pipeline": "Grok Imagine production art pass",
@@ -159,6 +159,188 @@
       ],
       "guid_lib": "e274dca5372a20f8653a1508e132b3d9",
       "guid_res": "e234fa6777e1e52a87ec2b399731a9d2"
+    },
+    {
+      "id": "prop_candle",
+      "source": "20.jpg",
+      "library": "Assets/_Project/Art/Production/Props/Furniture/prop_candle.png",
+      "resources": "Assets/_Project/Resources/Art/Props/prop_candle.png",
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "id": "prop_chandelier",
+      "source": "21.jpg",
+      "library": "Assets/_Project/Art/Production/Props/Furniture/prop_chandelier.png",
+      "resources": "Assets/_Project/Resources/Art/Props/prop_chandelier.png",
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "id": "echo_attack",
+      "source": "22.jpg",
+      "library": "Assets/_Project/Art/Production/Enemies/Echo/echo_attack.png",
+      "resources": "Assets/_Project/Resources/Art/Enemies/echo_01.png",
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "id": "prop_carpet",
+      "source": "23.jpg",
+      "library": "Assets/_Project/Art/Production/Props/Furniture/prop_carpet.png",
+      "resources": "Assets/_Project/Resources/Art/Props/prop_carpet.png",
+      "size": [
+        2048,
+        1152
+      ]
+    },
+    {
+      "id": "echo_hurt",
+      "source": "24.jpg",
+      "library": "Assets/_Project/Art/Production/Enemies/Echo/echo_hurt.png",
+      "resources": "Assets/_Project/Resources/Art/Enemies/echo_02.png",
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "id": "prop_bookshelf",
+      "source": "25.jpg",
+      "library": "Assets/_Project/Art/Production/Props/Furniture/prop_bookshelf.png",
+      "resources": "Assets/_Project/Resources/Art/Props/prop_bookshelf.png",
+      "size": [
+        1365,
+        2048
+      ]
+    },
+    {
+      "id": "echo_death",
+      "source": "30.jpg",
+      "library": "Assets/_Project/Art/Production/Enemies/Echo/echo_death.png",
+      "resources": "Assets/_Project/Resources/Art/Enemies/echo_03.png",
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "id": "prop_broken_chair",
+      "source": "32.jpg",
+      "library": "Assets/_Project/Art/Production/Props/Furniture/prop_broken_chair.png",
+      "resources": "Assets/_Project/Resources/Art/Props/prop_broken_chair.png",
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "id": "prop_grandfather_clock",
+      "source": "33.jpg",
+      "library": "Assets/_Project/Art/Production/Props/Furniture/prop_grandfather_clock.png",
+      "resources": "Assets/_Project/Resources/Art/Props/prop_grandfather_clock.png",
+      "size": [
+        1365,
+        2048
+      ]
+    },
+    {
+      "id": "prop_portrait_frame",
+      "source": "34.jpg",
+      "library": "Assets/_Project/Art/Production/Props/Furniture/prop_portrait_frame.png",
+      "resources": "Assets/_Project/Resources/Art/Props/prop_portrait_frame.png",
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "id": "ui_atlas_full",
+      "source": "27.jpg",
+      "library": "Assets/_Project/Art/Production/UI/ui_atlas_full.jpg",
+      "resources": "Assets/_Project/Resources/Art/UI/ui_atlas_full.jpg",
+      "size": [
+        2048,
+        1152
+      ]
+    },
+    {
+      "id": "bg_dining_production",
+      "source": "26.jpg",
+      "library": "Assets/_Project/Art/Production/Environment/Backgrounds/bg_dining_production.jpg",
+      "resources": "Assets/_Project/Resources/Art/Backgrounds/bg_dining_16x9.jpg",
+      "size": [
+        2048,
+        1152
+      ]
+    },
+    {
+      "id": "bg_study_production",
+      "source": "29.jpg",
+      "library": "Assets/_Project/Art/Production/Environment/Backgrounds/bg_study_production.jpg",
+      "resources": "Assets/_Project/Resources/Art/Backgrounds/bg_study_16x9.jpg",
+      "size": [
+        2048,
+        1152
+      ]
+    },
+    {
+      "id": "bg_attic_production",
+      "source": "28.jpg",
+      "library": "Assets/_Project/Art/Production/Environment/Backgrounds/bg_attic_production.jpg",
+      "resources": "Assets/_Project/Resources/Art/Backgrounds/bg_attic_16x9.jpg",
+      "size": [
+        2048,
+        1152
+      ]
+    },
+    {
+      "id": "bg_cemetery_production",
+      "source": "31.jpg",
+      "library": "Assets/_Project/Art/Production/Environment/Backgrounds/bg_cemetery_production.jpg",
+      "resources": "Assets/_Project/Resources/Art/Backgrounds/bg_cemetery_16x9.jpg",
+      "size": [
+        2048,
+        1152
+      ]
+    },
+    {
+      "id": "player_hood_cape",
+      "source": "36.jpg",
+      "library": "Assets/_Project/Art/Production/Characters/Player/layers/player_hood_cape.png",
+      "resources": "Assets/_Project/Resources/Art/Characters/Layers/player_hood_cape.png",
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "id": "player_portrait",
+      "source": "37.jpg",
+      "library": "Assets/_Project/Art/Production/Characters/Player/layers/player_portrait.png",
+      "resources": "Assets/_Project/Resources/Art/Characters/Layers/player_portrait.png",
+      "size": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "id": "player_arms_reach",
+      "source": "35.jpg",
+      "library": "Assets/_Project/Art/Production/Characters/Player/layers/player_arms_reach.png",
+      "resources": "Assets/_Project/Resources/Art/Characters/Layers/player_arms_reach.png",
+      "size": [
+        2048,
+        2048
+      ]
     }
-  ]
+  ],
+  "updated_at": "2026-07-10T06:07:34.601004+00:00",
+  "batch": "props_echo_ui_rooms_layers"
 }
