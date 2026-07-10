@@ -76,21 +76,30 @@ public class GameplayHUD : MonoBehaviour
         canvasContentRoot = content != null ? content : canvas.transform;
         var font = LockeUILayout.GetUIFont();
 
-        ObjectiveTrackerHUD.Ensure(canvasContentRoot, font);
+        // Horizontal top layout: inv (L) · title (bar) · minimap (R) · objective under title
+        TopHudLayout.HideLegacyTopChrome(canvasContentRoot);
+        var bar = canvasContentRoot.Find("HudBar");
+        if (bar != null)
+            TopHudLayout.StyleTitleBar(bar.gameObject);
+
         InventoryStripHUD.Ensure(canvasContentRoot, font);
         MiniMapHUD.Ensure(canvasContentRoot, font);
+        ObjectiveTrackerHUD.Ensure(canvasContentRoot, font);
         settingsPanel = AccessibilitySettingsPanel.Ensure(canvasContentRoot, font);
 
-        // Hide legacy yellow-ish bottom hint plate — objective tracker replaces it.
         if (hintPanel != null)
             hintPanel.gameObject.SetActive(false);
         if (hintText != null)
             hintText.gameObject.SetActive(false);
 
-        // Gear button for settings
+        // Settings tucked under inventory — no overlap with title/minimap
         EnsureSettingsButton(canvasContentRoot, font);
 
-        // World tooltip host
+        if (keySlotHud != null)
+            keySlotHud.gameObject.SetActive(false);
+        if (keySlotImage != null)
+            keySlotImage.gameObject.SetActive(false);
+
         if (worldTooltip == null)
         {
             worldTooltip = CreateText(canvasContentRoot, "WorldTooltip", font, 13, TextAnchor.MiddleCenter,
@@ -102,10 +111,31 @@ public class GameplayHUD : MonoBehaviour
 
     private void EnsureSettingsButton(Transform root, Font font)
     {
-        if (root.Find("SettingsBtn") != null) return;
+        var existing = root.Find("SettingsBtn");
+        if (existing != null)
+        {
+            // Park under inventory icon
+            var r = existing.GetComponent<RectTransform>();
+            if (r != null)
+            {
+                r.anchorMin = r.anchorMax = new Vector2(0f, 1f);
+                r.pivot = new Vector2(0f, 1f);
+                r.anchoredPosition = new Vector2(TopHudLayout.EdgePad, -(TopHudLayout.TopInset + TopHudLayout.InvSize + 6f));
+                r.sizeDelta = new Vector2(32f, 28f);
+            }
+            return;
+        }
+
         var btn = LockeUIComponents.CreateSecondaryButton(root, font, "⚙",
-            new Vector2(0.08f, 0.94f), () => settingsPanel?.Show(), 44f);
+            new Vector2(0f, 1f), () => settingsPanel?.Show(), 32f);
         btn.name = "SettingsBtn";
+        var rect = btn.GetComponent<RectTransform>();
+        rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
+        rect.pivot = new Vector2(0f, 1f);
+        rect.anchoredPosition = new Vector2(TopHudLayout.EdgePad, -(TopHudLayout.TopInset + TopHudLayout.InvSize + 6f));
+        rect.sizeDelta = new Vector2(32f, 28f);
+        var img = btn.GetComponent<Image>();
+        TopHudLayout.ApplyGlass(img);
     }
 
     public void FlashInteractButton(float duration = 1.5f)
@@ -253,6 +283,7 @@ public class GameplayHUD : MonoBehaviour
     public void FlashKeyDiscovered()
     {
         keySlotHud?.FlashDiscovered();
+        FindFirstObjectByType<InventoryStripHUD>()?.PlayCollectPop();
     }
 
     public void HideMemoryOverlay()
@@ -500,30 +531,13 @@ public class GameplayHUD : MonoBehaviour
             () => GrokUIFlowManager.Instance?.ShowKeyRing());
         roomTitleText = bar.transform.Find("Title")?.GetComponent<Text>();
 
-        var keySlotGo = new GameObject("KeySlot", typeof(RectTransform), typeof(Image), typeof(KeySlotHUD));
-        keySlotGo.transform.SetParent(canvasRoot, false);
-        var keySlotRect = keySlotGo.GetComponent<RectTransform>();
-        keySlotRect.anchorMin = keySlotRect.anchorMax = new Vector2(1f, 1f);
-        keySlotRect.pivot = new Vector2(1f, 1f);
-        keySlotRect.anchoredPosition = new Vector2(-12f, -52f);
-        keySlotRect.sizeDelta = new Vector2(LockeKeyUITheme.KeySlotSize, LockeKeyUITheme.KeySlotSize);
-        keySlotImage = keySlotGo.GetComponent<Image>();
-        keySlotImage.preserveAspect = true;
-        keySlotHud = keySlotGo.GetComponent<KeySlotHUD>();
-
-        keyStatusIcon = CreateStatusIcon(canvasRoot, "KeyStatusIcon", new Vector2(16f, -56f), 28f);
-
-        keyStatusText = CreateText(canvasRoot, "KeyStatus", font, LockeKeyUITheme.CaptionSize + 2,
-            TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(0f, 1f),
-            new Vector2(16f, -56f), new Vector2(contentW * 0.55f, 28f), LockeKeyUITheme.BodyText);
-        keyStatusText.gameObject.SetActive(false);
-
-        houseKeyIcon = CreateStatusIcon(canvasRoot, "HouseKeyIcon", new Vector2(52f, -56f), 24f);
-        houseKeyIcon.gameObject.SetActive(false);
-        houseKeyText = CreateText(canvasRoot, "HouseKeyStatus", font, LockeKeyUITheme.CaptionSize,
-            TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(0f, 1f),
-            new Vector2(80f, -58f), new Vector2(contentW * 0.5f, 24f), LockeKeyUITheme.CaptionText);
-        houseKeyText.gameObject.SetActive(false);
+        // Legacy key slot / status icons removed from top chrome (inventory + minimap own those slots).
+        keySlotImage = null;
+        keySlotHud = null;
+        keyStatusIcon = null;
+        keyStatusText = null;
+        houseKeyIcon = null;
+        houseKeyText = null;
 
         // Legacy hint plate kept but hidden — ObjectiveTrackerHUD is the modern quest card.
         var hintPlate = CreatePanel(canvasRoot, "HintPlate", new Color(0.04f, 0.05f, 0.09f, 0f),

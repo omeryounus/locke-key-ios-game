@@ -203,13 +203,21 @@ public static class LockeUIComponents
         barRect.anchorMin = new Vector2(0f, 1f);
         barRect.anchorMax = new Vector2(1f, 1f);
         barRect.pivot = new Vector2(0.5f, 1f);
-        barRect.sizeDelta = new Vector2(0f, LockeKeyUITheme.HudBarHeight);
-        barGo.GetComponent<Image>().color = new Color(0.04f, 0.05f, 0.09f, 0.88f);
+        barRect.sizeDelta = new Vector2(0f, TopHudLayout.BarHeight);
+        // Clean glass bar — no heavy chrome; Map/Key live on inv/minimap taps
+        TopHudLayout.ApplyGlass(barGo.GetComponent<Image>(), deep: true);
+        TopHudLayout.AddSoftBlurLayer(barGo.transform);
 
+        // Keep optional hooks but hide default side buttons (avoid overlap with inv/minimap)
         CreateHudNavButton(barGo.transform, font, "Map", new Vector2(0f, 0.5f), true, onMap);
-        AddText(barGo.transform, "Title", font, LockeKeyUITheme.TitleSize, FontStyle.Bold,
-            LockeKeyUITheme.White, new Vector2(0.5f, 0.5f), title, new Vector2(200f, 36f), TextAnchor.MiddleCenter);
         CreateHudNavButton(barGo.transform, font, "Key", new Vector2(1f, 0.5f), false, onKeyRing);
+        var mapBtn = barGo.transform.Find("MapBtn");
+        if (mapBtn != null) mapBtn.gameObject.SetActive(false);
+        var keyBtn = barGo.transform.Find("KeyBtn");
+        if (keyBtn != null) keyBtn.gameObject.SetActive(false);
+
+        AddText(barGo.transform, "Title", font, 17, FontStyle.Bold,
+            LockeKeyUITheme.White, new Vector2(0.5f, 0.5f), title, new Vector2(180f, 28f), TextAnchor.MiddleCenter);
         return barGo;
     }
 

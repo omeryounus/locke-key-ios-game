@@ -2,12 +2,11 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Compact quest tracker — top-left, not a yellow full-width instruction bar.
+/// Compact centered objective pill beneath the title bar.
 /// </summary>
 public class ObjectiveTrackerHUD : MonoBehaviour
 {
     private Text titleText;
-    private Text bodyText;
     private Text stepText;
     private Image cardBg;
     private Font font;
@@ -15,7 +14,11 @@ public class ObjectiveTrackerHUD : MonoBehaviour
     public static ObjectiveTrackerHUD Ensure(Transform canvasRoot, Font font)
     {
         var existing = Object.FindFirstObjectByType<ObjectiveTrackerHUD>();
-        if (existing != null) return existing;
+        if (existing != null)
+        {
+            existing.Relayout();
+            return existing;
+        }
 
         var go = new GameObject("ObjectiveTracker", typeof(RectTransform), typeof(ObjectiveTrackerHUD));
         go.transform.SetParent(canvasRoot, false);
@@ -27,63 +30,51 @@ public class ObjectiveTrackerHUD : MonoBehaviour
     private void Build(Font f)
     {
         font = f ?? LockeUILayout.GetUIFont();
-        var scale = GameSettings.UiScale;
-
         var rect = GetComponent<RectTransform>();
-        // Top-left compact card
-        rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
-        rect.pivot = new Vector2(0f, 1f);
-        rect.anchoredPosition = new Vector2(10f, -52f);
-        rect.sizeDelta = new Vector2(200f * scale, 68f * scale);
+        TopHudLayout.PlaceObjective(rect);
 
         cardBg = gameObject.AddComponent<Image>();
-        cardBg.color = new Color(0.05f, 0.06f, 0.1f, 0.82f);
-        var outline = gameObject.AddComponent<Outline>();
-        outline.effectColor = new Color(GameSettings.AccentColor.r, GameSettings.AccentColor.g, GameSettings.AccentColor.b, 0.4f);
-        outline.effectDistance = new Vector2(1.2f, -1.2f);
+        TopHudLayout.ApplyGlass(cardBg);
+        TopHudLayout.AddSoftBlurLayer(transform);
 
-        var accent = new GameObject("Accent", typeof(RectTransform), typeof(Image));
-        accent.transform.SetParent(transform, false);
-        var aRect = accent.GetComponent<RectTransform>();
-        aRect.anchorMin = new Vector2(0f, 0f);
-        aRect.anchorMax = new Vector2(0f, 1f);
-        aRect.pivot = new Vector2(0f, 0.5f);
-        aRect.sizeDelta = new Vector2(3f, 0f);
-        accent.GetComponent<Image>().color = GameSettings.AccentColor;
-
-        // Quest diamond icon
-        var iconGo = new GameObject("Icon", typeof(RectTransform), typeof(Image));
-        iconGo.transform.SetParent(transform, false);
-        var iRect = iconGo.GetComponent<RectTransform>();
-        iRect.anchorMin = iRect.anchorMax = new Vector2(0f, 0.5f);
-        iRect.pivot = new Vector2(0f, 0.5f);
-        iRect.anchoredPosition = new Vector2(10f, 0f);
-        iRect.sizeDelta = new Vector2(14f, 14f);
-        iconGo.GetComponent<Image>().color = GameSettings.AccentColor;
+        // Thin gold accent line on top edge (not a heavy border)
+        var line = new GameObject("AccentLine", typeof(RectTransform), typeof(Image));
+        line.transform.SetParent(transform, false);
+        var lRect = line.GetComponent<RectTransform>();
+        lRect.anchorMin = new Vector2(0.12f, 1f);
+        lRect.anchorMax = new Vector2(0.88f, 1f);
+        lRect.pivot = new Vector2(0.5f, 1f);
+        lRect.sizeDelta = new Vector2(0f, 2f);
+        line.GetComponent<Image>().color = new Color(
+            GameSettings.AccentColor.r, GameSettings.AccentColor.g, GameSettings.AccentColor.b, 0.55f);
+        line.GetComponent<Image>().raycastTarget = false;
 
         stepText = MakeText("Step", 10, FontStyle.Bold, GameSettings.AccentColor,
-            new Vector2(0.12f, 0.78f), new Vector2(160f, 16f));
+            new Vector2(0.5f, 0.72f), new Vector2(220f, 14f), TextAnchor.MiddleCenter);
         titleText = MakeText("Title", 13, FontStyle.Bold, Color.white,
-            new Vector2(0.12f, 0.48f), new Vector2(170f, 20f));
-        bodyText = MakeText("Body", 11, FontStyle.Normal, LockeKeyUITheme.BodyText,
-            new Vector2(0.12f, 0.2f), new Vector2(170f, 16f));
+            new Vector2(0.5f, 0.32f), new Vector2(220f, 18f), TextAnchor.MiddleCenter);
     }
 
-    private Text MakeText(string name, int size, FontStyle style, Color color, Vector2 anchor, Vector2 sizeDelta)
+    public void Relayout()
+    {
+        TopHudLayout.PlaceObjective(GetComponent<RectTransform>());
+        if (cardBg != null) TopHudLayout.ApplyGlass(cardBg);
+    }
+
+    private Text MakeText(string name, int size, FontStyle style, Color color, Vector2 anchor, Vector2 sizeDelta, TextAnchor align)
     {
         var go = new GameObject(name, typeof(RectTransform), typeof(Text));
         go.transform.SetParent(transform, false);
         var rect = go.GetComponent<RectTransform>();
         rect.anchorMin = rect.anchorMax = anchor;
-        rect.pivot = new Vector2(0f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
         rect.sizeDelta = sizeDelta;
         var t = go.GetComponent<Text>();
         t.font = font;
         t.fontSize = Mathf.RoundToInt(size * GameSettings.SubtitleScale);
         t.fontStyle = style;
         t.color = color;
-        t.alignment = TextAnchor.MiddleLeft;
-        t.horizontalOverflow = HorizontalWrapMode.Wrap;
+        t.alignment = align;
         t.raycastTarget = false;
         return t;
     }
@@ -98,30 +89,29 @@ public class ObjectiveTrackerHUD : MonoBehaviour
         switch (beat.CurrentBeat)
         {
             case ChapterBeatDirector.Beat.Arrival:
-                Set("QUEST  1/6", "Collect House Key", "Follow the glow");
+                Set("QUEST 1/6", "Collect the House Key");
                 break;
             case ChapterBeatDirector.Beat.StuckDoor:
-                Set("QUEST  2/6", "Unlock Front Door", "Go to highlighted door");
+                Set("QUEST 2/6", "Unlock the Front Door");
                 break;
             case ChapterBeatDirector.Beat.Library:
-                Set("QUEST  3/6", "Clear Bookshelf", "Tap Interact once");
+                Set("QUEST 3/6", "Clear the Bookshelf");
                 break;
             case ChapterBeatDirector.Beat.GhostKeyUse:
-                Set("QUEST  4/6", "Phase the Seal", "Use Key, walk through");
+                Set("QUEST 4/6", "Phase Through the Seal");
                 break;
             case ChapterBeatDirector.Beat.EchoEncounter:
-                Set("DANGER", "Escape the Echo", "Hide or run");
+                Set("DANGER", "Escape the Echo");
                 break;
             default:
-                Set("QUEST  6/6", "Uncover Memory", "Head Key → portrait");
+                Set("QUEST 6/6", "Uncover a Memory");
                 break;
         }
     }
 
-    private void Set(string step, string title, string body)
+    private void Set(string step, string title)
     {
         if (stepText != null) stepText.text = step;
         if (titleText != null) titleText.text = title;
-        if (bodyText != null) bodyText.text = body;
     }
 }

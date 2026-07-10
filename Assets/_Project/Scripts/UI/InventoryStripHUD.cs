@@ -2,23 +2,29 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Named inventory strip: shows Front Door Key with checkmark, not just a tiny icon.
+/// Top-left compact inventory: icon + numeric badge. Taps open key ring.
 /// </summary>
 public class InventoryStripHUD : MonoBehaviour
 {
-    private Text header;
-    private Text line1;
     private Image icon;
     private Image card;
+    private Text badgeText;
+    private GameObject badgeGo;
     private Font font;
     private Vector3 baseScale = Vector3.one;
     private float popTimer;
+    private int lastCount = -1;
 
     public static InventoryStripHUD Ensure(Transform canvasRoot, Font font)
     {
         var existing = Object.FindFirstObjectByType<InventoryStripHUD>();
-        if (existing != null) return existing;
-        var go = new GameObject("InventoryStrip", typeof(RectTransform), typeof(InventoryStripHUD));
+        if (existing != null)
+        {
+            existing.Relayout();
+            return existing;
+        }
+
+        var go = new GameObject("InventoryStrip", typeof(RectTransform), typeof(InventoryStripHUD), typeof(Button));
         go.transform.SetParent(canvasRoot, false);
         var hud = go.GetComponent<InventoryStripHUD>();
         hud.Build(font);
@@ -28,55 +34,61 @@ public class InventoryStripHUD : MonoBehaviour
     private void Build(Font f)
     {
         font = f ?? LockeUILayout.GetUIFont();
-        var scale = GameSettings.UiScale;
         var rect = GetComponent<RectTransform>();
-        rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
-        rect.pivot = new Vector2(0f, 1f);
-        // Below compact quest tracker
-        rect.anchoredPosition = new Vector2(10f, -128f);
-        rect.sizeDelta = new Vector2(168f * scale, 64f * scale);
+        TopHudLayout.PlaceInventory(rect);
         baseScale = Vector3.one;
 
         card = gameObject.AddComponent<Image>();
-        card.color = new Color(0.05f, 0.06f, 0.1f, 0.86f);
-        var outline = gameObject.AddComponent<Outline>();
-        outline.effectColor = new Color(1f, 1f, 1f, 0.12f);
-        outline.effectDistance = new Vector2(1f, -1f);
+        TopHudLayout.ApplyGlass(card);
+        TopHudLayout.AddSoftBlurLayer(transform);
 
-        header = Make("Header", "INVENTORY", 10, FontStyle.Bold, LockeKeyUITheme.CaptionText,
-            new Vector2(0.5f, 0.82f), new Vector2(150f, 16f));
+        var btn = GetComponent<Button>();
+        btn.targetGraphic = card;
+        btn.onClick.AddListener(() => GrokUIFlowManager.Instance?.ShowKeyRing());
+        UIButtonFeedback.Ensure(gameObject);
 
         icon = new GameObject("Icon", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
         icon.transform.SetParent(transform, false);
         icon.preserveAspect = true;
+        icon.raycastTarget = false;
         var iRect = icon.rectTransform;
-        iRect.anchorMin = iRect.anchorMax = new Vector2(0f, 0.35f);
-        iRect.pivot = new Vector2(0f, 0.5f);
-        iRect.anchoredPosition = new Vector2(10f, 0f);
-        iRect.sizeDelta = new Vector2(34f, 34f); // ~30% larger than prior 24–28px status icons
+        iRect.anchorMin = new Vector2(0.15f, 0.15f);
+        iRect.anchorMax = new Vector2(0.85f, 0.85f);
+        iRect.offsetMin = iRect.offsetMax = Vector2.zero;
 
-        line1 = Make("Line1", "— empty —", 12, FontStyle.Normal, LockeKeyUITheme.BodyText,
-            new Vector2(0.62f, 0.35f), new Vector2(110f, 36f));
-        line1.alignment = TextAnchor.MiddleLeft;
+        // Badge (top-right of icon)
+        badgeGo = new GameObject("Badge", typeof(RectTransform), typeof(Image));
+        badgeGo.transform.SetParent(transform, false);
+        var bImg = badgeGo.GetComponent<Image>();
+        bImg.color = GameSettings.AccentColor;
+        bImg.raycastTarget = false;
+        var bRect = badgeGo.GetComponent<RectTransform>();
+        bRect.anchorMin = bRect.anchorMax = new Vector2(1f, 1f);
+        bRect.pivot = new Vector2(0.5f, 0.5f);
+        bRect.anchoredPosition = new Vector2(-2f, -2f);
+        bRect.sizeDelta = new Vector2(16f, 16f);
+
+        var bTextGo = new GameObject("Num", typeof(RectTransform), typeof(Text));
+        bTextGo.transform.SetParent(badgeGo.transform, false);
+        badgeText = bTextGo.GetComponent<Text>();
+        badgeText.font = font;
+        badgeText.fontSize = 10;
+        badgeText.fontStyle = FontStyle.Bold;
+        badgeText.color = Color.black;
+        badgeText.alignment = TextAnchor.MiddleCenter;
+        badgeText.raycastTarget = false;
+        var btRect = bTextGo.GetComponent<RectTransform>();
+        btRect.anchorMin = Vector2.zero;
+        btRect.anchorMax = Vector2.one;
+        btRect.offsetMin = btRect.offsetMax = Vector2.zero;
+
+        badgeGo.SetActive(false);
     }
 
-    private Text Make(string name, string text, int size, FontStyle style, Color color, Vector2 anchor, Vector2 sizeDelta)
+    public void Relayout()
     {
-        var go = new GameObject(name, typeof(RectTransform), typeof(Text));
-        go.transform.SetParent(transform, false);
-        var rect = go.GetComponent<RectTransform>();
-        rect.anchorMin = rect.anchorMax = anchor;
-        rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.sizeDelta = sizeDelta;
-        var t = go.GetComponent<Text>();
-        t.font = font;
-        t.fontSize = size;
-        t.fontStyle = style;
-        t.color = color;
-        t.text = text;
-        t.alignment = TextAnchor.MiddleCenter;
-        t.raycastTarget = false;
-        return t;
+        TopHudLayout.PlaceInventory(GetComponent<RectTransform>());
+        if (card != null) TopHudLayout.ApplyGlass(card);
     }
 
     private void Update()
@@ -88,58 +100,45 @@ public class InventoryStripHUD : MonoBehaviour
         bool hasHouse = inv != null && inv.HasHouseKey;
         bool hasGhost = km != null && km.ownedKeys.Exists(k => k.abilityType == KeyManager.KeyAbilityType.GhostPhase);
         bool hasHead = km != null && km.ownedKeys.Exists(k => k.abilityType == KeyManager.KeyAbilityType.HeadMemory);
+        int count = (hasHouse ? 1 : 0) + (hasGhost ? 1 : 0) + (hasHead ? 1 : 0);
 
-        if (hasHouse)
+        if (icon != null)
         {
-            if (line1 != null)
+            Sprite spr = null;
+            if (hasHouse) spr = lib != null ? lib.houseKeyIcon : Resources.Load<Sprite>(ArtPaths.KeySpriteForId("house"));
+            else if (hasGhost) spr = lib?.ghostKeyIcon;
+            else if (hasHead) spr = lib?.headKeyIcon;
+
+            if (spr != null)
             {
-                line1.text = "✓ Front Door Key";
-                line1.color = LockeKeyUITheme.Success;
-            }
-            if (icon != null)
-            {
-                icon.sprite = lib != null ? lib.houseKeyIcon : Resources.Load<Sprite>(ArtPaths.KeySpriteForId("house"));
-                icon.enabled = icon.sprite != null;
-                // Glow pulse
-                var a = 0.85f + Mathf.Sin(Time.time * 3f) * 0.15f;
-                icon.color = new Color(1f, 0.95f, 0.7f, a);
-                icon.rectTransform.localScale = Vector3.one * (1f + Mathf.Sin(Time.time * 3f) * 0.06f);
-            }
-        }
-        else if (hasGhost)
-        {
-            if (line1 != null) { line1.text = "✓ Ghost Key"; line1.color = LockeKeyUITheme.Success; }
-            if (icon != null)
-            {
-                icon.sprite = lib?.ghostKeyIcon;
-                icon.enabled = icon.sprite != null;
+                icon.sprite = spr;
+                icon.enabled = true;
                 icon.color = Color.white;
             }
-        }
-        else if (hasHead)
-        {
-            if (line1 != null) { line1.text = "✓ Head Key"; line1.color = LockeKeyUITheme.Success; }
-            if (icon != null)
+            else
             {
-                icon.sprite = lib?.headKeyIcon;
-                icon.enabled = icon.sprite != null;
+                // Empty bag glyph
+                icon.enabled = true;
+                icon.sprite = null;
+                icon.color = new Color(1f, 1f, 1f, 0.25f);
             }
         }
-        else
+
+        if (badgeGo != null)
         {
-            if (line1 != null) { line1.text = "— empty —"; line1.color = LockeKeyUITheme.CaptionText; }
-            if (icon != null) icon.enabled = false;
+            badgeGo.SetActive(count > 0);
+            if (badgeText != null)
+                badgeText.text = count.ToString();
         }
 
-        // Multi-key summary in header when more than one
-        int count = (hasHouse ? 1 : 0) + (hasGhost ? 1 : 0) + (hasHead ? 1 : 0);
-        if (header != null)
-            header.text = count > 0 ? $"INVENTORY  ·  {count}" : "INVENTORY";
+        if (count != lastCount && count > lastCount && lastCount >= 0)
+            PlayCollectPop();
+        lastCount = count;
 
         if (popTimer > 0f)
         {
             popTimer -= Time.deltaTime;
-            float k = 1f + Mathf.Sin((1f - popTimer) * Mathf.PI) * 0.12f;
+            float k = 1f + Mathf.Sin((1f - popTimer) * Mathf.PI) * 0.14f;
             transform.localScale = baseScale * k;
         }
         else
