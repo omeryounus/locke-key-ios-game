@@ -137,41 +137,9 @@ public class CollapsedBookshelfPuzzle : PuzzleBase
                 Random.Range(0.12f, 0.22f),
                 0.9f);
             sr.sortingOrder = 4;
-            bit.AddComponent<DebrisDrift>().Init(
+            bit.AddComponent<EnvDebrisDrift>().Init(
                 new Vector2(Random.Range(0.5f, 1.6f), Random.Range(0.8f, 2.2f)),
                 Random.Range(1.4f, 2.4f));
-        }
-    }
-
-    private class DebrisDrift : MonoBehaviour
-    {
-        private Vector2 velocity;
-        private float life;
-        private float age;
-        private SpriteRenderer sr;
-
-        public void Init(Vector2 vel, float lifetime)
-        {
-            velocity = vel;
-            life = lifetime;
-            sr = GetComponent<SpriteRenderer>();
-        }
-
-        private void Update()
-        {
-            age += Time.deltaTime;
-            velocity.y -= 5f * Time.deltaTime;
-            transform.position += (Vector3)(velocity * Time.deltaTime);
-            transform.Rotate(0f, 0f, velocity.x * 50f * Time.deltaTime);
-            if (sr != null)
-            {
-                var c = sr.color;
-                c.a = Mathf.Lerp(0.9f, 0f, age / life);
-                sr.color = c;
-            }
-
-            if (age >= life)
-                Destroy(gameObject);
         }
     }
 }

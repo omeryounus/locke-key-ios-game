@@ -152,7 +152,7 @@ public class SceneAtmosphereController : MonoBehaviour
             float size = Random.Range(0.04f, 0.12f);
             mote.transform.localScale = Vector3.one * size;
             mote.transform.position = RandomDustPos();
-            mote.AddComponent<DustMote>().Init(Random.Range(0.12f, 0.4f), Random.Range(0.35f, 1.2f));
+            mote.AddComponent<EnvDustMote>().Init(Random.Range(0.12f, 0.4f), Random.Range(0.35f, 1.2f));
         }
     }
 
@@ -208,32 +208,5 @@ public class SceneAtmosphereController : MonoBehaviour
         tex.Apply();
         tex.filterMode = FilterMode.Bilinear;
         return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
-    }
-
-    private class DustMote : MonoBehaviour
-    {
-        private float speed;
-        private float phase;
-        private Vector3 baseLocal;
-        private float drift;
-
-        public void Init(float s, float d)
-        {
-            speed = s;
-            drift = d;
-            phase = Random.Range(0f, 10f);
-            baseLocal = transform.localPosition;
-        }
-
-        private void Update()
-        {
-            phase += Time.deltaTime * speed;
-            transform.localPosition = baseLocal + new Vector3(
-                Mathf.Sin(phase * 0.7f) * drift * 0.35f,
-                Mathf.Sin(phase) * drift * 0.55f,
-                0f);
-            if (transform.localPosition.y > 3.4f)
-                baseLocal.y = -2.9f;
-        }
     }
 }

@@ -133,7 +133,7 @@ public class FoyerEnvironmentBuilder : MonoBehaviour
         var flame = Prop(root, name + "Flame", disc, pos + new Vector3(0f, 0.28f, 0f),
             new Vector3(0.2f, 0.28f, 1f), new Color(1f, 0.75f, 0.35f, 0.9f), 6);
         AddLight(flame.transform, LockeKeyUITheme.LKCandle, 0.8f, 2.1f);
-        flame.AddComponent<FlickerLight>();
+        flame.AddComponent<EnvFlickerLight>();
     }
 
     private static GameObject Prop(GameObject parent, string name, Sprite sprite, Vector3 pos, Vector3 scale, Color color, int order)
@@ -199,21 +199,5 @@ public class FoyerEnvironmentBuilder : MonoBehaviour
         }
         tex.Apply();
         return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
-    }
-
-    private class FlickerLight : MonoBehaviour
-    {
-        private Light2D light;
-        private float baseI;
-        private void Start()
-        {
-            light = GetComponentInChildren<Light2D>();
-            if (light != null) baseI = light.intensity;
-        }
-        private void Update()
-        {
-            if (light == null) return;
-            light.intensity = baseI * (0.85f + Mathf.PerlinNoise(Time.time * 3.5f, 0.2f) * 0.3f);
-        }
     }
 }

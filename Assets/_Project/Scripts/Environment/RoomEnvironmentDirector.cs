@@ -75,7 +75,7 @@ public class RoomEnvironmentDirector : MonoBehaviour
             new Vector3(1.2f, 0.45f, 1f), new Color(0.3f, 0.18f, 0.1f, 0.95f), 5);
         var lamp = Prop(root, "DeskLamp", disc, new Vector3(cx + 1.5f, -0.45f, 0.25f),
             new Vector3(0.25f, 0.35f, 1f), LockeKeyUITheme.LKCandle, 6);
-        Light(lamp.transform, LockeKeyUITheme.LKCandle, 0.75f, 2.2f);
+        AddPointLight(lamp.transform, LockeKeyUITheme.LKCandle, 0.75f, 2.2f);
 
         Prop(root, "Globe", disc, new Vector3(cx + 2.1f, -0.55f, 0.22f),
             new Vector3(0.4f, 0.4f, 1f), new Color(0.35f, 0.45f, 0.55f, 0.9f), 6);
@@ -89,8 +89,8 @@ public class RoomEnvironmentDirector : MonoBehaviour
         // Magical floating tome
         var tome = Prop(root, "MagicTome", square, new Vector3(cx + 0.8f, 0.3f, 0.25f),
             new Vector3(0.35f, 0.25f, 1f), LockeKeyUITheme.LKMagicPurple * 0.8f + Color.white * 0.2f, 7);
-        Light(tome.transform, LockeKeyUITheme.LKMagicPurple, 0.45f, 1.6f);
-        tome.AddComponent<FloatBob>().Init(0.12f, 1.4f);
+        AddPointLight(tome.transform, LockeKeyUITheme.LKMagicPurple, 0.45f, 1.6f);
+        tome.AddComponent<EnvFloatBob>().Init(0.12f, 1.4f);
         return root;
     }
 
@@ -106,17 +106,17 @@ public class RoomEnvironmentDirector : MonoBehaviour
             new Vector3(0.45f, 2.4f, 1f), new Color(0.2f, 0.25f, 0.28f, 0.95f), 4);
         var rune = Prop(root, "RuneGlow", disc, new Vector3(cx, 0.8f, 0.22f),
             new Vector3(0.9f, 0.9f, 1f), LockeKeyUITheme.LKSpiritGreen, 5);
-        Light(rune.transform, LockeKeyUITheme.LKSpiritGreen, 0.7f, 2.8f);
-        rune.AddComponent<FloatBob>().Init(0.08f, 2f);
+        AddPointLight(rune.transform, LockeKeyUITheme.LKSpiritGreen, 0.7f, 2.8f);
+        rune.AddComponent<EnvFloatBob>().Init(0.08f, 2f);
 
         Prop(root, "ChainsL", square, new Vector3(cx - 1.1f, 1.5f, 0.2f),
             new Vector3(0.08f, 1.2f, 1f), new Color(0.4f, 0.4f, 0.42f, 0.8f), 5);
         Prop(root, "ChainsR", square, new Vector3(cx + 1.1f, 1.4f, 0.2f),
             new Vector3(0.08f, 1.3f, 1f), new Color(0.4f, 0.4f, 0.42f, 0.8f), 5);
         var chainL = root.Find("ChainsL");
-        if (chainL != null) chainL.gameObject.AddComponent<PendulumSway>().Init(4f, 1.8f);
+        if (chainL != null) chainL.gameObject.AddComponent<EnvPendulumSway>().Init(4f, 1.8f);
         var chainR = root.Find("ChainsR");
-        if (chainR != null) chainR.gameObject.AddComponent<PendulumSway>().Init(3.5f, 2.1f);
+        if (chainR != null) chainR.gameObject.AddComponent<EnvPendulumSway>().Init(3.5f, 2.1f);
 
         Prop(root, "SealedCobweb", disc, new Vector3(cx - 1.8f, 2.1f, 0.1f),
             new Vector3(1.1f, 0.8f, 1f), new Color(0.85f, 0.9f, 0.95f, 0.16f), 3);
@@ -139,7 +139,7 @@ public class RoomEnvironmentDirector : MonoBehaviour
             new Vector3(0.65f, 1.3f, 1f), new Color(0.16f, 0.38f, 0.18f, 0.7f), 5);
         Prop(root, "RainWindow", square, new Vector3(cx - 2.2f, 1.2f, 0.08f),
             new Vector3(1.2f, 1.6f, 1f), new Color(0.3f, 0.4f, 0.55f, 0.25f), 1);
-        Light(root.Find("RainWindow") ?? root, LockeKeyUITheme.LKMoon, 0.4f, 3f);
+        AddPointLight(root.Find("RainWindow") ?? root, LockeKeyUITheme.LKMoon, 0.4f, 3f);
         Prop(root, "Planter", square, new Vector3(cx + 1.5f, -1.15f, 0.18f),
             new Vector3(0.5f, 0.4f, 1f), new Color(0.35f, 0.22f, 0.15f, 0.9f), 4);
         Prop(root, "Bush", disc, new Vector3(cx + 1.5f, -0.7f, 0.2f),
@@ -150,7 +150,7 @@ public class RoomEnvironmentDirector : MonoBehaviour
             var drop = Prop(root, $"Rain{i}", square,
                 new Vector3(cx + Random.Range(-2f, 2f), Random.Range(0.5f, 2.5f), 0.05f),
                 new Vector3(0.04f, 0.25f, 1f), new Color(0.7f, 0.8f, 1f, 0.25f), 8);
-            drop.AddComponent<RainStreak>().Init(Random.Range(2.5f, 4.5f));
+            drop.AddComponent<EnvRainStreak>().Init(Random.Range(2.5f, 4.5f));
         }
         return root;
     }
@@ -171,23 +171,23 @@ public class RoomEnvironmentDirector : MonoBehaviour
             new Vector3(1.4f, 1.7f, 1f), LockeKeyUITheme.LKMagicPurple, 3);
         var lg = frameGlow.GetComponent<SpriteRenderer>();
         if (lg != null) lg.color = new Color(0.65f, 0.35f, 1f, 0.12f);
-        Light(frameGlow.transform, LockeKeyUITheme.LKMagicPurple, 0.55f, 2.5f);
+        AddPointLight(frameGlow.transform, LockeKeyUITheme.LKMagicPurple, 0.55f, 2.5f);
 
         Prop(root, "Pedestal", square, new Vector3(cx + 1.6f, -0.9f, 0.2f),
             new Vector3(0.45f, 0.7f, 1f), new Color(0.35f, 0.32f, 0.3f, 0.95f), 5);
         var artifact = Prop(root, "MemoryOrb", disc, new Vector3(cx + 1.6f, -0.25f, 0.25f),
             new Vector3(0.35f, 0.35f, 1f), LockeKeyUITheme.LKSpiritGreen, 7);
-        Light(artifact.transform, LockeKeyUITheme.LKSpiritGreen, 0.65f, 1.8f);
-        artifact.AddComponent<FloatBob>().Init(0.15f, 1.6f);
+        AddPointLight(artifact.transform, LockeKeyUITheme.LKSpiritGreen, 0.65f, 1.8f);
+        artifact.AddComponent<EnvFloatBob>().Init(0.15f, 1.6f);
 
         Prop(root, "CurtainL", square, new Vector3(cx - 2.2f, 0.7f, 0.18f),
             new Vector3(0.5f, 2.0f, 1f), new Color(0.3f, 0.12f, 0.2f, 0.7f), 4);
         Prop(root, "CurtainR", square, new Vector3(cx + 2.3f, 0.7f, 0.18f),
             new Vector3(0.5f, 2.0f, 1f), new Color(0.28f, 0.12f, 0.22f, 0.7f), 4);
         var cl = root.Find("CurtainL");
-        if (cl != null) cl.gameObject.AddComponent<PendulumSway>().Init(3f, 1.5f);
+        if (cl != null) cl.gameObject.AddComponent<EnvPendulumSway>().Init(3f, 1.5f);
         var cr = root.Find("CurtainR");
-        if (cr != null) cr.gameObject.AddComponent<PendulumSway>().Init(2.6f, 1.7f);
+        if (cr != null) cr.gameObject.AddComponent<EnvPendulumSway>().Init(2.6f, 1.7f);
         return root;
     }
 
@@ -211,7 +211,7 @@ public class RoomEnvironmentDirector : MonoBehaviour
         return go;
     }
 
-    private static void Light(Transform parent, Color color, float intensity, float radius)
+    private static void AddPointLight(Transform parent, Color color, float intensity, float radius)
     {
         if (parent == null) return;
         var go = new GameObject("Light");
@@ -248,37 +248,5 @@ public class RoomEnvironmentDirector : MonoBehaviour
         }
         tex.Apply();
         return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
-    }
-
-    public class FloatBob : MonoBehaviour
-    {
-        private float amp, speed, phase;
-        private Vector3 origin;
-        public void Init(float a, float s) { amp = a; speed = s; phase = Random.value * 10f; origin = transform.position; }
-        private void Update() =>
-            transform.position = origin + Vector3.up * (Mathf.Sin(Time.time * speed + phase) * amp);
-    }
-
-    public class PendulumSway : MonoBehaviour
-    {
-        private float amp, speed, phase;
-        private Quaternion baseRot;
-        public void Init(float a, float s) { amp = a; speed = s; phase = Random.value * 5f; baseRot = transform.rotation; }
-        private void Update() =>
-            transform.rotation = baseRot * Quaternion.Euler(0f, 0f, Mathf.Sin(Time.time * speed + phase) * amp);
-    }
-
-    public class RainStreak : MonoBehaviour
-    {
-        private float speed;
-        private float top = 2.8f, bot = -1.2f;
-        public void Init(float s) => speed = s;
-        private void Update()
-        {
-            var p = transform.position;
-            p.y -= speed * Time.deltaTime;
-            if (p.y < bot) p.y = top;
-            transform.position = p;
-        }
     }
 }

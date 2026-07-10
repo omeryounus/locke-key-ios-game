@@ -218,11 +218,12 @@ public class TutorialCoach : MonoBehaviour
         if (group != null) group.gameObject.SetActive(false);
         enabled = false;
     }
+}
 
-    private class TutorialCoachProxy : MonoBehaviour
-    {
-        private TutorialCoach owner;
-        public void Bind(TutorialCoach o) => owner = o;
-        private void Update() => owner?.TickProxy();
-    }
+/// <summary>Top-level proxy so Unity can AddComponent it (nested MonoBehaviours are illegal).</summary>
+public class TutorialCoachProxy : MonoBehaviour
+{
+    private TutorialCoach owner;
+    public void Bind(TutorialCoach o) => owner = o;
+    private void Update() => owner?.TickProxy();
 }

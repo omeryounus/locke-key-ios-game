@@ -131,7 +131,7 @@ public class LivingWorldAtmosphere : MonoBehaviour
                 : new Color(0.55f, 0.7f, 1f, Random.Range(0.1f, 0.24f));   // moon dust
             go.transform.localScale = Vector3.one * Random.Range(0.04f, 0.13f);
             go.transform.localPosition = new Vector3(Random.Range(-5f, 5f), Random.Range(-2.5f, 3f), 0f);
-            go.AddComponent<DriftMote>().Init(
+            go.AddComponent<EnvDriftMote>().Init(
                 new Vector2(Random.Range(-0.15f, 0.15f), Random.Range(0.05f, 0.22f)),
                 Random.Range(0.4f, 1.4f));
         }
@@ -151,7 +151,7 @@ public class LivingWorldAtmosphere : MonoBehaviour
             sr.color = new Color(0.55f, 0.58f, 0.7f, Random.Range(0.06f, 0.12f));
             go.transform.localScale = new Vector3(Random.Range(3.5f, 6f), Random.Range(0.8f, 1.6f), 1f);
             go.transform.localPosition = new Vector3(Random.Range(-4f, 4f), Random.Range(-1.2f, 0.6f), 0f);
-            go.AddComponent<DriftMote>().Init(
+            go.AddComponent<EnvDriftMote>().Init(
                 new Vector2(Random.Range(0.04f, 0.12f) * (i % 2 == 0 ? 1f : -1f), Random.Range(-0.02f, 0.02f)),
                 Random.Range(1.5f, 3f));
         }
@@ -180,7 +180,7 @@ public class LivingWorldAtmosphere : MonoBehaviour
         sr.sprite = SoftSquare(24);
         sr.color = color;
         sr.sortingOrder = 4;
-        go.AddComponent<ClothSway>().Init(Random.Range(1.2f, 2.2f), Random.Range(2f, 5f));
+        go.AddComponent<EnvClothSway>().Init(Random.Range(1.2f, 2.2f), Random.Range(2f, 5f));
     }
 
     private void AnimateCloth() { /* ClothSway self-updates */ }
@@ -206,7 +206,7 @@ public class LivingWorldAtmosphere : MonoBehaviour
             sr.color = col;
             go.transform.localScale = Vector3.one * Random.Range(0.03f, 0.08f);
             go.transform.localPosition = new Vector3(Random.Range(-4f, 4f), Random.Range(-1f, 2f), 0f);
-            go.AddComponent<DriftMote>().Init(
+            go.AddComponent<EnvDriftMote>().Init(
                 new Vector2(Random.Range(-0.08f, 0.08f), Random.Range(0.12f, 0.35f)),
                 Random.Range(0.3f, 0.9f));
         }
@@ -226,7 +226,7 @@ public class LivingWorldAtmosphere : MonoBehaviour
             sr.sprite = disc;
             sr.color = new Color(0f, 0f, 0f, 0.08f + i * 0.01f);
             sr.sortingOrder = 3;
-            go.AddComponent<ClothSway>().Init(0.6f + i * 0.15f, 1.5f + i * 0.3f);
+            go.AddComponent<EnvClothSway>().Init(0.6f + i * 0.15f, 1.5f + i * 0.3f);
         }
     }
 
@@ -260,7 +260,7 @@ public class LivingWorldAtmosphere : MonoBehaviour
         sr.sprite = disc;
         sr.color = color;
         sr.sortingOrder = 1;
-        go.AddComponent<DriftMote>().Init(new Vector2(0.01f, 0f), 0.5f);
+        go.AddComponent<EnvDriftMote>().Init(new Vector2(0.01f, 0f), 0.5f);
     }
 
     private static Light2D MakeLight(string name, Light2D.LightType type, Color color, float intensity, float radius)
@@ -300,58 +300,5 @@ public class LivingWorldAtmosphere : MonoBehaviour
         }
         tex.Apply();
         return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
-    }
-
-    private class DriftMote : MonoBehaviour
-    {
-        private Vector2 vel;
-        private float wander;
-        private Vector3 origin;
-
-        public void Init(Vector2 v, float w)
-        {
-            vel = v;
-            wander = w;
-            origin = transform.localPosition;
-        }
-
-        private void Update()
-        {
-            var p = transform.localPosition;
-            p += (Vector3)(vel * Time.deltaTime);
-            p.x += Mathf.Sin(Time.time * wander + origin.x) * 0.01f;
-            // Wrap
-            if (p.y > 3.5f) p.y = -2.8f;
-            if (p.y < -3f) p.y = 3.2f;
-            if (p.x > 6f) p.x = -6f;
-            if (p.x < -6f) p.x = 6f;
-            transform.localPosition = p;
-        }
-    }
-
-    private class ClothSway : MonoBehaviour
-    {
-        private float speed;
-        private float amount;
-        private Vector3 baseScale;
-        private Quaternion baseRot;
-
-        public void Init(float s, float a)
-        {
-            speed = s;
-            amount = a;
-            baseScale = transform.localScale;
-            baseRot = transform.rotation;
-        }
-
-        private void Update()
-        {
-            float t = Time.time * speed;
-            transform.rotation = baseRot * Quaternion.Euler(0f, 0f, Mathf.Sin(t) * amount);
-            transform.localScale = new Vector3(
-                baseScale.x * (1f + Mathf.Sin(t * 0.7f) * 0.03f),
-                baseScale.y * (1f + Mathf.Sin(t) * 0.04f),
-                1f);
-        }
     }
 }

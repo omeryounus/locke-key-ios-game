@@ -30,39 +30,10 @@ public class KeySparkleVFX : MonoBehaviour
                 ? new Color(1f, 0.85f, 0.3f, 0.95f)
                 : new Color(0.75f, 0.45f, 1f, 0.9f);
             p.transform.localScale = Vector3.one * Random.Range(0.08f, 0.16f);
-            var rb = p.AddComponent<Spark>();
+            var rb = p.AddComponent<EnvSpark>();
             rb.Init(new Vector2(Random.Range(-1.4f, 1.4f), Random.Range(0.8f, 2.4f)), Random.Range(0.4f, 0.85f));
         }
         Destroy(gameObject, 1.1f);
-    }
-
-    private class Spark : MonoBehaviour
-    {
-        private Vector2 vel;
-        private float life;
-        private float age;
-        private SpriteRenderer sr;
-
-        public void Init(Vector2 v, float l)
-        {
-            vel = v;
-            life = l;
-            sr = GetComponent<SpriteRenderer>();
-        }
-
-        private void Update()
-        {
-            age += Time.deltaTime;
-            vel.y -= 3.2f * Time.deltaTime;
-            transform.position += (Vector3)(vel * Time.deltaTime);
-            if (sr != null)
-            {
-                var c = sr.color;
-                c.a = Mathf.Lerp(c.a, 0f, age / life);
-                sr.color = c;
-            }
-            if (age >= life) Destroy(gameObject);
-        }
     }
 
     private static Sprite SoftDisc(int size)
