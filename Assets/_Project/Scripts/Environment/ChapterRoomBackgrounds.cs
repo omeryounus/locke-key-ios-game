@@ -20,6 +20,7 @@ public class ChapterRoomBackgrounds : MonoBehaviour
     private Sprite sealedSprite;
     private Sprite wellhouseSprite;
     private Sprite exteriorSprite;
+    private Sprite memorySprite;
 
     private void Awake()
     {
@@ -32,8 +33,12 @@ public class ChapterRoomBackgrounds : MonoBehaviour
                         ?? Resources.Load<Sprite>("Art/Parallax/library_far");
         sealedSprite = LoadBg("bg_room_sealed_16x9")
                        ?? Resources.Load<Sprite>("Art/Parallax/sealed_passage");
-        wellhouseSprite = Resources.Load<Sprite>(ArtPaths.BgWellhouse);
-        exteriorSprite = foyerSprite;
+        wellhouseSprite = Resources.Load<Sprite>(ArtPaths.BgWellhouse)
+                          ?? LoadBg("bg_wellhouse_exterior");
+        exteriorSprite = LoadBg("bg_wellhouse_exterior")
+                         ?? Resources.Load<Sprite>(ArtPaths.BgFoyerLandscape)
+                         ?? foyerSprite;
+        memorySprite = LoadBg("bg_room_memory_16x9") ?? librarySprite;
 
         CreateLayers();
         ApplyRoom(ChapterRoomZone.RoomId.ExteriorEntrance, force: true);
@@ -69,10 +74,10 @@ public class ChapterRoomBackgrounds : MonoBehaviour
 
         Sprite sprite = room switch
         {
-            ChapterRoomZone.RoomId.ExteriorEntrance => exteriorSprite,
+            ChapterRoomZone.RoomId.ExteriorEntrance => exteriorSprite ?? foyerSprite,
             ChapterRoomZone.RoomId.Foyer => foyerSprite,
             ChapterRoomZone.RoomId.Library => librarySprite,
-            ChapterRoomZone.RoomId.MemoryPortrait => librarySprite,
+            ChapterRoomZone.RoomId.MemoryPortrait => memorySprite ?? librarySprite,
             ChapterRoomZone.RoomId.SealedPassage => sealedSprite,
             _ => foyerSprite
         };

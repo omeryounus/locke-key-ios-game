@@ -1,0 +1,164 @@
+{
+  "version": "2.0",
+  "generated_at": "2026-07-10T06:01:05.829501+00:00",
+  "style": "Art Bible v1.0 \u2014 dark fantasy gothic painterly, Little Nightmares / The Room / Locke & Key",
+  "pipeline": "Grok Imagine production art pass",
+  "assets": [
+    {
+      "id": "bg_foyer_production",
+      "source_session": "8.jpg",
+      "library_path": "Assets/_Project/Art/Production/Environment/Backgrounds/bg_foyer_production.jpg",
+      "resources_path": "Assets/_Project/Resources/Art/Backgrounds/bg_room_foyer_16x9.jpg",
+      "source_size": [
+        2048,
+        1152
+      ],
+      "guid_lib": "e2782408485e842dad50953ed6539db0",
+      "guid_res": "e2581d47e860a6ca3c35b080e50280eb"
+    },
+    {
+      "id": "bg_library_production",
+      "source_session": "6.jpg",
+      "library_path": "Assets/_Project/Art/Production/Environment/Backgrounds/bg_library_production.jpg",
+      "resources_path": "Assets/_Project/Resources/Art/Backgrounds/bg_room_library_16x9.jpg",
+      "source_size": [
+        2048,
+        1152
+      ],
+      "guid_lib": "e27299eea94f163c624987df27cd422a",
+      "guid_res": "e2ab22f31383e8ef6d56ae472ee97b07"
+    },
+    {
+      "id": "bg_sealed_production",
+      "source_session": "7.jpg",
+      "library_path": "Assets/_Project/Art/Production/Environment/Backgrounds/bg_sealed_production.jpg",
+      "resources_path": "Assets/_Project/Resources/Art/Backgrounds/bg_room_sealed_16x9.jpg",
+      "source_size": [
+        2048,
+        1152
+      ],
+      "guid_lib": "e21b3fe6c71f3005016fcda218067aa5",
+      "guid_res": "e2fdb95e371641af3ec7af4d8741b340"
+    },
+    {
+      "id": "bg_exterior_production",
+      "source_session": "9.jpg",
+      "library_path": "Assets/_Project/Art/Production/Environment/Backgrounds/bg_exterior_production.jpg",
+      "resources_path": "Assets/_Project/Resources/Art/Backgrounds/bg_wellhouse_exterior.jpg",
+      "source_size": [
+        2048,
+        1152
+      ],
+      "guid_lib": "e2ed530603c23b7e349720e37821b8d7",
+      "guid_res": "e23bf30d98694929fcf5a5285adae315"
+    },
+    {
+      "id": "bg_memory_production",
+      "source_session": "16.jpg",
+      "library_path": "Assets/_Project/Art/Production/Environment/Backgrounds/bg_memory_production.jpg",
+      "resources_path": "Assets/_Project/Resources/Art/Backgrounds/bg_room_memory_16x9.jpg",
+      "source_size": [
+        2048,
+        1152
+      ],
+      "guid_lib": "e23be3342d177b8ebf3aab2e1372dc81",
+      "guid_res": "e225faa62420ffe1fffee64f426a401b"
+    },
+    {
+      "id": "player_idle_production",
+      "source_session": "5.jpg",
+      "library_path": "Assets/_Project/Art/Production/Characters/Player/player_idle_production.png",
+      "resources_path": "Assets/_Project/Resources/Art/Characters/player_idle.png",
+      "source_size": [
+        2048,
+        2048
+      ],
+      "guid_lib": "e251cd73ce9783aec7e840212a42d6d8",
+      "guid_res": "e2cdb60b007e6b43035b3afff4ae40b9"
+    },
+    {
+      "id": "key_house_production",
+      "source_session": "4.jpg",
+      "library_path": "Assets/_Project/Art/Production/Items/Keys/key_house_production.png",
+      "resources_path": "Assets/_Project/Resources/Art/Keys/key_house_prod.png",
+      "source_size": [
+        2048,
+        2048
+      ],
+      "guid_lib": "e2cf31cd46c85a6c858f38a5bafbba08",
+      "guid_res": "e2d16610283622fabb0079100f6d87d6"
+    },
+    {
+      "id": "key_ghost_production",
+      "source_session": "10.jpg",
+      "library_path": "Assets/_Project/Art/Production/Items/Keys/key_ghost_production.png",
+      "resources_path": "Assets/_Project/Resources/Art/Keys/key_ghost.jpg",
+      "source_size": [
+        2048,
+        2048
+      ],
+      "guid_lib": "e26bf6612f4fd1bb3ac72643ad51613f",
+      "guid_res": "e2dfa2967e8b5bb4fd673464eb3405e8"
+    },
+    {
+      "id": "key_head_production",
+      "source_session": "11.jpg",
+      "library_path": "Assets/_Project/Art/Production/Items/Keys/key_head_production.png",
+      "resources_path": "Assets/_Project/Resources/Art/Keys/key_head.jpg",
+      "source_size": [
+        2048,
+        2048
+      ],
+      "guid_lib": "e22e1a1965975d2b8064974329379f18",
+      "guid_res": "e23b996103c438227fbfb86f2772b598"
+    },
+    {
+      "id": "echo_production",
+      "source_session": "12.jpg",
+      "library_path": "Assets/_Project/Art/Production/Enemies/Echo/echo_production.png",
+      "resources_path": "Assets/_Project/Resources/Art/Enemies/echo_00.png",
+      "source_size": [
+        2048,
+        2048
+      ],
+      "guid_lib": "e2e7b4dd6ad3463ebcfbf79a8514c08a",
+      "guid_res": "e2c57073ce02d84be0526801d5159ddb"
+    },
+    {
+      "id": "vfx_particle_atlas_production",
+      "source_session": "13.jpg",
+      "library_path": "Assets/_Project/Art/Production/Effects/vfx_particle_atlas_production.png",
+      "resources_path": "Assets/_Project/Resources/Art/VFX/vfx_atlas_production.png",
+      "source_size": [
+        2048,
+        2048
+      ],
+      "guid_lib": "e212f96a384d7968e0348fd56b62934f",
+      "guid_res": "e27cfdfbf742dc75128d2ebc134457be"
+    },
+    {
+      "id": "ui_panel_kit_production",
+      "source_session": "14.jpg",
+      "library_path": "Assets/_Project/Art/Production/UI/ui_panel_kit_production.jpg",
+      "resources_path": "Assets/_Project/Resources/Art/UI/ui_panel_kit_production.jpg",
+      "source_size": [
+        2048,
+        1152
+      ],
+      "guid_lib": "e23f04a0da2295c5cc132e8ab45023c2",
+      "guid_res": "e2f1e6f5a035adfb38d5cf553e3fca36"
+    },
+    {
+      "id": "door_front_production",
+      "source_session": "15.jpg",
+      "library_path": "Assets/_Project/Art/Production/Props/Doors/door_front_production.png",
+      "resources_path": "Assets/_Project/Resources/Art/Environments/door_front_production.png",
+      "source_size": [
+        2048,
+        2048
+      ],
+      "guid_lib": "e274dca5372a20f8653a1508e132b3d9",
+      "guid_res": "e234fa6777e1e52a87ec2b399731a9d2"
+    }
+  ]
+}
