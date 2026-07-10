@@ -87,14 +87,21 @@ public class GameBootstrap : MonoBehaviour
         var player = FindFirstObjectByType<PlayerController>();
         if (player == null) return;
 
+        // 2.5D layered rig + multi-frame atlas animator
+        if (player.GetComponent<PlayerCharacterRig>() == null)
+            player.gameObject.AddComponent<PlayerCharacterRig>();
+
         if (player.GetComponent<PlayerSpriteAnimator>() == null)
             player.gameObject.AddComponent<PlayerSpriteAnimator>();
 
+        // Visibility boost still adds fill light; secondary motion owned by rig
         if (player.GetComponent<PlayerVisibilityBoost>() == null)
             player.gameObject.AddComponent<PlayerVisibilityBoost>();
 
-        if (player.GetComponent<PlayerIdleDetail>() == null)
-            player.gameObject.AddComponent<PlayerIdleDetail>();
+        // Legacy idle detail disabled when modern animator is present
+        var idleDetail = player.GetComponent<PlayerIdleDetail>();
+        if (idleDetail != null)
+            idleDetail.enabled = false;
 
         if (player.GetComponent<GhostPhaseVFX>() == null)
             player.gameObject.AddComponent<GhostPhaseVFX>();

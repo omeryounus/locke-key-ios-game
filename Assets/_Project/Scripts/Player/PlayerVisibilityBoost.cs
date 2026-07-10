@@ -16,11 +16,16 @@ public class PlayerVisibilityBoost : MonoBehaviour
     private Light2D fill;
     private Color baseBodyColor = Color.white;
 
+    private bool modernRig;
+
     private void Awake()
     {
         body = GetComponent<SpriteRenderer>();
         if (body == null)
             body = gameObject.AddComponent<SpriteRenderer>();
+
+        modernRig = GetComponent<PlayerCharacterRig>() != null
+                    || GetComponent<PlayerSpriteAnimator>() != null;
 
         var s = transform.localScale;
         if (Mathf.Abs(s.x) < 1.5f)
@@ -32,16 +37,31 @@ public class PlayerVisibilityBoost : MonoBehaviour
         body.color = baseBodyColor;
         body.sortingOrder = Mathf.Max(body.sortingOrder, 20);
 
-        EnsureShadow();
+        // Modern 2.5D rig owns shadow/hood/secondary motion — only keep fill light here
+        if (!modernRig)
+        {
+            EnsureShadow();
+            EnsureHoodSway();
+        }
         EnsureRimLight();
-        EnsureHoodSway();
+    }
+
+    private void Start()
+    {
+        // Rig may be added later in bootstrap order
+        modernRig = GetComponent<PlayerCharacterRig>() != null;
+        if (modernRig)
+        {
+            if (shadow != null) shadow.enabled = false;
+            if (hood != null) hood.enabled = false;
+        }
     }
 
     private void LateUpdate()
     {
         var pcMain = GetComponent<PlayerController>();
-        // Keep brightness unless ghosting
-        if (body != null && (pcMain == null || !pcMain.IsGhostPhasing))
+        // Keep brightness unless ghosting or modern ghost tint is active
+        if (body != null && (pcMain == null || !pcMain.IsGhostPhasing) && !modernRig)
         {
             var c = body.color;
             if (c.r < 0.9f || c.g < 0.9f || c.b < 0.9f)
@@ -60,7 +80,6 @@ public class PlayerVisibilityBoost : MonoBehaviour
 
         if (hood != null)
         {
-            // Soft hood sway (visual cloth) — slight rotation + offset
             float t = Time.time;
             hood.transform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * 1.7f) * 4.5f + Mathf.Sin(t * 0.6f) * 2f);
             hood.transform.localPosition = new Vector3(
@@ -69,8 +88,10 @@ public class PlayerVisibilityBoost : MonoBehaviour
                 0f);
         }
 
-        if (rim != null)
+        if (rim != null && !modernRig)
             rim.intensity = 0.65f + Mathf.Sin(Time.time * 2f) * 0.08f;
+        if (fill != null)
+            fill.intensity = modernRig ? 0.3f : 0.25f;
     }
 
     private void EnsureSprite()
