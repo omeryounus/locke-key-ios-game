@@ -29,6 +29,11 @@ public class EventBus : ScriptableObject
     public event Action OnGhostPhaseStarted;
     public event Action OnGhostPhaseEnded;
     public event Action<Vector2, float> OnNoiseHeard; // position and intensity
+    public event Action OnMindscapeEntered;
+    public event Action OnMindscapeExited;
+    public event Action OnMirrorTravel;
+    public event Action OnHideEntered;
+    public event Action OnHideExited;
 
     public void KeyActivated(IKeyAbility key) => OnKeyActivated?.Invoke(key);
     public void KeyDeactivated(IKeyAbility key) => OnKeyDeactivated?.Invoke(key);
@@ -51,4 +56,10 @@ public class EventBus : ScriptableObject
     public void GhostPhaseEnded() => OnGhostPhaseEnded?.Invoke();
 
     public void NoiseHeard(Vector2 pos, float radius) => OnNoiseHeard?.Invoke(pos, radius);
+
+    public void MindscapeEntered() => OnMindscapeEntered?.Invoke();
+    public void MindscapeExited() => OnMindscapeExited?.Invoke();
+    public void MirrorTravel() => OnMirrorTravel?.Invoke();
+    public void HideEntered() => OnHideEntered?.Invoke();
+    public void HideExited() => OnHideExited?.Invoke();
 }

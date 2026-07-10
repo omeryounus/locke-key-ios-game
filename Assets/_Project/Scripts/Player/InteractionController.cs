@@ -39,7 +39,17 @@ public class InteractionController : MonoBehaviour
     {
         if (NearestInteractable != null && NearestInteractable.CanInteract)
         {
-            FindFirstObjectByType<PlayerSpriteAnimator>()?.PlayInteractPose(0.4f);
+            // House Key door unlock gets deliberate confidence reach
+            var inventory = FindFirstObjectByType<PlayerInventory>();
+            if (NearestInteractable is StuckDoorPuzzle && inventory != null && inventory.HasHouseKey)
+            {
+                FindFirstObjectByType<PlayerSpriteAnimator>()?.PlayHouseKeyInteract(0.55f);
+            }
+            else
+            {
+                FindFirstObjectByType<PlayerSpriteAnimator>()?.PlayInteractPose(0.4f);
+            }
+
             NearestInteractable.Interact();
             GameHaptics.TriggerHapticLight();
             FindFirstObjectByType<CameraFollow2D>()?.Shake(0.07f, 0.18f);

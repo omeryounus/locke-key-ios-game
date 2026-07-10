@@ -2,37 +2,46 @@ using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
 /// <summary>
-/// 2.5D layered character hierarchy: cape, legs, torso, arms, head, hair, face.
-/// Secondary motion (breath, sway, blink, follow-through) runs here so the body
-/// never feels like a stiff puppet even between atlas frames.
+/// Production 2.5D layered rig for the gothic Keyhouse teen.
+/// Hierarchy: Hip → Torso/Arms/Cape/Head/Face + Legs, independent cape spring chain,
+/// foot shadow, key prop, and ability-driven visual modes (ghost / hide / scare / mindscape).
 /// </summary>
 [DisallowMultipleComponent]
 public class PlayerCharacterRig : MonoBehaviour
 {
+    public enum VisualMode { Normal, Ghost, Hide, ScareFreeze, Mindscape, MirrorFlash }
+
     public Transform VisualRoot { get; private set; }
-    public Transform Cape { get; private set; }
-    public Transform Legs { get; private set; }
+    public Transform Hip { get; private set; }
     public Transform Torso { get; private set; }
-    public Transform ArmBack { get; private set; }
-    public Transform ArmFront { get; private set; }
+    public Transform CapeRoot { get; private set; }
+    public Transform CapeTip { get; private set; }
     public Transform Head { get; private set; }
     public Transform Hair { get; private set; }
     public Transform Face { get; private set; }
     public Transform Eyes { get; private set; }
+    public Transform Brows { get; private set; }
+    public Transform ArmL { get; private set; }
+    public Transform ArmR { get; private set; }
+    public Transform KeyProp { get; private set; }
+    public Transform LegL { get; private set; }
+    public Transform LegR { get; private set; }
     public Transform Shadow { get; private set; }
 
     public SpriteRenderer BodyRenderer { get; private set; }
     public SpriteRenderer CapeRenderer { get; private set; }
-    public SpriteRenderer HeadRenderer { get; private set; }
+    public SpriteRenderer CapeTipRenderer { get; private set; }
     public SpriteRenderer HairRenderer { get; private set; }
     public SpriteRenderer FaceRenderer { get; private set; }
     public SpriteRenderer EyesRenderer { get; private set; }
-    public SpriteRenderer ArmBackRenderer { get; private set; }
-    public SpriteRenderer ArmFrontRenderer { get; private set; }
-    public SpriteRenderer LegsRenderer { get; private set; }
+    public SpriteRenderer BrowsRenderer { get; private set; }
+    public SpriteRenderer ArmLRenderer { get; private set; }
+    public SpriteRenderer ArmRRenderer { get; private set; }
+    public SpriteRenderer KeyPropRenderer { get; private set; }
     public SpriteRenderer ShadowRenderer { get; private set; }
 
     private Light2D rimLight;
+    private PlayerController player;
     private Vector3 baseVisualScale = new(1.55f, 1.55f, 1f);
     private float facing = 1f;
     private float facingVel;
@@ -43,28 +52,37 @@ public class PlayerCharacterRig : MonoBehaviour
     private float blinkClose;
     private bool eyesClosed;
     private float secondaryAmp = 1f;
-    private PlayerController player;
+    private float capeAngle;
+    private float capeTipAngle;
+    private float capeVel;
+    private float capeTipVel;
+    private float ghostPulse;
+    private float waryTimer = 8f;
+    private float waryActive;
+    private float shakenBreathBoost;
+    private VisualMode mode = VisualMode.Normal;
+    private Color bodyBase = new(1.12f, 1.12f, 1.12f, 1f);
 
-    // Pose offsets driven by animator (walk cycle phase 0..1, air stretch, etc.)
     public float CyclePhase { get; set; }
     public float AirStretch { get; set; }
     public float MoveEnergy { get; set; }
     public float EmotionIntensity { get; set; }
-    public bool GhostMode { get; set; }
-
+    public float GhostWarning { get; set; } // 0..1 last second of phase
+    public bool GhostMode => mode == VisualMode.Ghost;
     public float Facing => facing;
     public Vector3 BaseVisualScale => baseVisualScale;
+    public VisualMode Mode => mode;
 
     private void Awake()
     {
         player = GetComponent<PlayerController>();
-        // Move authored root scale onto VisualRoot so facing flip does not fight physics scale
         var rs = transform.localScale;
         if (Mathf.Abs(rs.x) > 1.01f || Mathf.Abs(rs.y) > 1.01f)
         {
             baseVisualScale = new Vector3(Mathf.Abs(rs.x), Mathf.Abs(rs.y), 1f);
             transform.localScale = Vector3.one;
         }
+
         BuildHierarchy();
         LoadLayerSprites();
         EnsureRim();
@@ -72,53 +90,62 @@ public class PlayerCharacterRig : MonoBehaviour
 
     private void BuildHierarchy()
     {
-        // Root body sprite stays on this GO for physics visuals fallback
         BodyRenderer = GetComponent<SpriteRenderer>();
         if (BodyRenderer == null)
             BodyRenderer = gameObject.AddComponent<SpriteRenderer>();
         BodyRenderer.sortingOrder = 20;
+        bodyBase = BodyRenderer.color.a > 0.1f ? BodyRenderer.color : bodyBase;
 
         VisualRoot = EnsureChild("VisualRoot", transform, Vector3.zero);
         Shadow = EnsureChild("FootShadow", VisualRoot, new Vector3(0f, -0.02f, 0.05f));
-        Cape = EnsureChild("Cape", VisualRoot, new Vector3(-0.02f, 0.12f, 0f));
-        Legs = EnsureChild("Legs", VisualRoot, new Vector3(0f, 0.02f, 0f));
-        Torso = EnsureChild("Torso", VisualRoot, new Vector3(0f, 0.28f, 0f));
-        ArmBack = EnsureChild("ArmBack", Torso, new Vector3(-0.12f, 0.05f, 0f));
-        ArmFront = EnsureChild("ArmFront", Torso, new Vector3(0.14f, 0.02f, 0f));
-        Head = EnsureChild("Head", Torso, new Vector3(0.02f, 0.38f, 0f));
-        Hair = EnsureChild("Hair", Head, new Vector3(-0.02f, 0.08f, 0f));
+        Hip = EnsureChild("Hip", VisualRoot, new Vector3(0f, 0.05f, 0f));
+        LegL = EnsureChild("LegL", Hip, new Vector3(-0.08f, -0.05f, 0f));
+        LegR = EnsureChild("LegR", Hip, new Vector3(0.08f, -0.05f, 0f));
+        Torso = EnsureChild("Torso", Hip, new Vector3(0f, 0.22f, 0f));
+        ArmL = EnsureChild("ArmL", Torso, new Vector3(-0.14f, 0.06f, 0f));
+        ArmR = EnsureChild("ArmR", Torso, new Vector3(0.14f, 0.04f, 0f));
+        KeyProp = EnsureChild("KeyProp", ArmR, new Vector3(0.12f, -0.08f, 0f));
+        // Independent cape spring chain (not parented under torso rotation fully — hip based)
+        CapeRoot = EnsureChild("CapeRoot", Hip, new Vector3(-0.04f, 0.28f, 0f));
+        CapeTip = EnsureChild("CapeTip", CapeRoot, new Vector3(-0.08f, -0.2f, 0f));
+        Head = EnsureChild("Head", Torso, new Vector3(0.02f, 0.36f, 0f));
+        Hair = EnsureChild("Hair", Head, new Vector3(-0.02f, 0.1f, 0f));
         Face = EnsureChild("Face", Head, new Vector3(0.04f, 0.02f, 0f));
-        Eyes = EnsureChild("Eyes", Face, new Vector3(0.02f, 0.04f, 0f));
+        Eyes = EnsureChild("Eyes", Face, new Vector3(0.02f, 0.05f, 0f));
+        Brows = EnsureChild("Brows", Face, new Vector3(0.02f, 0.1f, 0f));
 
         ShadowRenderer = EnsureSr(Shadow, 5);
-        CapeRenderer = EnsureSr(Cape, 18);
-        LegsRenderer = EnsureSr(Legs, 19);
-        // Body is main atlas frame
-        ArmBackRenderer = EnsureSr(ArmBack, 19);
-        ArmFrontRenderer = EnsureSr(ArmFront, 22);
-        HeadRenderer = EnsureSr(Head, 23);
+        CapeRenderer = EnsureSr(CapeRoot, 17);
+        CapeTipRenderer = EnsureSr(CapeTip, 16);
+        ArmLRenderer = EnsureSr(ArmL, 19);
+        ArmRRenderer = EnsureSr(ArmR, 22);
+        KeyPropRenderer = EnsureSr(KeyProp, 23);
         HairRenderer = EnsureSr(Hair, 24);
         FaceRenderer = EnsureSr(Face, 25);
         EyesRenderer = EnsureSr(Eyes, 26);
+        BrowsRenderer = EnsureSr(Brows, 27);
 
         Shadow.localScale = new Vector3(0.9f, 0.22f, 1f);
-        Cape.localScale = new Vector3(0.92f, 0.95f, 1f);
-        Legs.localScale = new Vector3(0.55f, 0.45f, 1f);
-        ArmBack.localScale = ArmFront.localScale = new Vector3(0.35f, 0.4f, 1f);
-        Head.localScale = new Vector3(0.42f, 0.42f, 1f);
+        CapeRoot.localScale = new Vector3(0.85f, 0.9f, 1f);
+        CapeTip.localScale = new Vector3(0.7f, 0.55f, 1f);
+        ArmL.localScale = ArmR.localScale = new Vector3(0.32f, 0.38f, 1f);
+        KeyProp.localScale = new Vector3(0.28f, 0.28f, 1f);
+        Head.localScale = new Vector3(0.4f, 0.4f, 1f);
         Hair.localScale = new Vector3(0.55f, 0.5f, 1f);
-        Face.localScale = new Vector3(0.28f, 0.28f, 1f);
-        Eyes.localScale = new Vector3(0.35f, 0.12f, 1f);
+        Face.localScale = new Vector3(0.26f, 0.26f, 1f);
+        Eyes.localScale = new Vector3(0.32f, 0.1f, 1f);
+        Brows.localScale = new Vector3(0.3f, 0.06f, 1f);
 
-        // Default layers semi-hidden until expression/overlay needed; body atlas carries most form
-        SetLayerAlpha(CapeRenderer, 0.55f);
-        SetLayerAlpha(LegsRenderer, 0f);
-        SetLayerAlpha(ArmBackRenderer, 0f);
-        SetLayerAlpha(ArmFrontRenderer, 0f);
-        SetLayerAlpha(HeadRenderer, 0f);
-        SetLayerAlpha(HairRenderer, 0.35f);
-        SetLayerAlpha(FaceRenderer, 0f);
-        SetLayerAlpha(EyesRenderer, 0f);
+        // Layers mostly support secondary motion; body atlas carries primary silhouette
+        SetAlpha(CapeRenderer, 0.52f);
+        SetAlpha(CapeTipRenderer, 0.35f);
+        SetAlpha(ArmLRenderer, 0f);
+        SetAlpha(ArmRRenderer, 0f);
+        SetAlpha(KeyPropRenderer, 0f);
+        SetAlpha(HairRenderer, 0.32f);
+        SetAlpha(FaceRenderer, 0f);
+        SetAlpha(EyesRenderer, 0f);
+        SetAlpha(BrowsRenderer, 0f);
     }
 
     private void LoadLayerSprites()
@@ -127,26 +154,30 @@ public class PlayerCharacterRig : MonoBehaviour
         ShadowRenderer.sprite = disc;
         ShadowRenderer.color = new Color(0f, 0f, 0f, 0.4f);
 
-        CapeRenderer.sprite = PlayerSpriteAtlas.LoadSingle("Art/Characters/Layers/player_hood_cape")
-                              ?? PlayerSpriteAtlas.LoadSingle("Art/Characters/Layers/player_hair_hood")
+        var cape = PlayerSpriteAtlas.LoadSingle("Art/Characters/Layers/player_hood_cape")
+                   ?? PlayerSpriteAtlas.LoadSingle("Art/Characters/Layers/player_hair_hood")
+                   ?? disc;
+        CapeRenderer.sprite = cape;
+        CapeTipRenderer.sprite = cape;
+        HairRenderer.sprite = PlayerSpriteAtlas.LoadSingle("Art/Characters/Layers/player_hair_hood") ?? cape;
+        FaceRenderer.sprite = PlayerSpriteAtlas.LoadSingle("Art/Characters/Layers/player_portrait")
+                              ?? PlayerSpriteAtlas.LoadSingle("Art/Characters/Layers/player_head")
                               ?? disc;
-        HairRenderer.sprite = PlayerSpriteAtlas.LoadSingle("Art/Characters/Layers/player_hair_hood")
-                              ?? CapeRenderer.sprite;
-        HeadRenderer.sprite = PlayerSpriteAtlas.LoadSingle("Art/Characters/Layers/player_head") ?? disc;
-        LegsRenderer.sprite = PlayerSpriteAtlas.LoadSingle("Art/Characters/Layers/player_legs") ?? disc;
-        ArmBackRenderer.sprite = PlayerSpriteAtlas.LoadSingle("Art/Characters/Layers/player_arm_l")
-                                 ?? PlayerSpriteAtlas.LoadSingle("Art/Characters/Layers/player_arms_reach")
-                                 ?? disc;
-        ArmFrontRenderer.sprite = PlayerSpriteAtlas.LoadSingle("Art/Characters/Layers/player_arm_r")
-                                  ?? ArmBackRenderer.sprite;
-        FaceRenderer.sprite = PlayerSpriteAtlas.LoadSingle("Art/Characters/Layers/player_portrait") ?? disc;
+        ArmLRenderer.sprite = PlayerSpriteAtlas.LoadSingle("Art/Characters/Layers/player_arm_l")
+                              ?? PlayerSpriteAtlas.LoadSingle("Art/Characters/Layers/player_arms_reach")
+                              ?? disc;
+        ArmRRenderer.sprite = PlayerSpriteAtlas.LoadSingle("Art/Characters/Layers/player_arm_r")
+                              ?? ArmLRenderer.sprite;
+        KeyPropRenderer.sprite = disc;
         EyesRenderer.sprite = disc;
-        EyesRenderer.color = new Color(0.05f, 0.05f, 0.08f, 0f);
+        BrowsRenderer.sprite = disc;
+        EyesRenderer.color = new Color(0.05f, 0.04f, 0.07f, 0f);
+        BrowsRenderer.color = new Color(0.12f, 0.08f, 0.1f, 0f);
     }
 
     private void EnsureRim()
     {
-        var existing = transform.Find("PlayerRimLight");
+        var existing = transform.Find("VisualRoot/PlayerRimLight");
         if (existing != null)
         {
             rimLight = existing.GetComponent<Light2D>();
@@ -164,99 +195,207 @@ public class PlayerCharacterRig : MonoBehaviour
         rimLight.pointLightInnerRadius = 0.1f;
     }
 
+    public void SetMode(VisualMode m) => mode = m;
+
+    public void SetBodySprite(Sprite sprite)
+    {
+        if (BodyRenderer != null && sprite != null)
+            BodyRenderer.sprite = sprite;
+    }
+
+    public void SetSquash(float amount) => squashY = amount;
+    public void SetSecondaryAmplitude(float amp) => secondaryAmp = Mathf.Clamp01(amp);
+
+    public void SetExpressionOverlay(Sprite faceSprite, float alpha)
+    {
+        if (FaceRenderer == null) return;
+        if (faceSprite != null) FaceRenderer.sprite = faceSprite;
+        SetAlpha(FaceRenderer, alpha);
+    }
+
+    public void SetKeyPropVisible(bool on, Color? tint = null)
+    {
+        if (KeyPropRenderer == null) return;
+        SetAlpha(KeyPropRenderer, on ? 0.9f : 0f);
+        if (tint.HasValue)
+        {
+            var c = tint.Value;
+            c.a = on ? 0.9f : 0f;
+            KeyPropRenderer.color = c;
+        }
+    }
+
+    public void PulseHit()
+    {
+        squashY = -0.14f;
+        EmotionIntensity = 1f;
+        shakenBreathBoost = 1.4f;
+    }
+
+    public void BeginScareFreeze()
+    {
+        mode = VisualMode.ScareFreeze;
+        secondaryAmp = 0f; // breath-hold stillness
+        EmotionIntensity = 1f;
+        if (EyesRenderer != null)
+        {
+            Eyes.localScale = new Vector3(0.4f, 0.16f, 1f); // wide eyes
+            EyesRenderer.color = new Color(0.05f, 0.04f, 0.07f, 0.55f);
+        }
+    }
+
+    public void EndScareFreeze()
+    {
+        if (mode == VisualMode.ScareFreeze)
+            mode = VisualMode.Normal;
+        secondaryAmp = 1f;
+        shakenBreathBoost = 1.6f; // shallow fast recover breath
+        if (Eyes != null) Eyes.localScale = new Vector3(0.32f, 0.1f, 1f);
+        if (EyesRenderer != null) EyesRenderer.color = new Color(0.05f, 0.04f, 0.07f, 0f);
+    }
+
     private void LateUpdate()
     {
         float dt = Time.deltaTime;
-        breathPhase += dt * (1.7f + MoveEnergy * 0.8f);
+        float breathRate = (1.7f + MoveEnergy * 0.8f) * (1f + shakenBreathBoost * 0.5f);
+        if (mode == VisualMode.ScareFreeze)
+            breathRate = 0f; // freeze alive-when-still
+        else
+            breathPhase += dt * breathRate;
 
-        // Facing: smooth flip without robotic snap (scale X through zero-ish)
+        shakenBreathBoost = Mathf.MoveTowards(shakenBreathBoost, 0f, dt * 0.35f);
+
         float desired = facing;
         if (player != null && Mathf.Abs(player.MoveInput) > 0.12f)
             desired = Mathf.Sign(player.MoveInput);
         else if (player != null && Mathf.Abs(player.Velocity.x) > 0.2f)
             desired = Mathf.Sign(player.Velocity.x);
-        facing = Mathf.SmoothDamp(facing, desired, ref facingVel, 0.06f, 40f);
-
+        facing = Mathf.SmoothDamp(facing, desired, ref facingVel, 0.055f, 45f);
         float faceSign = facing >= 0f ? 1f : -1f;
         float faceAmt = Mathf.Clamp01(Mathf.Abs(facing));
 
-        // Body squash from animator
-        float breath = Mathf.Sin(breathPhase) * 0.018f * secondaryAmp;
-        float breath2 = Mathf.Sin(breathPhase * 0.5f + 0.4f) * 0.008f * secondaryAmp;
-        float sy = 1f + squashY + breath + breath2 + AirStretch * 0.08f;
+        float breath = mode == VisualMode.ScareFreeze
+            ? 0f
+            : Mathf.Sin(breathPhase) * 0.018f * secondaryAmp;
+        float breath2 = mode == VisualMode.ScareFreeze
+            ? 0f
+            : Mathf.Sin(breathPhase * 0.5f + 0.4f) * 0.008f * secondaryAmp;
+
+        // Hide: crouch scale
+        float hideSquash = mode == VisualMode.Hide ? -0.08f : 0f;
+        float ghostFloat = mode == VisualMode.Ghost ? Mathf.Sin(Time.time * 3.2f) * 0.015f : 0f;
+
+        float sy = 1f + squashY + breath + breath2 + AirStretch * 0.08f + hideSquash;
         float sx = 1f - squashY * 0.65f - AirStretch * 0.04f + breath * 0.3f;
         VisualRoot.localScale = new Vector3(
             baseVisualScale.x * sx * faceSign * Mathf.Lerp(0.15f, 1f, faceAmt),
             baseVisualScale.y * sy,
             1f);
+        VisualRoot.localPosition = new Vector3(0f, ghostFloat, 0f);
 
-        // Lean into movement
         float vx = player != null ? player.Velocity.x : 0f;
-        float targetLean = -MoveEnergy * 6.5f * faceSign - vx * 0.6f;
+        float targetLean = -MoveEnergy * 6.5f * faceSign - vx * 0.55f;
+        if (player != null && player.IsWallSliding)
+            targetLean = wallSignLean(faceSign) * 12f;
         if (player != null && !player.IsGrounded)
             targetLean += -vx * 0.35f;
+        if (mode == VisualMode.Hide)
+            targetLean *= 0.3f;
         leanZ = Mathf.Lerp(leanZ, targetLean, dt * 8f);
         VisualRoot.localRotation = Quaternion.Euler(0f, 0f, leanZ * 0.35f);
 
+        AnimateCapeSpring(dt, faceSign);
         AnimateSecondary(dt, faceSign);
+        AnimateWaryPersonality(dt, faceSign);
         AnimateShadow();
-        AnimateGhost();
+        AnimateAbilityVisuals(dt);
+    }
+
+    private float wallSignLean(float faceSign)
+    {
+        if (player == null) return faceSign;
+        return player.WallSign; // press into wall
+    }
+
+    private void AnimateCapeSpring(float dt, float faceSign)
+    {
+        if (CapeRoot == null) return;
+
+        // Spring target lags torso/lean — independent chain
+        float target = -leanZ * 1.4f - MoveEnergy * 14f * faceSign;
+        if (mode == VisualMode.Hide)
+            target = 8f * faceSign; // gathered close
+        if (mode == VisualMode.ScareFreeze)
+            target = 18f * faceSign; // snaps protective inward
+        if (mode == VisualMode.Ghost)
+            target += Mathf.Sin(Time.time * 4f) * 8f;
+
+        // 2-bone spring with overshoot
+        float stiffness = 28f;
+        float damp = 7f;
+        float acc = (target - capeAngle) * stiffness - capeVel * damp;
+        capeVel += acc * dt;
+        capeAngle += capeVel * dt;
+
+        float tipTarget = capeAngle * 1.35f + Mathf.Sin(Time.time * 2.6f + CyclePhase * 6f) * (4f + MoveEnergy * 6f);
+        float tipAcc = (tipTarget - capeTipAngle) * 34f - capeTipVel * 8f;
+        capeTipVel += tipAcc * dt;
+        capeTipAngle += capeTipVel * dt;
+
+        CapeRoot.localRotation = Quaternion.Euler(0f, 0f, capeAngle);
+        if (CapeTip != null)
+            CapeTip.localRotation = Quaternion.Euler(0f, 0f, capeTipAngle - capeAngle);
+
+        float capeA = mode switch
+        {
+            VisualMode.Ghost => 0.28f + GhostWarning * 0.2f,
+            VisualMode.Hide => 0.62f,
+            _ => 0.48f + MoveEnergy * 0.12f
+        };
+        SetAlpha(CapeRenderer, capeA);
+        SetAlpha(CapeTipRenderer, capeA * 0.7f);
     }
 
     private void AnimateSecondary(float dt, float faceSign)
     {
         float t = Time.time;
-        float energy = 0.5f + MoveEnergy;
+        float swing = Mathf.Sin(CyclePhase * Mathf.PI * 2f) * (12f + MoveEnergy * 16f);
+        if (mode == VisualMode.ScareFreeze || mode == VisualMode.Hide)
+            swing = 0f;
 
-        // Cape / hair follow-through
-        if (Cape != null)
+        if (ArmR != null)
+            ArmR.localRotation = Quaternion.Euler(0f, 0f, swing * 0.14f * secondaryAmp);
+        if (ArmL != null)
+            ArmL.localRotation = Quaternion.Euler(0f, 0f, -swing * 0.12f * secondaryAmp);
+
+        if (Torso != null)
         {
-            float flap = Mathf.Sin(t * 2.4f * energy + CyclePhase * Mathf.PI * 2f) * (5f + MoveEnergy * 10f);
-            float drag = -MoveEnergy * 12f * faceSign;
-            Cape.localRotation = Quaternion.Euler(0f, 0f, flap + drag);
-            Cape.localPosition = new Vector3(
-                -0.04f * faceSign + Mathf.Sin(t * 1.8f) * 0.015f,
-                0.1f + Mathf.Sin(t * 2.1f) * 0.02f,
-                0f);
-            if (CapeRenderer != null)
-            {
-                var c = CapeRenderer.color;
-                c.a = GhostMode ? 0.25f : 0.5f + MoveEnergy * 0.1f;
-                CapeRenderer.color = c;
-            }
+            float bob = Mathf.Abs(Mathf.Sin(CyclePhase * Mathf.PI * 2f)) * MoveEnergy * 0.03f;
+            float breathY = mode == VisualMode.ScareFreeze ? 0f : Mathf.Sin(breathPhase) * 0.012f * secondaryAmp;
+            Torso.localPosition = new Vector3(0f, 0.22f + bob + breathY, 0f);
+            Torso.localRotation = Quaternion.Euler(0f, 0f, swing * 0.04f);
+        }
+
+        if (Head != null)
+        {
+            float headTilt = -swing * 0.05f + EmotionIntensity * 4f;
+            if (mode == VisualMode.Mindscape) headTilt = -8f;
+            if (mode == VisualMode.Hide) headTilt = 6f; // peek tilt
+            Head.localRotation = Quaternion.Euler(0f, 0f, headTilt + Mathf.Sin(t * 1.3f) * 1.2f * secondaryAmp);
+            Head.localPosition = new Vector3(0.02f * faceSign, 0.36f + Mathf.Sin(breathPhase) * 0.01f * secondaryAmp, 0f);
         }
 
         if (Hair != null)
         {
             Hair.localRotation = Quaternion.Euler(0f, 0f,
-                Mathf.Sin(t * 2.8f + 1f) * (4f + MoveEnergy * 6f) - MoveEnergy * 8f * faceSign);
+                Mathf.Sin(t * 2.8f + 1f) * (4f + MoveEnergy * 6f) * secondaryAmp - MoveEnergy * 8f * faceSign);
         }
 
-        // Arms swing opposite to walk phase
-        float swing = Mathf.Sin(CyclePhase * Mathf.PI * 2f) * (12f + MoveEnergy * 16f);
-        if (ArmFront != null)
-            ArmFront.localRotation = Quaternion.Euler(0f, 0f, swing * 0.15f * secondaryAmp);
-        if (ArmBack != null)
-            ArmBack.localRotation = Quaternion.Euler(0f, 0f, -swing * 0.12f * secondaryAmp);
+        // Blink — suppressed during scare freeze / mindscape
+        bool canBlink = MoveEnergy < 0.25f && mode != VisualMode.ScareFreeze
+                        && (player == null || player.IsGrounded);
+        if (mode == VisualMode.Mindscape) canBlink = false;
 
-        // Torso micro-bob
-        if (Torso != null)
-        {
-            float bob = Mathf.Abs(Mathf.Sin(CyclePhase * Mathf.PI * 2f)) * MoveEnergy * 0.03f;
-            Torso.localPosition = new Vector3(0f, 0.28f + bob + Mathf.Sin(breathPhase) * 0.012f, 0f);
-            Torso.localRotation = Quaternion.Euler(0f, 0f, swing * 0.04f);
-        }
-
-        // Head counter-rotate + emotion tilt
-        if (Head != null)
-        {
-            float headTilt = -swing * 0.05f + EmotionIntensity * 4f;
-            Head.localRotation = Quaternion.Euler(0f, 0f, headTilt + Mathf.Sin(t * 1.3f) * 1.5f);
-            Head.localPosition = new Vector3(0.02f * faceSign, 0.38f + Mathf.Sin(breathPhase) * 0.01f, 0f);
-        }
-
-        // Blink only when mostly idle
-        bool canBlink = MoveEnergy < 0.2f && (player == null || player.IsGrounded);
         if (!eyesClosed)
         {
             blinkTimer -= dt;
@@ -274,10 +413,41 @@ public class PlayerCharacterRig : MonoBehaviour
             if (blinkClose <= 0f)
             {
                 eyesClosed = false;
-                blinkTimer = Random.Range(2.0f, 4.5f);
-                if (EyesRenderer != null)
+                blinkTimer = Random.Range(2f, 4.5f);
+                if (EyesRenderer != null && mode != VisualMode.ScareFreeze)
                     EyesRenderer.color = new Color(0.06f, 0.05f, 0.08f, 0f);
             }
+        }
+    }
+
+    private void AnimateWaryPersonality(float dt, float faceSign)
+    {
+        // Brave-but-vulnerable tell: glance over shoulder / hand-to-key every 8–10s while idle
+        if (mode != VisualMode.Normal || MoveEnergy > 0.15f)
+        {
+            waryTimer = Mathf.Max(waryTimer, 6f);
+            waryActive = 0f;
+            return;
+        }
+
+        if (waryActive > 0f)
+        {
+            waryActive -= dt;
+            if (Head != null)
+                Head.localRotation *= Quaternion.Euler(0f, 0f, -12f * faceSign * Mathf.Sin(waryActive * 6f));
+            if (ArmR != null)
+                ArmR.localRotation = Quaternion.Euler(0f, 0f, 18f); // touch key at belt
+            SetKeyPropVisible(true, new Color(0.95f, 0.8f, 0.35f, 0.85f));
+            if (waryActive <= 0f)
+                SetKeyPropVisible(false);
+            return;
+        }
+
+        waryTimer -= dt;
+        if (waryTimer <= 0f)
+        {
+            waryActive = 0.7f;
+            waryTimer = Random.Range(8f, 11f);
         }
     }
 
@@ -285,54 +455,63 @@ public class PlayerCharacterRig : MonoBehaviour
     {
         if (Shadow == null || ShadowRenderer == null) return;
         bool grounded = player == null || player.IsGrounded;
-        float squash = grounded ? 1f : 0.55f;
+        float heightFactor = 1f;
+        if (player != null && !grounded)
+            heightFactor = Mathf.Clamp(1f - Mathf.Abs(player.Velocity.y) * 0.04f, 0.45f, 1f);
+
         float walk = player != null ? Mathf.Clamp01(player.HorizontalSpeed / 5f) : 0f;
-        Shadow.localPosition = new Vector3(0f, -0.02f, 0.05f);
-        Shadow.localScale = new Vector3(0.85f * squash * (1f + walk * 0.1f), 0.2f * squash, 1f);
+        Shadow.localScale = new Vector3(0.85f * heightFactor * (1f + walk * 0.1f), 0.2f * heightFactor, 1f);
         var c = ShadowRenderer.color;
-        c.a = grounded ? 0.42f : 0.16f;
+        // Snap full opacity on grounded contact feel
+        c.a = grounded ? 0.44f : 0.14f;
+        if (player != null && player.JustLanded) c.a = 0.55f;
         ShadowRenderer.color = c;
     }
 
-    private void AnimateGhost()
+    private void AnimateAbilityVisuals(float dt)
     {
-        if (rimLight != null)
-            rimLight.intensity = GhostMode
-                ? 0.9f + Mathf.Sin(Time.time * 8f) * 0.2f
-                : 0.5f + Mathf.Sin(Time.time * 2f) * 0.08f;
+        ghostPulse += dt;
+        if (BodyRenderer == null) return;
 
-        if (GhostMode && BodyRenderer != null)
+        switch (mode)
         {
-            var c = BodyRenderer.color;
-            float a = 0.48f + Mathf.Sin(Time.time * 9f) * 0.12f;
-            BodyRenderer.color = new Color(0.4f, 0.95f, 0.7f, a);
+            case VisualMode.Ghost:
+            {
+                float warn = GhostWarning;
+                float flicker = 0.45f + Mathf.Sin(Time.time * (9f + warn * 14f)) * (0.12f + warn * 0.1f);
+                BodyRenderer.color = new Color(0.38f, 0.95f, 0.68f, flicker);
+                if (rimLight != null)
+                {
+                    rimLight.color = Color.Lerp(new Color(0.4f, 1f, 0.7f), Color.white, warn);
+                    rimLight.intensity = 0.85f + warn * 0.6f + Mathf.Sin(Time.time * (6f + warn * 10f)) * 0.15f;
+                }
+                break;
+            }
+            case VisualMode.Mindscape:
+                BodyRenderer.color = Color.Lerp(BodyRenderer.color, new Color(0.85f, 0.75f, 1f, 0.95f), dt * 4f);
+                if (rimLight != null)
+                {
+                    rimLight.color = new Color(0.7f, 0.45f, 1f);
+                    rimLight.intensity = 0.7f + Mathf.Sin(Time.time * 2f) * 0.1f;
+                }
+                break;
+            case VisualMode.MirrorFlash:
+                BodyRenderer.color = Color.Lerp(BodyRenderer.color, Color.white, dt * 12f);
+                if (rimLight != null) rimLight.intensity = 1.4f;
+                break;
+            case VisualMode.Hide:
+                BodyRenderer.color = Color.Lerp(BodyRenderer.color, bodyBase * 0.85f, dt * 3f);
+                break;
+            default:
+                if (player == null || !player.IsGhostPhasing)
+                    BodyRenderer.color = Color.Lerp(BodyRenderer.color, bodyBase, dt * 6f);
+                if (rimLight != null)
+                {
+                    rimLight.color = new Color(1f, 0.92f, 0.75f);
+                    rimLight.intensity = 0.5f + Mathf.Sin(Time.time * 2f) * 0.08f;
+                }
+                break;
         }
-    }
-
-    public void SetBodySprite(Sprite sprite)
-    {
-        if (BodyRenderer == null || sprite == null) return;
-        BodyRenderer.sprite = sprite;
-    }
-
-    public void SetSquash(float amount) => squashY = amount;
-
-    public void SetSecondaryAmplitude(float amp) => secondaryAmp = Mathf.Clamp01(amp);
-
-    public void SetExpressionOverlay(Sprite faceSprite, float alpha)
-    {
-        if (FaceRenderer == null) return;
-        if (faceSprite != null)
-            FaceRenderer.sprite = faceSprite;
-        var c = FaceRenderer.color;
-        c.a = alpha;
-        FaceRenderer.color = c;
-    }
-
-    public void PulseHit()
-    {
-        squashY = -0.12f;
-        EmotionIntensity = 1f;
     }
 
     private static Transform EnsureChild(string name, Transform parent, Vector3 localPos)
@@ -355,7 +534,7 @@ public class PlayerCharacterRig : MonoBehaviour
         return sr;
     }
 
-    private static void SetLayerAlpha(SpriteRenderer sr, float a)
+    private static void SetAlpha(SpriteRenderer sr, float a)
     {
         if (sr == null) return;
         var c = sr.color;

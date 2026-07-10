@@ -48,6 +48,7 @@ public class HideSpot : MonoBehaviour
             FindFirstObjectByType<GameplayHUD>()?.ShowToast("Hidden in the arch — stay still.", 2.2f);
             GameHaptics.TriggerHapticLight();
             FindFirstObjectByType<GameAudioController>()?.SetMuffled(true);
+            Resources.Load<EventBus>("EventBus")?.HideEntered();
         }
     }
 
@@ -61,7 +62,10 @@ public class HideSpot : MonoBehaviour
 
         RemoveOccupant(col);
         if (HiddenPlayers.Count == 0)
+        {
             FindFirstObjectByType<GameAudioController>()?.SetMuffled(false);
+            Resources.Load<EventBus>("EventBus")?.HideExited();
+        }
     }
 
     private void ClearLocalOccupants()

@@ -40,6 +40,7 @@ public class HeadKeyMindscapePanel : MonoBehaviour
 
         SetupShards();
         BuildUI();
+        eventBus?.MindscapeEntered();
     }
 
     private void SetupShards()
@@ -180,6 +181,7 @@ public class HeadKeyMindscapePanel : MonoBehaviour
 
     private void Close()
     {
+        eventBus?.MindscapeExited();
         if (rootPanel != null)
         {
             Destroy(rootPanel);

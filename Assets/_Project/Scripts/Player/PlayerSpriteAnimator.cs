@@ -1,9 +1,9 @@
 using UnityEngine;
 
 /// <summary>
-/// Commercial-quality 2.5D character animation director.
-/// Multi-frame atlas playback + layered secondary motion + squash/stretch,
-/// physics-synced walk/run/jump, turns, interact, hit, and emotion poses.
+/// Production 2.5D animation director tuned to PlayerController physics and Keyhouse abilities.
+/// Locomotion atlases + Ghost/Head/Hide/Echo/Mirror/WallSlide states, footstep-frame sync,
+/// jump-cut awareness, and brave-but-vulnerable emotional beats.
 /// </summary>
 [RequireComponent(typeof(SpriteRenderer))]
 [RequireComponent(typeof(PlayerController))]
@@ -13,8 +13,13 @@ public class PlayerSpriteAnimator : MonoBehaviour
     public enum AnimState
     {
         Idle, Walk, Run,
-        JumpAnticipation, JumpRise, JumpApex, Fall, Land,
-        Turn, Interact, Hit, Scare, Happy, Injured
+        JumpRise, JumpApex, Fall, Land,
+        Turn, WallSlide,
+        Interact, HouseKeyInteract,
+        Hit, ScareFlinch, ScareFreeze, ScareRecover,
+        GhostEnter, GhostLoop, GhostExit,
+        Mindscape, Hide, MirrorTravel,
+        Happy, Injured
     }
 
     [Header("Frame rates")]
@@ -27,8 +32,8 @@ public class PlayerSpriteAnimator : MonoBehaviour
     [Header("Motion feel")]
     [SerializeField] private float walkThreshold = 0.12f;
     [SerializeField] private float runSpeedFactor = 0.72f;
-    [SerializeField] private float landSquash = 0.16f;
-    [SerializeField] private float jumpStretch = 0.1f;
+    [SerializeField] private float landSquash = 0.18f;
+    [SerializeField] private float jumpStretch = 0.12f;
     [SerializeField] private float squashRecover = 11f;
 
     private PlayerController player;
@@ -41,28 +46,36 @@ public class PlayerSpriteAnimator : MonoBehaviour
     private Sprite[] runFrames = System.Array.Empty<Sprite>();
     private Sprite[] jumpFrames = System.Array.Empty<Sprite>();
     private Sprite[] expressFrames = System.Array.Empty<Sprite>();
+    private Sprite[] ghostFrames = System.Array.Empty<Sprite>();
+    private Sprite[] scareFrames = System.Array.Empty<Sprite>();
+    private Sprite[] hideFrames = System.Array.Empty<Sprite>();
     private Sprite fallbackIdle, fallbackWalkA, fallbackWalkB, fallbackJump;
 
     private AnimState state = AnimState.Idle;
     private AnimState prevState = AnimState.Idle;
     private float frameTimer;
     private int frameIndex;
-    private float stateTimer;
+    private int lastFootstepFrame = -1;
     private float landHold;
     private float interactTimer;
+    private bool houseKeyInteract;
     private float hitTimer;
+    private float scareTimer;
+    private float scarePhase; // 0 flinch, 1 freeze, 2 recover
     private float expressionTimer;
     private AnimState expressionState = AnimState.Idle;
-    private float jumpAnticipation;
-    private bool jumpAnticipating;
     private float turnTimer;
     private int lastFacing = 1;
     private float squash;
-    private bool ghostVisual;
-    private Color baseColor = new(1.12f, 1.12f, 1.12f, 1f);
-    private Color ghostTint = new(0.35f, 0.95f, 0.65f, 0.55f);
     private bool wasGrounded = true;
     private float airTime;
+    private bool ghostActive;
+    private float ghostEnterTimer;
+    private float ghostExitTimer;
+    private bool mindscapeActive;
+    private bool hideActive;
+    private float mirrorTimer;
+    private Color baseColor = new(1.12f, 1.12f, 1.12f, 1f);
 
     public AnimState State => state;
 
@@ -76,29 +89,47 @@ public class PlayerSpriteAnimator : MonoBehaviour
         if (rig == null)
             rig = gameObject.AddComponent<PlayerCharacterRig>();
 
-        // Disable legacy overlay systems — rig owns secondary life
         var idleDetail = GetComponent<PlayerIdleDetail>();
         if (idleDetail != null) idleDetail.enabled = false;
 
+        if (player != null)
+            player.AnimationDrivesFootsteps = true;
+
         LoadAtlases();
         ApplyFrame(idleFrames, 0, fallbackIdle);
-
-        if (eventBus != null)
-        {
-            eventBus.OnGhostPhaseStarted += OnGhostStart;
-            eventBus.OnGhostPhaseEnded += OnGhostEnd;
-            eventBus.OnEchoCaught += OnHit;
-            eventBus.OnEchoTriggered += OnScare;
-        }
+        Subscribe();
     }
 
-    private void OnDestroy()
+    private void OnDestroy() => Unsubscribe();
+
+    private void Subscribe()
+    {
+        if (eventBus == null) return;
+        eventBus.OnGhostPhaseStarted += OnGhostStart;
+        eventBus.OnGhostPhaseEnded += OnGhostEnd;
+        eventBus.OnEchoCaught += OnHit;
+        eventBus.OnEchoTriggered += OnScare;
+        eventBus.OnMindscapeEntered += OnMindscapeEnter;
+        eventBus.OnMindscapeExited += OnMindscapeExit;
+        eventBus.OnMirrorTravel += OnMirror;
+        eventBus.OnHideEntered += OnHideEnter;
+        eventBus.OnHideExited += OnHideExit;
+        eventBus.OnKeyActivated += OnKeyActivated;
+    }
+
+    private void Unsubscribe()
     {
         if (eventBus == null) return;
         eventBus.OnGhostPhaseStarted -= OnGhostStart;
         eventBus.OnGhostPhaseEnded -= OnGhostEnd;
         eventBus.OnEchoCaught -= OnHit;
         eventBus.OnEchoTriggered -= OnScare;
+        eventBus.OnMindscapeEntered -= OnMindscapeEnter;
+        eventBus.OnMindscapeExited -= OnMindscapeExit;
+        eventBus.OnMirrorTravel -= OnMirror;
+        eventBus.OnHideEntered -= OnHideEnter;
+        eventBus.OnHideExited -= OnHideExit;
+        eventBus.OnKeyActivated -= OnKeyActivated;
     }
 
     private void LoadAtlases()
@@ -108,34 +139,40 @@ public class PlayerSpriteAnimator : MonoBehaviour
         runFrames = PlayerSpriteAtlas.LoadGrid("Art/Characters/Atlases/atlas_run", 4, 3);
         jumpFrames = PlayerSpriteAtlas.LoadGrid("Art/Characters/Atlases/atlas_jump", 4, 4);
         expressFrames = PlayerSpriteAtlas.LoadGrid("Art/Characters/Atlases/atlas_express", 4, 3);
+        ghostFrames = PlayerSpriteAtlas.LoadGrid("Art/Characters/Atlases/atlas_ghost", 4, 2);
+        scareFrames = PlayerSpriteAtlas.LoadGrid("Art/Characters/Atlases/atlas_scare", 4, 3);
+        hideFrames = PlayerSpriteAtlas.LoadGrid("Art/Characters/Atlases/atlas_hide", 4, 2);
 
         fallbackIdle = Resources.Load<Sprite>("Art/Characters/player_idle");
         fallbackWalkA = Resources.Load<Sprite>("Art/Characters/player_walk_a") ?? fallbackIdle;
         fallbackWalkB = Resources.Load<Sprite>("Art/Characters/player_walk_b") ?? fallbackWalkA;
         fallbackJump = Resources.Load<Sprite>("Art/Characters/player_jump") ?? fallbackIdle;
 
-        if (idleFrames.Length == 0 && fallbackIdle != null)
-            idleFrames = new[] { fallbackIdle };
-        if (walkFrames.Length == 0)
-            walkFrames = new[] { fallbackWalkA, fallbackWalkB };
-        if (runFrames.Length == 0)
-            runFrames = walkFrames;
-        if (jumpFrames.Length == 0 && fallbackJump != null)
-            jumpFrames = new[] { fallbackJump };
+        if (idleFrames.Length == 0 && fallbackIdle != null) idleFrames = new[] { fallbackIdle };
+        if (walkFrames.Length == 0) walkFrames = new[] { fallbackWalkA, fallbackWalkB };
+        if (runFrames.Length == 0) runFrames = walkFrames;
+        if (jumpFrames.Length == 0 && fallbackJump != null) jumpFrames = new[] { fallbackJump };
+        if (ghostFrames.Length == 0) ghostFrames = idleFrames;
+        if (scareFrames.Length == 0) scareFrames = expressFrames.Length > 0 ? expressFrames : idleFrames;
+        if (hideFrames.Length == 0) hideFrames = idleFrames;
     }
 
     private void OnGhostStart()
     {
-        ghostVisual = true;
-        if (rig != null) rig.GhostMode = true;
+        ghostActive = true;
+        ghostEnterTimer = 0.22f;
+        ghostExitTimer = 0f;
+        state = AnimState.GhostEnter;
+        frameIndex = 0;
+        rig?.SetMode(PlayerCharacterRig.VisualMode.Ghost);
     }
 
     private void OnGhostEnd()
     {
-        ghostVisual = false;
-        if (rig != null) rig.GhostMode = false;
-        if (rig != null && rig.BodyRenderer != null)
-            rig.BodyRenderer.color = baseColor;
+        ghostActive = false;
+        ghostExitTimer = 0.18f;
+        state = AnimState.GhostExit;
+        frameIndex = 0;
     }
 
     private void OnHit()
@@ -150,15 +187,89 @@ public class PlayerSpriteAnimator : MonoBehaviour
 
     private void OnScare()
     {
-        PlayExpression(AnimState.Scare, 1.2f);
+        // Flinch → freeze (stillness) → recover shaky breath
+        scareTimer = 2.4f;
+        scarePhase = 0f;
+        state = AnimState.ScareFlinch;
+        frameIndex = 0;
+        squash = 0.06f;
+        rig?.BeginScareFreeze();
+    }
+
+    private void OnMindscapeEnter()
+    {
+        mindscapeActive = true;
+        state = AnimState.Mindscape;
+        rig?.SetMode(PlayerCharacterRig.VisualMode.Mindscape);
+        PlayExpression(AnimState.Happy, 0.3f);
+    }
+
+    private void OnMindscapeExit()
+    {
+        mindscapeActive = false;
+        // Snap-back flinch + blink
+        squash = -0.06f;
+        interactTimer = 0.2f;
+        rig?.SetMode(PlayerCharacterRig.VisualMode.Normal);
+        rig?.SetSecondaryAmplitude(1f);
+    }
+
+    private void OnMirror()
+    {
+        mirrorTimer = 0.35f;
+        state = AnimState.MirrorTravel;
+        rig?.SetMode(PlayerCharacterRig.VisualMode.MirrorFlash);
+    }
+
+    private void OnHideEnter()
+    {
+        hideActive = true;
+        state = AnimState.Hide;
+        frameIndex = 0;
+        rig?.SetMode(PlayerCharacterRig.VisualMode.Hide);
+        rig?.SetSecondaryAmplitude(0.35f);
+    }
+
+    private void OnHideExit()
+    {
+        hideActive = false;
+        rig?.SetMode(PlayerCharacterRig.VisualMode.Normal);
+        rig?.SetSecondaryAmplitude(1f);
+    }
+
+    private void OnKeyActivated(IKeyAbility key)
+    {
+        if (key == null) return;
+        if (key.Type == KeyType.Head)
+        {
+            // Head key often opens mindscape — entranced pose if not already
+            if (!mindscapeActive)
+                PlayExpression(AnimState.Happy, 0.5f);
+        }
+        else if (key.Type == KeyType.Ghost)
+        {
+            // ghost handled via phase events
+        }
     }
 
     public void PlayInteractPose(float duration = 0.4f)
     {
         interactTimer = duration;
+        houseKeyInteract = false;
         state = AnimState.Interact;
         frameIndex = 0;
         frameTimer = 0f;
+        PlayExpression(AnimState.Happy, duration);
+    }
+
+    /// <summary>Deliberate House Key door reach — slightly longer confidence beat.</summary>
+    public void PlayHouseKeyInteract(float duration = 0.55f)
+    {
+        interactTimer = duration;
+        houseKeyInteract = true;
+        state = AnimState.HouseKeyInteract;
+        frameIndex = 0;
+        rig?.SetKeyPropVisible(true, new Color(0.95f, 0.82f, 0.35f));
         PlayExpression(AnimState.Happy, duration);
     }
 
@@ -177,11 +288,13 @@ public class PlayerSpriteAnimator : MonoBehaviour
         bool grounded = player.IsGrounded;
         float dt = Time.deltaTime;
 
-        // Landing detection
+        // Landing
         if (grounded && !wasGrounded)
         {
-            landHold = 0.16f;
-            squash = -landSquash * Mathf.Clamp(Mathf.Abs(vel.y) / 8f, 0.5f, 1.35f);
+            float impact = Mathf.Clamp(Mathf.Abs(vel.y) / 8f, 0.45f, 1.4f);
+            landHold = 0.14f + impact * 0.04f;
+            // Soft vs hard land squash (two intensities)
+            squash = -landSquash * (impact < 0.75f ? 0.7f : 1.15f);
             state = AnimState.Land;
             frameIndex = 0;
             airTime = 0f;
@@ -190,59 +303,24 @@ public class PlayerSpriteAnimator : MonoBehaviour
         if (!grounded) airTime += dt;
         else airTime = 0f;
 
-        // Jump anticipation: buffer about to fire while grounded
-        // Detect upward impulse start
-        if (grounded && vel.y > player.jumpForce * 0.55f && !jumpAnticipating && jumpAnticipation <= 0f)
-        {
-            // Already left ground visually next frame; stretch now
-            squash = jumpStretch;
-        }
-
-        // Turn detection
+        // Turn
         int face = absVx > 0.15f ? (vel.x < 0f ? -1 : 1) : lastFacing;
-        if (face != lastFacing && grounded && absVx > 0.2f)
+        if (face != lastFacing && grounded && absVx > 0.2f && !AbilityLocksLocomotion())
         {
-            turnTimer = 0.12f;
+            turnTimer = 0.1f;
             state = AnimState.Turn;
         }
         if (absVx > 0.15f) lastFacing = face;
 
-        // Priority state machine
-        if (hitTimer > 0f)
+        // Ghost warning last 1s
+        if (ghostActive && player.IsGhostPhasing && rig != null)
         {
-            hitTimer -= dt;
-            state = AnimState.Hit;
+            float rem = player.GhostPhaseRemaining;
+            rig.GhostWarning = rem > 0f && rem < 1f ? 1f - rem : 0f;
         }
-        else if (interactTimer > 0f)
-        {
-            interactTimer -= dt;
-            state = AnimState.Interact;
-        }
-        else if (turnTimer > 0f)
-        {
-            turnTimer -= dt;
-            state = AnimState.Turn;
-        }
-        else if (landHold > 0f)
-        {
-            landHold -= dt;
-            state = AnimState.Land;
-        }
-        else if (!grounded)
-        {
-            if (vel.y > 1.2f) state = AnimState.JumpRise;
-            else if (vel.y > -0.4f && airTime > 0.05f) state = AnimState.JumpApex;
-            else state = AnimState.Fall;
-        }
-        else if (absVx < walkThreshold)
-        {
-            state = AnimState.Idle;
-        }
-        else
-        {
-            float runAt = player.moveSpeed * runSpeedFactor;
-            state = absVx >= runAt ? AnimState.Run : AnimState.Walk;
-        }
+        else if (rig != null) rig.GhostWarning = 0f;
+
+        ResolveState(dt, absVx, vel, grounded);
 
         if (state != prevState)
         {
@@ -254,14 +332,158 @@ public class PlayerSpriteAnimator : MonoBehaviour
             prevState = state;
             frameTimer = 0f;
             if (!keepStride)
+            {
                 frameIndex = 0;
+                lastFootstepFrame = -1;
+            }
         }
 
-        stateTimer += dt;
-        AdvanceFrames(dt, absVx, vel.y, grounded);
+        AdvanceFrames(dt, absVx, vel, grounded);
         ApplySquashAndRig(dt, absVx, vel, grounded);
-        ApplyColor();
         ApplyExpression();
+    }
+
+    private bool AbilityLocksLocomotion() =>
+        hitTimer > 0f || scareTimer > 0f || mindscapeActive || hideActive
+        || mirrorTimer > 0f || ghostEnterTimer > 0f || ghostExitTimer > 0f;
+
+    private void ResolveState(float dt, float absVx, Vector2 vel, bool grounded)
+    {
+        // Highest priority: ability / reaction states
+        if (mirrorTimer > 0f)
+        {
+            mirrorTimer -= dt;
+            state = AnimState.MirrorTravel;
+            if (mirrorTimer <= 0f)
+                rig?.SetMode(ghostActive ? PlayerCharacterRig.VisualMode.Ghost : PlayerCharacterRig.VisualMode.Normal);
+            return;
+        }
+
+        if (hitTimer > 0f)
+        {
+            hitTimer -= dt;
+            state = AnimState.Hit;
+            return;
+        }
+
+        if (scareTimer > 0f)
+        {
+            scareTimer -= dt;
+            // 0–0.12 flinch, 0.12–1.1 freeze, rest recover
+            float elapsed = 2.4f - scareTimer;
+            if (elapsed < 0.12f)
+            {
+                scarePhase = 0f;
+                state = AnimState.ScareFlinch;
+            }
+            else if (elapsed < 1.15f)
+            {
+                scarePhase = 1f;
+                state = AnimState.ScareFreeze;
+                rig?.BeginScareFreeze();
+            }
+            else
+            {
+                scarePhase = 2f;
+                state = AnimState.ScareRecover;
+                rig?.EndScareFreeze();
+            }
+            if (scareTimer <= 0f)
+            {
+                rig?.EndScareFreeze();
+                rig?.SetMode(PlayerCharacterRig.VisualMode.Normal);
+            }
+            return;
+        }
+
+        if (ghostEnterTimer > 0f)
+        {
+            ghostEnterTimer -= dt;
+            state = AnimState.GhostEnter;
+            return;
+        }
+
+        if (ghostExitTimer > 0f)
+        {
+            ghostExitTimer -= dt;
+            state = AnimState.GhostExit;
+            if (ghostExitTimer <= 0f)
+                rig?.SetMode(PlayerCharacterRig.VisualMode.Normal);
+            return;
+        }
+
+        if (ghostActive && player.IsGhostPhasing)
+        {
+            state = AnimState.GhostLoop;
+            rig?.SetMode(PlayerCharacterRig.VisualMode.Ghost);
+            return;
+        }
+
+        if (mindscapeActive)
+        {
+            state = AnimState.Mindscape;
+            return;
+        }
+
+        if (hideActive || HideSpot.IsPlayerHidden)
+        {
+            if (!hideActive && HideSpot.IsPlayerHidden)
+                OnHideEnter();
+            state = AnimState.Hide;
+            return;
+        }
+
+        if (interactTimer > 0f)
+        {
+            interactTimer -= dt;
+            state = houseKeyInteract ? AnimState.HouseKeyInteract : AnimState.Interact;
+            if (interactTimer <= 0f)
+            {
+                houseKeyInteract = false;
+                rig?.SetKeyPropVisible(false);
+            }
+            return;
+        }
+
+        if (turnTimer > 0f)
+        {
+            turnTimer -= dt;
+            state = AnimState.Turn;
+            return;
+        }
+
+        if (landHold > 0f)
+        {
+            landHold -= dt;
+            state = AnimState.Land;
+            return;
+        }
+
+        if (player.IsWallSliding)
+        {
+            state = AnimState.WallSlide;
+            return;
+        }
+
+        if (!grounded)
+        {
+            // Jump cut: early release → snap toward apex sooner
+            bool shortHop = !player.JumpHeld && vel.y > 0.5f && vel.y < player.jumpForce * 0.85f;
+            if (vel.y > 1.2f && !shortHop) state = AnimState.JumpRise;
+            else if (vel.y > -0.35f || shortHop) state = AnimState.JumpApex;
+            else state = AnimState.Fall;
+            return;
+        }
+
+        if (absVx < walkThreshold)
+        {
+            state = AnimState.Idle;
+            return;
+        }
+
+        float runAt = player.moveSpeed * runSpeedFactor;
+        // Ghost loop uses 0.9× move — still walk/run under GhostLoop priority above
+        state = absVx >= runAt ? AnimState.Run : AnimState.Walk;
     }
 
     private void OnStateEnter(AnimState next, AnimState prev)
@@ -271,20 +493,20 @@ public class PlayerSpriteAnimator : MonoBehaviour
             case AnimState.JumpRise:
                 squash = Mathf.Max(squash, jumpStretch);
                 break;
-            case AnimState.Land:
-                // squash already set
+            case AnimState.WallSlide:
+                squash = Mathf.Lerp(squash, 0.04f, 0.5f);
+                break;
+            case AnimState.Hide:
+                squash = -0.06f;
                 break;
             case AnimState.Idle:
                 if (prev == AnimState.Land || prev == AnimState.Run || prev == AnimState.Walk)
                     rig?.SetSecondaryAmplitude(1f);
                 break;
-            case AnimState.Scare:
-                squash = 0.05f;
-                break;
         }
     }
 
-    private void AdvanceFrames(float dt, float absVx, float vy, bool grounded)
+    private void AdvanceFrames(float dt, float absVx, Vector2 vel, bool grounded)
     {
         Sprite[] frames;
         float fps;
@@ -304,70 +526,127 @@ public class PlayerSpriteAnimator : MonoBehaviour
                 frames = runFrames;
                 fps = runFps * Mathf.Clamp(absVx / 4.5f, 0.7f, 1.5f);
                 break;
-            case AnimState.JumpRise:
-                frames = jumpFrames;
-                fps = jumpFps;
+            case AnimState.GhostLoop:
+                // Reuse walk/idle at 0.9× speed with float feel
+                frames = absVx > walkThreshold ? walkFrames : idleFrames;
+                fps = (absVx > walkThreshold ? walkFps : idleFps) * 0.9f;
+                break;
+            case AnimState.GhostEnter:
+                frames = ghostFrames.Length > 0 ? ghostFrames : idleFrames;
+                fps = 14f;
                 loop = false;
-                frameIndex = Mathf.Clamp(jumpFrames.Length > 4 ? 2 : 0, 0, Mathf.Max(0, frames.Length - 1));
-                ApplyFrame(frames, frameIndex, fallbackJump);
+                break;
+            case AnimState.GhostExit:
+                frames = ghostFrames.Length > 0 ? ghostFrames : idleFrames;
+                fps = 16f;
+                loop = false;
+                break;
+            case AnimState.JumpRise:
+            {
+                frames = jumpFrames;
+                int idx = Mathf.Clamp(jumpFrames.Length > 4 ? 2 : 0, 0, Mathf.Max(0, frames.Length - 1));
+                // Fall-velocity stretch param for hard drops uses same frames
+                ApplyFrame(frames, idx, fallbackJump);
                 UpdateCyclePhase(0.25f);
                 return;
+            }
             case AnimState.JumpApex:
+            {
                 frames = jumpFrames;
-                frameIndex = Mathf.Clamp(jumpFrames.Length > 8 ? 6 : frames.Length / 2, 0, Mathf.Max(0, frames.Length - 1));
-                ApplyFrame(frames, frameIndex, fallbackJump);
+                int idx = Mathf.Clamp(jumpFrames.Length > 8 ? 6 : frames.Length / 2, 0, Mathf.Max(0, frames.Length - 1));
+                ApplyFrame(frames, idx, fallbackJump);
                 UpdateCyclePhase(0.5f);
                 return;
+            }
             case AnimState.Fall:
+            {
                 frames = jumpFrames;
-                frameIndex = Mathf.Clamp(jumpFrames.Length > 10 ? 10 : frames.Length - 2, 0, Mathf.Max(0, frames.Length - 1));
-                ApplyFrame(frames, frameIndex, fallbackJump);
+                int idx = Mathf.Clamp(jumpFrames.Length > 10 ? 10 : frames.Length - 2, 0, Mathf.Max(0, frames.Length - 1));
+                ApplyFrame(frames, idx, fallbackJump);
                 UpdateCyclePhase(0.7f);
+                // Stretch from fall speed toward maxFall 14
+                float fallT = Mathf.Clamp01(Mathf.Abs(vel.y) / Mathf.Max(0.1f, player.maxFallSpeed));
+                squash = Mathf.Lerp(squash, jumpStretch * 0.35f * fallT, dt * 6f);
                 return;
+            }
             case AnimState.Land:
+            {
                 frames = jumpFrames.Length > 0 ? jumpFrames : idleFrames;
-                fps = landFps;
-                loop = false;
-                // Use last quarter of jump sheet as land frames
                 int landStart = Mathf.Max(0, frames.Length - 4);
-                frameTimer += dt * fps;
-                if (frameTimer >= 1f)
-                {
-                    frameTimer = 0f;
-                    frameIndex++;
-                }
+                frameTimer += dt * landFps;
+                if (frameTimer >= 1f) { frameTimer = 0f; frameIndex++; }
                 int li = landStart + Mathf.Clamp(frameIndex, 0, 3);
                 ApplyFrame(frames, Mathf.Min(li, frames.Length - 1), fallbackIdle);
                 UpdateCyclePhase(0f);
                 return;
+            }
             case AnimState.Turn:
                 frames = walkFrames.Length > 0 ? walkFrames : idleFrames;
-                fps = walkFps * 1.2f;
+                fps = walkFps * 1.35f;
                 break;
+            case AnimState.WallSlide:
+                frames = jumpFrames.Length > 0 ? jumpFrames : idleFrames;
+                // Pressed pose — hold mid-fall cell
+                ApplyFrame(frames, Mathf.Clamp(frames.Length > 8 ? 9 : frames.Length / 2, 0, frames.Length - 1), fallbackJump);
+                UpdateCyclePhase(0.6f);
+                return;
             case AnimState.Interact:
+            case AnimState.HouseKeyInteract:
                 frames = expressFrames.Length > 8 ? expressFrames : idleFrames;
-                fps = 10f;
-                loop = false;
-                // Prefer full-body interact cells (row 3 of express sheet = indices 8-11)
                 if (expressFrames.Length >= 12)
                 {
-                    frameIndex = 8 + Mathf.Clamp(Mathf.FloorToInt((0.4f - interactTimer) / 0.4f * 3f), 0, 3);
+                    // Confidence pause for house key: hold frame 8 longer
+                    float t = houseKeyInteract ? (0.55f - interactTimer) / 0.55f : (0.4f - interactTimer) / 0.4f;
+                    if (houseKeyInteract && t < 0.25f)
+                        frameIndex = 8;
+                    else
+                        frameIndex = 8 + Mathf.Clamp(Mathf.FloorToInt(t * 3f), 0, 3);
                     ApplyFrame(expressFrames, frameIndex, fallbackIdle);
                     UpdateCyclePhase(0f);
                     return;
                 }
+                fps = 10f;
+                loop = false;
                 break;
             case AnimState.Hit:
-                frames = expressFrames.Length > 9 ? expressFrames : idleFrames;
-                fps = 14f;
-                loop = false;
                 if (expressFrames.Length >= 10)
                 {
-                    ApplyFrame(expressFrames, 9, fallbackIdle); // hit recoil cell
+                    ApplyFrame(expressFrames, 9, fallbackIdle);
                     UpdateCyclePhase(0f);
                     return;
                 }
+                frames = scareFrames;
+                fps = 14f;
+                loop = false;
                 break;
+            case AnimState.ScareFlinch:
+                frames = scareFrames;
+                ApplyFrame(frames, 0, fallbackIdle);
+                UpdateCyclePhase(0f);
+                return;
+            case AnimState.ScareFreeze:
+                frames = scareFrames;
+                ApplyFrame(frames, Mathf.Min(2, frames.Length - 1), fallbackIdle);
+                UpdateCyclePhase(0f);
+                return;
+            case AnimState.ScareRecover:
+                frames = scareFrames.Length > 4 ? scareFrames : idleFrames;
+                fps = 9f;
+                break;
+            case AnimState.Mindscape:
+                frames = expressFrames.Length > 0 ? expressFrames : idleFrames;
+                ApplyFrame(frames, Mathf.Min(1, frames.Length - 1), fallbackIdle);
+                UpdateCyclePhase(0f);
+                return;
+            case AnimState.Hide:
+                frames = hideFrames;
+                fps = 6f;
+                break;
+            case AnimState.MirrorTravel:
+                frames = jumpFrames.Length > 0 ? jumpFrames : idleFrames;
+                ApplyFrame(frames, Mathf.Min(4, frames.Length - 1), fallbackJump);
+                UpdateCyclePhase(0.3f);
+                return;
             default:
                 frames = idleFrames;
                 fps = idleFps;
@@ -385,27 +664,38 @@ public class PlayerSpriteAnimator : MonoBehaviour
         {
             frameTimer -= 1f;
             frameIndex++;
-            // Contact squash pulse on walk/run foot plant (every half cycle)
-            if (state == AnimState.Walk || state == AnimState.Run)
+            if (state == AnimState.Walk || state == AnimState.Run || state == AnimState.GhostLoop)
             {
-                if (frameIndex % Mathf.Max(1, frames.Length / 2) == 0)
+                int half = Mathf.Max(1, frames.Length / 2);
+                if (frameIndex % half == 0)
                     squash = Mathf.Min(squash, state == AnimState.Run ? -0.05f : -0.035f);
+                // Footstep on contact frames (0 and mid-cycle)
+                TryFootstep(frames.Length);
             }
         }
 
-        if (loop)
-            frameIndex %= frames.Length;
-        else
-            frameIndex = Mathf.Min(frameIndex, frames.Length - 1);
+        if (loop) frameIndex %= frames.Length;
+        else frameIndex = Mathf.Min(frameIndex, frames.Length - 1);
 
         ApplyFrame(frames, frameIndex, fallbackIdle);
         UpdateCyclePhase(frames.Length > 0 ? frameIndex / (float)frames.Length : 0f);
     }
 
+    private void TryFootstep(int frameCount)
+    {
+        if (player == null || !player.IsGrounded) return;
+        // Contact frames: 0 and halfway through cycle
+        int half = Mathf.Max(1, frameCount / 2);
+        int contact = frameIndex % half == 0 ? frameIndex : -1;
+        if (contact < 0 || contact == lastFootstepFrame) return;
+        lastFootstepFrame = contact;
+        float radius = state == AnimState.Run ? 2.8f : 2.2f;
+        player.EmitFootstepNoise(radius);
+    }
+
     private void UpdateCyclePhase(float phase)
     {
-        if (rig != null)
-            rig.CyclePhase = phase;
+        if (rig != null) rig.CyclePhase = phase;
     }
 
     private void ApplyFrame(Sprite[] frames, int index, Sprite fallback)
@@ -415,9 +705,7 @@ public class PlayerSpriteAnimator : MonoBehaviour
             spr = frames[Mathf.Clamp(index, 0, frames.Length - 1)];
         if (spr == null) spr = fallback;
         if (spr == null) return;
-
-        if (rig != null)
-            rig.SetBodySprite(spr);
+        if (rig != null) rig.SetBodySprite(spr);
         else
         {
             var sr = GetComponent<SpriteRenderer>();
@@ -427,63 +715,47 @@ public class PlayerSpriteAnimator : MonoBehaviour
 
     private void ApplySquashAndRig(float dt, float absVx, Vector2 vel, bool grounded)
     {
-        // Recover squash toward zero with nice overshoot damping
         squash = Mathf.Lerp(squash, 0f, dt * squashRecover);
 
-        // Air stretch from vertical velocity
         float airStretch = 0f;
         if (!grounded)
             airStretch = Mathf.Clamp(vel.y * 0.02f, -0.06f, 0.1f);
 
         float energy = grounded ? Mathf.Clamp01(absVx / Mathf.Max(0.1f, player.moveSpeed)) : 0.35f;
         if (state == AnimState.Run) energy = Mathf.Max(energy, 0.85f);
+        if (state == AnimState.GhostLoop) energy *= 0.9f;
+        if (state == AnimState.WallSlide) energy = 0.4f;
 
         if (rig != null)
         {
             rig.SetSquash(squash);
             rig.AirStretch = airStretch;
             rig.MoveEnergy = energy;
-            rig.SetSecondaryAmplitude(state == AnimState.Idle ? 1f : 0.75f);
+            if (state != AnimState.ScareFreeze && state != AnimState.Hide)
+                rig.SetSecondaryAmplitude(state == AnimState.Idle ? 1f : 0.75f);
             if (expressionTimer > 0f)
                 rig.EmotionIntensity = Mathf.Lerp(rig.EmotionIntensity, 1f, dt * 6f);
             else
                 rig.EmotionIntensity = Mathf.Lerp(rig.EmotionIntensity, 0f, dt * 4f);
         }
-        else
-        {
-            // Fallback scale on root
-            var baseScale = 1.55f;
-            float sy = 1f + squash + airStretch;
-            float sx = 1f - squash * 0.65f;
-            int face = lastFacing;
-            transform.localScale = new Vector3(baseScale * sx * face, baseScale * sy, 1f);
-        }
-    }
-
-    private void ApplyColor()
-    {
-        var sr = rig != null ? rig.BodyRenderer : GetComponent<SpriteRenderer>();
-        if (sr == null) return;
-        if (ghostVisual) return; // rig handles ghost tint
-        sr.color = Color.Lerp(sr.color, baseColor, Time.deltaTime * 8f);
     }
 
     private void ApplyExpression()
     {
         if (expressionTimer <= 0f)
         {
-            rig?.SetExpressionOverlay(null, 0f);
+            if (state != AnimState.Mindscape)
+                rig?.SetExpressionOverlay(null, 0f);
             return;
         }
 
         expressionTimer -= Time.deltaTime;
         if (expressFrames.Length == 0 || rig == null) return;
 
-        // Expression sheet row 0: happy, surprised, scared, angry
         int idx = expressionState switch
         {
             AnimState.Happy => 0,
-            AnimState.Scare => 2,
+            AnimState.ScareFlinch => 2,
             AnimState.Hit => 3,
             AnimState.Injured => 4,
             _ => 7

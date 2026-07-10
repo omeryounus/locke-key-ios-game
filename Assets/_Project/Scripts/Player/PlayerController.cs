@@ -53,9 +53,17 @@ public class PlayerController : MonoBehaviour
     public bool IsGhostPhasing => isGhostPhasing;
     public bool IsGrounded => isGrounded;
     public bool JustLanded => landTimer > 0f;
+    public bool IsWallSliding => touchingWall && !isGrounded && rb != null && rb.linearVelocity.y < -0.05f
+                                 && Mathf.Abs(moveInput) > 0.1f && Mathf.Sign(moveInput) == wallSign;
+    public int WallSign => wallSign;
     public float HorizontalSpeed => rb != null ? Mathf.Abs(rb.linearVelocity.x) : 0f;
     public float MoveInput => moveInput;
     public Vector2 Velocity => rb != null ? rb.linearVelocity : Vector2.zero;
+    public float GhostPhaseDuration => ghostPhaseDuration;
+    public float GhostPhaseRemaining { get; private set; }
+    public bool JumpHeld => jumpHeld;
+    /// <summary>When true, footstep noise is driven by animation contact frames.</summary>
+    public bool AnimationDrivesFootsteps { get; set; }
 
     private void Awake()
     {
@@ -90,8 +98,12 @@ public class PlayerController : MonoBehaviour
             }
 
             TryConsumeJumpBuffer();
-            TickFootstepNoise();
+            if (!AnimationDrivesFootsteps)
+                TickFootstepNoise();
         }
+
+        if (isGhostPhasing && GhostPhaseRemaining > 0f)
+            GhostPhaseRemaining = Mathf.Max(0f, GhostPhaseRemaining - Time.deltaTime);
     }
 
     private void TickFootstepNoise()
@@ -102,11 +114,18 @@ public class PlayerController : MonoBehaviour
             if (noiseTimer >= noiseStepInterval)
             {
                 noiseTimer = 0f;
-                eventBus?.NoiseHeard(transform.position, 2.2f);
-                FindFirstObjectByType<GameAudioController>()?.PlayFootstep();
+                EmitFootstepNoise();
             }
         }
         else noiseTimer = noiseStepInterval;
+    }
+
+    /// <summary>Called by the animator on walk/run ground-contact frames so SFX never drifts from art.</summary>
+    public void EmitFootstepNoise(float radius = 2.2f)
+    {
+        if (!isGrounded || isGhostPhasing) return;
+        eventBus?.NoiseHeard(transform.position, radius);
+        FindFirstObjectByType<GameAudioController>()?.PlayFootstep();
     }
 
     public void Move(float horizontalInput) =>
@@ -248,6 +267,7 @@ public class PlayerController : MonoBehaviour
         if (nearestMirror != null)
         {
             transform.position = nearestMirror.destinationMirror.GetTravelPosition();
+            eventBus?.MirrorTravel();
             FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.35f, 0.3f);
             FindFirstObjectByType<CameraFollow2D>()?.Shake(0.1f, 0.25f);
             FindFirstObjectByType<GameAudioController>()?.PlayMemoryTransition();
@@ -269,6 +289,7 @@ public class PlayerController : MonoBehaviour
     private IEnumerator GhostPhaseRoutine(float duration)
     {
         isGhostPhasing = true;
+        GhostPhaseRemaining = duration;
         eventBus?.GhostPhaseStarted();
         GameHaptics.PhaseStart();
         FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.18f, 0.3f);
@@ -277,6 +298,7 @@ public class PlayerController : MonoBehaviour
         yield return new WaitForSeconds(duration);
 
         isGhostPhasing = false;
+        GhostPhaseRemaining = 0f;
         ghostPhaseRoutine = null;
         eventBus?.GhostPhaseEnded();
         FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.1f, 0.15f);
