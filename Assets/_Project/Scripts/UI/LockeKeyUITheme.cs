@@ -9,15 +9,18 @@ public static class LockeKeyUITheme
     public const float RefWidth = 393f;
     public const float RefHeight = 852f;
 
-    // ── Colors ──────────────────────────────────────────────────────────
-    public static readonly Color LKInk = Hex("#121218");
+    // ── Colors — high-contrast gothic palette ───────────────────────────
+    public static readonly Color LKInk = Hex("#0E0E14");
     public static readonly Color LKWood = Hex("#4A3728");
-    public static readonly Color LKMoon = Hex("#2B3D5C");
-    public static readonly Color LKGold = Hex("#D4AF37");
+    public static readonly Color LKMoon = Hex("#3A6AB5");       // blue moonlight
+    public static readonly Color LKGold = Hex("#E0B84A");       // brighter gold UI
+    public static readonly Color LKCandle = Hex("#FF9A3C");     // warm orange candles
+    public static readonly Color LKMagicPurple = Hex("#A855F7"); // purple magical glow
+    public static readonly Color LKSpiritGreen = Hex("#34D399"); // green supernatural
     public static readonly Color LKIron = Hex("#5C6B7A");
     public static readonly Color Success = Hex("#3D9A5F");
-    public static readonly Color BodyText = Hex("#C8C8D0");
-    public static readonly Color CaptionText = Hex("#888899");
+    public static readonly Color BodyText = Hex("#D4D4DE");
+    public static readonly Color CaptionText = Hex("#9A9AAB");
     public static readonly Color ButtonOnGold = Hex("#1A1A1A");
     public static readonly Color White = Color.white;
 

@@ -77,19 +77,18 @@ public class SceneAtmosphereController : MonoBehaviour
             new Color(0.88f, 0.86f, 0.95f), 0.8f);
 
         warmKey = FindOrCreateLight("WarmKeyLight", Light2D.LightType.Point,
-            new Color(1f, 0.72f, 0.42f), 1.1f);
+            LockeKeyUITheme.LKCandle, 1.25f);
         warmKey.pointLightOuterRadius = 10f;
         warmKey.pointLightInnerRadius = 1.4f;
         warmKey.transform.position = new Vector3(0.4f, 1.9f, 0f);
 
         coolRim = FindOrCreateLight("CoolRimLight", Light2D.LightType.Point,
-            new Color(0.4f, 0.55f, 0.95f), 0.45f);
+            LockeKeyUITheme.LKMoon, 0.55f);
         coolRim.pointLightOuterRadius = 8f;
         coolRim.transform.position = new Vector3(-2.8f, 2.4f, 0f);
 
-        // Soft pool near typical front-door X so the objective area reads early.
         doorPool = FindOrCreateLight("DoorPoolLight", Light2D.LightType.Point,
-            new Color(1f, 0.8f, 0.45f), 0.7f);
+            new Color(1f, 0.75f, 0.3f), 0.85f);
         doorPool.pointLightOuterRadius = 3.2f;
         doorPool.pointLightInnerRadius = 0.3f;
         doorPool.transform.position = new Vector3(-0.2f, 0.4f, 0f);

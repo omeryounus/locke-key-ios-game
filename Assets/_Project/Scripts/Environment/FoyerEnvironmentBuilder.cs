@@ -44,10 +44,10 @@ public class FoyerEnvironmentBuilder : MonoBehaviour
             new Color(0.22f, 0.12f, 0.08f, 0.9f), 4);
         var c1 = Prop(root, "CandleL1", disc, new Vector3(-3.55f, -0.45f, 0.25f), new Vector3(0.14f, 0.32f, 1f),
             new Color(1f, 0.9f, 0.55f, 0.95f), 6);
-        AddLight(c1.transform, new Color(1f, 0.7f, 0.35f), 0.7f, 2.0f);
+        AddLight(c1.transform, LockeKeyUITheme.LKCandle, 0.85f, 2.2f);
         var c2 = Prop(root, "CandleL2", disc, new Vector3(-3.2f, -0.4f, 0.25f), new Vector3(0.12f, 0.28f, 1f),
             new Color(1f, 0.88f, 0.5f, 0.9f), 6);
-        AddLight(c2.transform, new Color(1f, 0.68f, 0.3f), 0.55f, 1.6f);
+        AddLight(c2.transform, LockeKeyUITheme.LKCandle, 0.7f, 1.8f);
         Prop(root, "PlantPot", square, new Vector3(-4.3f, -1.2f, 0.2f), new Vector3(0.32f, 0.32f, 1f),
             new Color(0.32f, 0.2f, 0.14f, 0.95f), 5);
         Prop(root, "PlantLeaves", disc, new Vector3(-4.3f, -0.65f, 0.22f), new Vector3(0.75f, 0.9f, 1f),
@@ -132,7 +132,7 @@ public class FoyerEnvironmentBuilder : MonoBehaviour
             new Color(0.4f, 0.32f, 0.2f, 0.95f), 5);
         var flame = Prop(root, name + "Flame", disc, pos + new Vector3(0f, 0.28f, 0f),
             new Vector3(0.2f, 0.28f, 1f), new Color(1f, 0.75f, 0.35f, 0.9f), 6);
-        AddLight(flame.transform, new Color(1f, 0.7f, 0.35f), 0.65f, 1.9f);
+        AddLight(flame.transform, LockeKeyUITheme.LKCandle, 0.8f, 2.1f);
         flame.AddComponent<FlickerLight>();
     }
 

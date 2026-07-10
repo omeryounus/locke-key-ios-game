@@ -194,7 +194,7 @@ public class FrontDoorHighlight : MonoBehaviour
         }
         else keyholeLight = kl;
         keyholeLight.lightType = Light2D.LightType.Point;
-        keyholeLight.color = new Color(1f, 0.85f, 0.35f);
+        keyholeLight.color = LockeKeyUITheme.LKMagicPurple;
         keyholeLight.intensity = 0.6f;
         keyholeLight.pointLightOuterRadius = 1.4f;
 

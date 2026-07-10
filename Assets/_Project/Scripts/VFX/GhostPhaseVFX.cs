@@ -9,7 +9,7 @@ public class GhostPhaseVFX : MonoBehaviour
 {
     [SerializeField] private PlayerController player;
     [SerializeField] private SpriteRenderer playerRenderer;
-    [SerializeField] private Color ghostTint = new(0.65f, 0.85f, 1f, 0.45f);
+    [SerializeField] private Color ghostTint = new(0.35f, 0.95f, 0.65f, 0.5f); // green spirit
     [SerializeField] private float fadeSpeed = 5f;
 
     private EventBus eventBus;

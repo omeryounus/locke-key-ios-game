@@ -68,25 +68,34 @@ public class LivingWorldAtmosphere : MonoBehaviour
 
     private void BuildMoonAndVolumes()
     {
+        // Blue moonlight
         moonlight = MakeLight("Moonlight", Light2D.LightType.Point,
-            new Color(0.55f, 0.68f, 1f), 0.55f, 11f);
+            LockeKeyUITheme.LKMoon, 0.7f, 12f);
         moonlight.transform.position = new Vector3(-3.5f, 3.2f, 0f);
 
+        // Purple magical window volume
         windowVolA = MakeLight("WindowVolumeA", Light2D.LightType.Point,
-            new Color(0.75f, 0.55f, 1f), 0.5f, 4.5f);
+            LockeKeyUITheme.LKMagicPurple, 0.65f, 5f);
         windowVolA.transform.position = new Vector3(-4.2f, 1.5f, 0f);
 
+        // Cool blue + green supernatural edge
         windowVolB = MakeLight("WindowVolumeB", Light2D.LightType.Point,
-            new Color(0.4f, 0.6f, 1f), 0.4f, 4f);
+            new Color(0.35f, 0.75f, 0.85f), 0.5f, 4.5f);
         windowVolB.transform.position = new Vector3(4.1f, 1.4f, 0f);
 
-        // Soft volumetric shafts (sprite planes)
+        var spirit = MakeLight("SpiritGreenGlow", Light2D.LightType.Point,
+            LockeKeyUITheme.LKSpiritGreen, 0.35f, 3.5f);
+        spirit.transform.position = new Vector3(2.5f, 0.2f, 0f);
+
+        // Soft volumetric shafts
         MakeShaft("VolShaftL", new Vector3(-4.0f, 1.2f, 0.06f), new Vector3(1.8f, 2.8f, 1f),
-            new Color(0.75f, 0.5f, 1f, 0.1f), -18f);
+            new Color(0.7f, 0.4f, 1f, 0.12f), -18f);
         MakeShaft("VolShaftR", new Vector3(3.9f, 1.1f, 0.06f), new Vector3(1.6f, 2.5f, 1f),
-            new Color(0.45f, 0.65f, 1f, 0.08f), 14f);
+            new Color(0.4f, 0.7f, 1f, 0.1f), 14f);
         MakeShaft("MoonShaft", new Vector3(-2.5f, 1.8f, 0.05f), new Vector3(2.2f, 3.2f, 1f),
-            new Color(0.6f, 0.75f, 1f, 0.07f), -8f);
+            new Color(0.45f, 0.65f, 1f, 0.09f), -8f);
+        MakeShaft("SpiritShaft", new Vector3(2.6f, 0.6f, 0.05f), new Vector3(1.3f, 2.0f, 1f),
+            new Color(0.3f, 0.9f, 0.55f, 0.07f), 8f);
     }
 
     private void AnimateMoon()
@@ -118,8 +127,8 @@ public class LivingWorldAtmosphere : MonoBehaviour
             sr.sortingOrder = 9;
             bool warm = i % 3 == 0;
             sr.color = warm
-                ? new Color(1f, 0.92f, 0.7f, Random.Range(0.1f, 0.28f))
-                : new Color(0.85f, 0.9f, 1f, Random.Range(0.08f, 0.22f));
+                ? new Color(1f, 0.7f, 0.35f, Random.Range(0.12f, 0.32f))   // candle dust
+                : new Color(0.55f, 0.7f, 1f, Random.Range(0.1f, 0.24f));   // moon dust
             go.transform.localScale = Vector3.one * Random.Range(0.04f, 0.13f);
             go.transform.localPosition = new Vector3(Random.Range(-5f, 5f), Random.Range(-2.5f, 3f), 0f);
             go.AddComponent<DriftMote>().Init(
@@ -187,7 +196,14 @@ public class LivingWorldAtmosphere : MonoBehaviour
             var sr = go.GetComponent<SpriteRenderer>();
             sr.sprite = disc;
             sr.sortingOrder = 11;
-            sr.color = new Color(1f, 0.75f, 0.35f, Random.Range(0.15f, 0.4f));
+            // Gold / purple / green ember mix
+            Color col = (i % 3) switch
+            {
+                0 => new Color(1f, 0.65f, 0.25f, Random.Range(0.2f, 0.45f)),
+                1 => new Color(0.75f, 0.4f, 1f, Random.Range(0.15f, 0.35f)),
+                _ => new Color(0.3f, 0.95f, 0.55f, Random.Range(0.12f, 0.3f)),
+            };
+            sr.color = col;
             go.transform.localScale = Vector3.one * Random.Range(0.03f, 0.08f);
             go.transform.localPosition = new Vector3(Random.Range(-4f, 4f), Random.Range(-1f, 2f), 0f);
             go.AddComponent<DriftMote>().Init(

@@ -18,5 +18,6 @@ public static class PickupFeedback
         var player = Object.FindFirstObjectByType<PlayerController>();
         var pos = player != null ? player.transform.position : Vector3.zero;
         Object.FindFirstObjectByType<ParticleVFXController>()?.PlayMemoryBurst(pos);
+        KeySparkleVFX.Play(pos + Vector3.up * 0.4f);
     }
 }

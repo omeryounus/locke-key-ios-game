@@ -87,6 +87,9 @@ public class GameBootstrap : MonoBehaviour
         if (player.GetComponent<PlayerVisibilityBoost>() == null)
             player.gameObject.AddComponent<PlayerVisibilityBoost>();
 
+        if (player.GetComponent<PlayerIdleDetail>() == null)
+            player.gameObject.AddComponent<PlayerIdleDetail>();
+
         if (player.GetComponent<GhostPhaseVFX>() == null)
             player.gameObject.AddComponent<GhostPhaseVFX>();
 
