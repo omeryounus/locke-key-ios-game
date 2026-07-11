@@ -12,6 +12,8 @@ public class GameBootstrap : MonoBehaviour
 
     private void Awake()
     {
+        ApplyMobileRuntimeDefaults();
+
         if (eventBus == null)
             eventBus = Resources.Load<EventBus>("EventBus");
 
@@ -22,6 +24,18 @@ public class GameBootstrap : MonoBehaviour
             eventBus.OnChapterCompleted += HandleChapterCompleted;
 
         EnsureStoryboardSystems();
+    }
+
+    private static void ApplyMobileRuntimeDefaults()
+    {
+        // Commercial mobile targets
+        Application.targetFrameRate = 60;
+        QualitySettings.vSyncCount = 0;
+        // 2D URP scene — keep shadows cheap
+        QualitySettings.shadows = ShadowQuality.Disable;
+        // Avoid runaway physics if frame hitch
+        Time.maximumDeltaTime = 0.1f;
+        Physics2D.simulationMode = SimulationMode2D.FixedUpdate;
     }
 
     private void EnsureStoryboardSystems()

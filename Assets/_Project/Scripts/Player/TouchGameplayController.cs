@@ -108,9 +108,10 @@ public class TouchGameplayController : MonoBehaviour
     private void ReadKeyboard()
     {
         var kbMove = Input.GetAxisRaw("Horizontal");
-        if (Mathf.Abs(kbMove) > 0.01f)
+        // Deadzone matches PlayerController — no micro-drift from stick/key noise
+        if (Mathf.Abs(kbMove) > 0.08f)
         {
-            moveInput = kbMove;
+            moveInput = Mathf.Sign(kbMove);
             isKeyboardActive = true;
         }
         else if (isKeyboardActive)
@@ -127,6 +128,10 @@ public class TouchGameplayController : MonoBehaviour
 
         if (Input.GetKeyUp(KeyCode.Space) || Input.GetKeyUp(KeyCode.W) || Input.GetKeyUp(KeyCode.UpArrow))
             player?.SetJumpHeld(false);
+
+        // Held jump while key stays down (Editor/desktop parity with mobile hold)
+        if (Input.GetKey(KeyCode.Space) || Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow))
+            player?.SetJumpHeld(true);
 
         if (Input.GetKeyDown(KeyCode.E))
             interactRequested = true;

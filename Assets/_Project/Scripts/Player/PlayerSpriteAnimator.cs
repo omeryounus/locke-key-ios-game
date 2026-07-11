@@ -34,11 +34,13 @@ public class PlayerSpriteAnimator : MonoBehaviour
     [SerializeField] private float landFps = 16f;
 
     [Header("Motion feel")]
-    [SerializeField] private float walkThreshold = 0.12f;
+    [SerializeField] private float walkThreshold = 0.18f;
     [SerializeField] private float runSpeedFactor = 0.72f;
-    [SerializeField] private float landSquash = 0.18f;
-    [SerializeField] private float jumpStretch = 0.12f;
-    [SerializeField] private float squashRecover = 11f;
+    [SerializeField] private float landSquash = 0.16f;
+    [SerializeField] private float jumpStretch = 0.1f;
+    [SerializeField] private float squashRecover = 12f;
+    [Tooltip("Hysteresis so idle/walk doesn't flicker at the threshold.")]
+    [SerializeField] private float stopThreshold = 0.1f;
 
     private PlayerController player;
     private Rigidbody2D rb;
@@ -482,15 +484,40 @@ public class PlayerSpriteAnimator : MonoBehaviour
             return;
         }
 
-        if (absVx < walkThreshold)
+        // Hysteresis: harder to leave idle than enter walk — kills foot skate flicker
+        float enterWalk = walkThreshold;
+        float leaveWalk = stopThreshold;
+        if (prevState == AnimState.Idle || prevState == AnimState.Land)
+        {
+            if (absVx < enterWalk)
+            {
+                state = AnimState.Idle;
+                return;
+            }
+        }
+        else if (state == AnimState.Idle || absVx < leaveWalk)
+        {
+            if (absVx < leaveWalk)
+            {
+                state = AnimState.Idle;
+                return;
+            }
+        }
+
+        if (absVx < enterWalk)
         {
             state = AnimState.Idle;
             return;
         }
 
         float runAt = player.moveSpeed * runSpeedFactor;
-        // Ghost loop uses 0.9× move — still walk/run under GhostLoop priority above
-        state = absVx >= runAt ? AnimState.Run : AnimState.Walk;
+        // Hysteresis on run too
+        float runEnter = runAt;
+        float runLeave = runAt * 0.88f;
+        if (prevState == AnimState.Run)
+            state = absVx >= runLeave ? AnimState.Run : AnimState.Walk;
+        else
+            state = absVx >= runEnter ? AnimState.Run : AnimState.Walk;
     }
 
     private void OnStateEnter(AnimState next, AnimState prev)
@@ -527,11 +554,12 @@ public class PlayerSpriteAnimator : MonoBehaviour
                 break;
             case AnimState.Walk:
                 frames = walkFrames;
-                fps = walkFps * Mathf.Clamp(absVx / 3.2f, 0.55f, 1.45f);
+                // Match cycle rate to world speed to reduce foot skating
+                fps = walkFps * Mathf.Clamp(absVx / Mathf.Max(0.5f, player.moveSpeed * 0.55f), 0.5f, 1.5f);
                 break;
             case AnimState.Run:
                 frames = runFrames;
-                fps = runFps * Mathf.Clamp(absVx / 4.5f, 0.7f, 1.5f);
+                fps = runFps * Mathf.Clamp(absVx / Mathf.Max(0.5f, player.moveSpeed * 0.85f), 0.65f, 1.55f);
                 break;
             case AnimState.GhostLoop:
                 // Reuse walk/idle at 0.9× speed with float feel

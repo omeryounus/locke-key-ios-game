@@ -265,12 +265,14 @@ public class PlayerCharacterRig : MonoBehaviour
 
         shakenBreathBoost = Mathf.MoveTowards(shakenBreathBoost, 0f, dt * 0.35f);
 
+        // Face input first (responsive), then velocity — never flip on micro drift
         float desired = facing;
-        if (player != null && Mathf.Abs(player.MoveInput) > 0.12f)
+        if (player != null && Mathf.Abs(player.MoveInput) > 0.15f)
             desired = Mathf.Sign(player.MoveInput);
-        else if (player != null && Mathf.Abs(player.Velocity.x) > 0.2f)
+        else if (player != null && Mathf.Abs(player.Velocity.x) > 0.45f)
             desired = Mathf.Sign(player.Velocity.x);
-        facing = Mathf.SmoothDamp(facing, desired, ref facingVel, 0.055f, 45f);
+        // SmoothDamp time ~2–3 frames at 60fps for snappy but non-snapping turns
+        facing = Mathf.SmoothDamp(facing, desired, ref facingVel, 0.045f, 50f);
         float faceSign = facing >= 0f ? 1f : -1f;
         float faceAmt = Mathf.Clamp01(Mathf.Abs(facing));
 
