@@ -42,6 +42,7 @@ Introduce the Locke siblings, establish Keyhouse as a living, strange place, and
 | Key          | When Found     | Primary Use in Chapter 1                  | Risk Introduced? |
 |--------------|----------------|-------------------------------------------|------------------|
 | **Ghost Key**   | Mid-chapter    | Phase through walls/doors                 | Yes (Echoes)     |
+| **Mirror Key**  | Mid-chapter    | Discovered inside hidden brickwork panel  | Yes (Vulnerability) |
 | **Head Key**    | Late chapter   | View memories (tutorial only)             | Teased           |
 
 ## 4. Puzzles in Chapter 1 (Target: 5–6 Puzzles)
@@ -64,9 +65,10 @@ Introduce the Locke siblings, establish Keyhouse as a living, strange place, and
 - **Solution:** Use Head Key on a specific object or character to see a short memory
 - **Purpose:** Introduce second key and deeper lore
 
-### Puzzle 5: The Hidden Key (Optional)
-- **Type:** Exploration + observation
-- **Solution:** Use Ghost Key + observation to find a hidden key
+### Puzzle 5: The Hidden Key (Mirror Key Discovery)
+- **Type:** Exploration + observation (requires Ghost Phase)
+- **Location:** Chamber behind the sealed door (X = 6.2)
+- **Solution:** Activate Ghost Key to reveal a cyan-glowing outline, then interact while ghost-phasing to reach inside the solid wall and retrieve the Mirror Key.
 
 ### Puzzle 6: First Echo Encounter (Horror Moment)
 - **Type:** Avoidance / tension
@@ -74,16 +76,16 @@ Introduce the Locke siblings, establish Keyhouse as a living, strange place, and
 
 ## 5. Core Systems Required for Vertical Slice
 
-- [ ] Player Controller (2.5D movement + interaction)
-- [ ] KeyManager + IKeyAbility system
-- [ ] GhostKey implementation
-- [ ] Basic HeadKey (memory viewing)
-- [ ] PuzzleBase + at least 3 concrete puzzles
-- [ ] EventBus integration
-- [ ] Simple Save System (chapter progress)
-- [ ] Basic UI (Key selection wheel or hotbar)
-- [ ] 2D Lighting + colored key glows
-- [ ] Simple Echo enemy (basic AI or scripted event)
+- [x] Player Controller (2.5D movement + interaction)
+- [x] KeyManager + IKeyAbility system
+- [x] GhostKey implementation
+- [x] Basic HeadKey (memory viewing)
+- [x] PuzzleBase + at least 3 concrete puzzles
+- [x] EventBus integration
+- [x] Simple Save System (chapter progress)
+- [x] Basic UI (Key selection wheel or hotbar)
+- [x] 2D Lighting + colored key glows
+- [x] Simple Echo enemy (basic AI or scripted event)
 
 ## 6. Narrative Beats (Key Moments)
 

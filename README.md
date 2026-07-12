@@ -19,7 +19,7 @@ A 2.5D atmospheric puzzle-adventure game where players explore the mysterious Ke
 - [x] Unity Project Scaffold (6000.5.2f1 + 2D URP)
 - [x] Art Bible
 - [x] Vertical Slice Plan (Chapter 1)
-- [x] Chapter 1 greybox vertical slice (Puzzles 1–4, Echo encounter, uGUI HUD)
+- [x] Chapter 1 vertical slice (All 5 puzzles, Mirror Key discovery, expanded Echo AI with Body Capture, Legacy Input migration, automated 4-layer Parallax)
 
 ## Repository Structure
 
@@ -157,10 +157,10 @@ python3 tools/patch_chapter1_parallax.py
 
 ## Next Milestones
 
-1. Import first environment art pass per Art Bible
-2. Replace placeholder sprites and tune 2D lighting
-3. Puzzle 5 (hidden key) and expanded Echo AI
-4. Ship TestFlight build from Xcode
+1. [x] Import first environment art pass per Art Bible
+2. [x] Replace placeholder sprites and tune 2D lighting (automated 4-layer Parallax)
+3. [x] Puzzle 5 (hidden key) and expanded Echo AI
+4. [ ] Ship TestFlight build from Xcode / physical device deployment
 
 ## License & IP
 
