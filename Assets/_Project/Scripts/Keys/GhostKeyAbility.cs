@@ -30,6 +30,8 @@ public class GhostKeyAbility : MonoBehaviour
     public UnityEvent OnGhostReturn;
     public UnityEvent OnBodyCaptured;
 
+    public bool IsBodyCaptured => bodyCaptured;
+
     private PlayerController playerController;
     private Rigidbody2D playerRigidbody;
     private Animator playerAnimator;

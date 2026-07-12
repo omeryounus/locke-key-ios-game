@@ -3,7 +3,9 @@
     "rootNamespace": "",
     "references": [
         "LockeKey",
-        "Unity.ugui"
+        "Unity.ugui",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Universal.2D.Runtime"
     ],
     "includePlatforms": [
         "Editor"

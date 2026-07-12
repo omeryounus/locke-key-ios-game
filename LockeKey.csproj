@@ -133,6 +133,7 @@
     <Compile Include="Assets/_Project/Scripts/VFX/GhostPhaseMomentController.cs" />
     <Compile Include="Assets/_Project/Scripts/UI/UIButtonFeedback.cs" />
     <Compile Include="Assets/_Project/Scripts/VFX/PickupFeedback.cs" />
+    <Compile Include="Assets/_Project/Scripts/Puzzles/HiddenKeyPuzzle.cs" />
     <Compile Include="Assets/_Project/Scripts/Environment/FoyerEnvironmentBuilder.cs" />
     <Compile Include="Assets/_Project/Scripts/Core/ArtPaths.cs" />
     <Compile Include="Assets/_Project/Scripts/Narrative/EchoTensionController.cs" />

@@ -149,7 +149,21 @@ public class EchoEntity : MonoBehaviour
             && !HideSpot.IsPlayerHidden
             && Vector2.Distance(transform.position, player.position) <= reachDistance)
         {
-            CatchPlayer();
+            var playerController = player.GetComponent<PlayerController>();
+            if (playerController != null && playerController.IsGhostPhasing)
+            {
+                var ghostAbility = player.GetComponent<GhostKeyAbility>();
+                if (ghostAbility != null && !ghostAbility.IsBodyCaptured)
+                {
+                    ghostAbility.TriggerBodyCapture();
+                    FindFirstObjectByType<GameplayHUD>()?.ShowToast("The Echo has seized your physical body! Return immediately!", 4f);
+                    Stun(3.5f);
+                }
+            }
+            else
+            {
+                CatchPlayer();
+            }
         }
     }
 

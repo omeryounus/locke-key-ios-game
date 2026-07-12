@@ -2,6 +2,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Rendering.Universal;
 
 /// <summary>
 /// Ensures TitleScreenController is on the TitleScreen scene's root GameObject
@@ -75,6 +76,9 @@ public static class ScenePatcher
 
         // Setup the Parallax Background
         dirty |= SetupParallaxBackground(scene);
+
+        // Setup the Hidden Key Puzzle
+        dirty |= SetupHiddenKeyPuzzle(scene);
 
         if (dirty)
         {
@@ -334,5 +338,130 @@ public static class ScenePatcher
         camGo.AddComponent<AudioListener>();
         Debug.Log("[ScenePatcher] Created Main Camera in TitleScreen");
         return c;
+    }
+
+    private static bool SetupHiddenKeyPuzzle(Scene scene)
+    {
+        bool dirty = false;
+
+        // 1. Find or create SecretWallPanel
+        var panelGo = FindOrCreateGO(scene, "SecretWallPanel");
+        panelGo.transform.position = new Vector3(6.2f, -0.6f, 0f);
+        panelGo.transform.localScale = Vector3.one;
+
+        // 2. Set tag and layer (11 is Interactable layer)
+        if (panelGo.layer != 11)
+        {
+            panelGo.layer = 11;
+            dirty = true;
+        }
+
+        // 3. Setup BoxCollider2D
+        var col = panelGo.GetComponent<BoxCollider2D>();
+        if (col == null)
+        {
+            col = panelGo.AddComponent<BoxCollider2D>();
+            col.isTrigger = true;
+            col.size = new Vector2(1f, 1.5f);
+            dirty = true;
+        }
+
+        // 4. Setup HiddenKeyPuzzle component
+        var puzzle = panelGo.GetComponent<HiddenKeyPuzzle>();
+        if (puzzle == null)
+        {
+            puzzle = panelGo.AddComponent<HiddenKeyPuzzle>();
+            dirty = true;
+        }
+
+        // 5. Setup GlowVisual child
+        SpriteRenderer glowSR = null;
+        GameObject visualGo = null;
+        foreach (Transform child in panelGo.transform)
+        {
+            if (child.name == "GlowVisual")
+            {
+                visualGo = child.gameObject;
+                break;
+            }
+        }
+        if (visualGo == null)
+        {
+            visualGo = new GameObject("GlowVisual");
+            visualGo.transform.SetParent(panelGo.transform);
+            visualGo.transform.localPosition = Vector3.zero;
+            visualGo.transform.localScale = new Vector3(0.5f, 0.5f, 1f);
+            dirty = true;
+        }
+        glowSR = visualGo.GetComponent<SpriteRenderer>();
+        if (glowSR == null)
+        {
+            glowSR = visualGo.AddComponent<SpriteRenderer>();
+            Sprite keySprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/_Project/Art/Parallax/foyer_near.png");
+            glowSR.sprite = keySprite;
+            glowSR.color = new Color(0f, 0.8f, 1f, 0f); // invisible by default
+            glowSR.sortingOrder = 5;
+            dirty = true;
+        }
+
+        // 6. Setup GlowLight child
+        Light2D glowLight = null;
+        GameObject lightGo = null;
+        foreach (Transform child in panelGo.transform)
+        {
+            if (child.name == "GlowLight")
+            {
+                lightGo = child.gameObject;
+                break;
+            }
+        }
+        if (lightGo == null)
+        {
+            lightGo = new GameObject("GlowLight");
+            lightGo.transform.SetParent(panelGo.transform);
+            lightGo.transform.localPosition = new Vector3(0f, 0f, 0f);
+            glowLight = lightGo.AddComponent<Light2D>();
+            glowLight.lightType = Light2D.LightType.Point;
+            glowLight.color = new Color(0f, 0.8f, 1f);
+            glowLight.intensity = 0f;
+            glowLight.pointLightOuterRadius = 3f;
+            dirty = true;
+        }
+        else
+        {
+            glowLight = lightGo.GetComponent<Light2D>();
+        }
+
+        // 7. Write components into fields via SerializedObject
+        SerializedObject so = new SerializedObject(puzzle);
+        so.Update();
+
+        var glowSRProp = so.FindProperty("hiddenObjectGlow");
+        if (glowSRProp.objectReferenceValue != glowSR)
+        {
+            glowSRProp.objectReferenceValue = glowSR;
+            dirty = true;
+        }
+
+        var glowLightProp = so.FindProperty("glowLight");
+        if (glowLightProp.objectReferenceValue != glowLight)
+        {
+            glowLightProp.objectReferenceValue = glowLight;
+            dirty = true;
+        }
+
+        var puzzleIdProp = so.FindProperty("puzzleID");
+        if (puzzleIdProp.stringValue != "chapter1_hidden_key")
+        {
+            puzzleIdProp.stringValue = "chapter1_hidden_key";
+            dirty = true;
+        }
+
+        if (so.ApplyModifiedProperties())
+        {
+            dirty = true;
+        }
+
+        return dirty;
     }
 }

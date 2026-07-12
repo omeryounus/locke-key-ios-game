@@ -104,6 +104,33 @@ public class KeyManager : MonoBehaviour
         SelectKey(headKey);
     }
 
+    public void GrantMirrorKey() => EnsureMirrorKey(silent: false);
+    public void GrantMirrorKeySilent() => EnsureMirrorKey(silent: true);
+
+    private void EnsureMirrorKey(bool silent)
+    {
+        if (ownedKeys.Exists(k => k.abilityType == KeyAbilityType.MirrorTravel))
+            return;
+
+        var mirrorKey = new KeyData
+        {
+            keyName = "Mirror Key",
+            description = "Travel through reflective surfaces and explore reflections.",
+            abilityType = KeyAbilityType.MirrorTravel,
+            usesRemaining = -1,
+            cooldown = 10f,
+            hasRisk = true,
+            riskLevel = 0.4f
+        };
+
+        if (silent)
+            ownedKeys.Add(mirrorKey);
+        else
+            DiscoverNewKey(mirrorKey);
+
+        SelectKey(mirrorKey);
+    }
+
     /// <summary>
     /// Call this when player selects a key from inventory/UI.
     /// </summary>
@@ -237,6 +264,8 @@ public class KeyManager : MonoBehaviour
             EnsureGhostKey(silent: true);
         if (save.hasHeadKey)
             EnsureHeadKey(silent: true);
+        if (save.discoveredKeyIds.Contains("mirror"))
+            EnsureMirrorKey(silent: true);
 
         if (!string.IsNullOrEmpty(save.activeKeyAbility))
         {
@@ -254,6 +283,13 @@ public class KeyManager : MonoBehaviour
         save.hasHeadKey = ownedKeys.Exists(k => k.abilityType == KeyAbilityType.HeadMemory);
         save.ghostKeyRevealed = save.ghostKeyRevealed
             || ChapterSaveManager.Instance?.IsPuzzleSolved("chapter1_bookshelf") == true;
+
+        bool hasMirror = ownedKeys.Exists(k => k.abilityType == KeyAbilityType.MirrorTravel);
+        if (hasMirror && !save.discoveredKeyIds.Contains("mirror"))
+        {
+            save.discoveredKeyIds.Add("mirror");
+        }
+
         save.activeKeyAbility = currentActiveKey != null
             ? currentActiveKey.abilityType.ToString()
             : string.Empty;
