@@ -51,6 +51,8 @@
     <Analyzer Include="/Applications/Unity/Hub/Editor/6000.5.2f1/Unity.app/Contents/Resources/Scripting/BCLExtensions/TargetingPacks/netstandard2.1/analyzers/dotnet/roslyn4.0/cs/System.Text.Json.SourceGeneration.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets/_Project/Scripts/Core/KeyCatalog.cs" />
+    <Compile Include="Assets/_Project/Scripts/Environment/SceneAtmosphereController.cs" />
     <Compile Include="Assets/_Project/Scripts/Puzzles/StuckDoorPuzzle.cs" />
     <Compile Include="Assets/_Project/Scripts/UI/HeadKeyMindscapePanel.cs" />
     <Compile Include="Assets/_Project/Scripts/Core/ChapterSaveData.cs" />
@@ -59,11 +61,15 @@
     <Compile Include="Assets/_Project/Scripts/UI/GameplayHUDBindings.cs" />
     <Compile Include="Assets/_Project/Scripts/Narrative/ChapterBeatDirector.cs" />
     <Compile Include="Assets/_Project/Scripts/Player/PlayerSpriteAnimator.cs" />
+    <Compile Include="Assets/_Project/Scripts/Environment/EnvMotionBehaviours.cs" />
     <Compile Include="Assets/_Project/Scripts/Core/PuzzleBase.cs" />
     <Compile Include="Assets/_Project/Scripts/Environment/ParallaxLayer.cs" />
+    <Compile Include="Assets/_Project/Scripts/Player/PlayerAnimatorGraphDriver.cs" />
     <Compile Include="Assets/_Project/Scripts/Core/EventBus.cs" />
     <Compile Include="Assets/_Project/Scripts/UI/GameplayHUD.cs" />
+    <Compile Include="Assets/_Project/Scripts/Environment/ProductionPropSpawner.cs" />
     <Compile Include="Assets/_Project/Scripts/Core/SaveablePickup.cs" />
+    <Compile Include="Assets/_Project/Scripts/UI/LockeUIComponents.cs" />
     <Compile Include="Assets/_Project/Scripts/Environment/PassageEscapeZone.cs" />
     <Compile Include="Assets/_Project/Scripts/Core/ChapterSaveManager.cs" />
     <Compile Include="Assets/_Project/Scripts/Core/LockDefinition.cs" />
@@ -71,47 +77,74 @@
     <Compile Include="Assets/_Project/Scripts/Keys/GhostKey.cs" />
     <Compile Include="Assets/_Project/Scripts/UI/SafeAreaFitter.cs" />
     <Compile Include="Assets/_Project/Scripts/UI/MemoryPanelLibrary.cs" />
+    <Compile Include="Assets/_Project/Scripts/VFX/InteractableHighlight.cs" />
     <Compile Include="Assets/_Project/Scripts/UI/GrokUIFlowManager.cs" />
+    <Compile Include="Assets/_Project/Scripts/UI/LockeUILayout.cs" />
     <Compile Include="Assets/_Project/Scripts/UI/KeySlotLibrary.cs" />
     <Compile Include="Assets/_Project/Scripts/Environment/ChapterRoomDirector.cs" />
+    <Compile Include="Assets/_Project/Scripts/UI/TopHudLayout.cs" />
     <Compile Include="Assets/_Project/Scripts/Player/TouchGameplayController.cs" />
     <Compile Include="Assets/_Project/Scripts/Keys/GhostKeyPickup.cs" />
+    <Compile Include="Assets/_Project/Scripts/UI/MiniMapHUD.cs" />
+    <Compile Include="Assets/_Project/Scripts/Player/PlayerFootContactVFX.cs" />
     <Compile Include="Assets/_Project/Scripts/UI/HoldButton.cs" />
     <Compile Include="Assets/_Project/Scripts/UI/UIManager.cs" />
+    <Compile Include="Assets/_Project/Scripts/UI/InventoryStripHUD.cs" />
+    <Compile Include="Assets/_Project/Scripts/UI/ObjectiveGuideController.cs" />
     <Compile Include="Assets/_Project/Scripts/Audio/GameAudioController.cs" />
     <Compile Include="Assets/_Project/Scripts/Narrative/EchoEncounterManager.cs" />
     <Compile Include="Assets/_Project/Scripts/Player/CameraFollow2D.cs" />
     <Compile Include="Assets/_Project/Scripts/Audio/GameHaptics.cs" />
+    <Compile Include="Assets/_Project/Scripts/UI/TutorialCoach.cs" />
     <Compile Include="Assets/_Project/Scripts/Narrative/EchoSpriteAnimator.cs" />
     <Compile Include="Assets/_Project/Scripts/Puzzles/SealedDoorPuzzle.cs" />
+    <Compile Include="Assets/_Project/Scripts/Player/PlayerCharacterRig.cs" />
     <Compile Include="Assets/_Project/Scripts/Core/SceneNames.cs" />
     <Compile Include="Assets/_Project/Scripts/Puzzles/HouseKeyPickup.cs" />
     <Compile Include="Assets/_Project/Scripts/Keys/HeadKey.cs" />
     <Compile Include="Assets/_Project/Scripts/UI/ChapterSaveDebugMenu.cs" />
     <Compile Include="Assets/_Project/Scripts/VFX/ParticleVFXController.cs" />
     <Compile Include="Assets/_Project/Scripts/Puzzles/SealedDoorPassageZone.cs" />
+    <Compile Include="Assets/_Project/Scripts/Player/PlayerSpriteAtlas.cs" />
     <Compile Include="Assets/_Project/Scripts/Environment/ChapterRoomZone.cs" />
     <Compile Include="Assets/_Project/Scripts/Narrative/EchoRecoveryController.cs" />
     <Compile Include="Assets/_Project/Scripts/Narrative/EchoEntity.cs" />
+    <Compile Include="Assets/_Project/Scripts/VFX/KeySparkleVFX.cs" />
+    <Compile Include="Assets/_Project/Scripts/Player/PlayerVisibilityBoost.cs" />
+    <Compile Include="Assets/_Project/Scripts/UI/AccessibilitySettingsPanel.cs" />
+    <Compile Include="Assets/_Project/Scripts/UI/ToastPresenter.cs" />
     <Compile Include="Assets/_Project/Scripts/Core/GameBootContext.cs" />
     <Compile Include="Assets/_Project/Scripts/Puzzles/MemoryFragmentPuzzle.cs" />
+    <Compile Include="Assets/_Project/Scripts/Environment/FrontDoorHighlight.cs" />
+    <Compile Include="Assets/_Project/Scripts/UI/ObjectiveTrackerHUD.cs" />
+    <Compile Include="Assets/_Project/Scripts/Core/ChapterMapDestination.cs" />
     <Compile Include="Assets/_Project/Scripts/Core/IKeyAbility.cs" />
+    <Compile Include="Assets/_Project/Scripts/Player/PlayerAnimParams.cs" />
+    <Compile Include="Assets/_Project/Scripts/Core/ChapterRoomLabels.cs" />
     <Compile Include="Assets/_Project/Scripts/Environment/ChapterRoomBackgrounds.cs" />
     <Compile Include="Assets/_Project/Scripts/Keys/HeadKeyPickup.cs" />
+    <Compile Include="Assets/_Project/Scripts/Environment/LivingWorldAtmosphere.cs" />
     <Compile Include="Assets/_Project/Scripts/Puzzles/CollapsedBookshelfPuzzle.cs" />
+    <Compile Include="Assets/_Project/Scripts/VFX/CinematicPostProcessOverlay.cs" />
+    <Compile Include="Assets/_Project/Scripts/UI/LockeKeyUITheme.cs" />
     <Compile Include="Assets/_Project/Scripts/Player/InteractionController.cs" />
+    <Compile Include="Assets/_Project/Scripts/Player/PlayerIdleDetail.cs" />
     <Compile Include="Assets/_Project/Scripts/Keys/KeyManager.cs" />
     <Compile Include="Assets/_Project/Scripts/VFX/GhostPhaseMomentController.cs" />
+    <Compile Include="Assets/_Project/Scripts/UI/UIButtonFeedback.cs" />
     <Compile Include="Assets/_Project/Scripts/VFX/PickupFeedback.cs" />
+    <Compile Include="Assets/_Project/Scripts/Environment/FoyerEnvironmentBuilder.cs" />
     <Compile Include="Assets/_Project/Scripts/Core/ArtPaths.cs" />
     <Compile Include="Assets/_Project/Scripts/Narrative/EchoTensionController.cs" />
     <Compile Include="Assets/_Project/Scripts/VFX/GhostPhaseVFX.cs" />
     <Compile Include="Assets/_Project/Scripts/Environment/HideSpot.cs" />
+    <Compile Include="Assets/_Project/Scripts/Environment/RoomEnvironmentDirector.cs" />
     <Compile Include="Assets/_Project/Scripts/UI/ChapterEndScreen.cs" />
     <Compile Include="Assets/_Project/Scripts/UI/KeySlotHUD.cs" />
     <Compile Include="Assets/_Project/Scripts/Core/GameBootstrap.cs" />
     <Compile Include="Assets/_Project/Scripts/UI/UIIconLibrary.cs" />
     <Compile Include="Assets/_Project/Scripts/VFX/InteractGlow.cs" />
+    <Compile Include="Assets/_Project/Scripts/Core/GameSettings.cs" />
     <Compile Include="Assets/_Project/Scripts/Keys/KeyGlowController.cs" />
     <Compile Include="Assets/_Project/Scripts/Player/PlayerInventory.cs" />
     <Compile Include="Assets/_Project/Scripts/UI/TitleScreenController.cs" />
@@ -672,12 +705,40 @@
       <HintPath>/Applications/Unity/Hub/Editor/6000.5.2f1/PlaybackEngines/iOSSupport/UnityEditor.iOS.Extensions.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="TextMateSharpPlastic">
+      <HintPath>Library/PackageCache/com.unity.collab-proxy@0b1559bcd34e/Lib/Editor/TextMateSharp/TextMateSharpPlastic.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="TextMateSharpPlastic.Grammars">
+      <HintPath>Library/PackageCache/com.unity.collab-proxy@0b1559bcd34e/Lib/Editor/TextMateSharp/TextMateSharpPlastic.Grammars.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Unity.Collections.LowLevel.ILSupport">
       <HintPath>Library/PackageCache/com.unity.collections@a43cabe808ca/Unity.Collections.LowLevel.ILSupport/Unity.Collections.LowLevel.ILSupport.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Unity.Plastic.Antlr3.Runtime">
+      <HintPath>Library/PackageCache/com.unity.collab-proxy@0b1559bcd34e/Lib/Editor/Unity.Plastic.Antlr3.Runtime.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="OnigwrapPlastic">
+      <HintPath>Library/PackageCache/com.unity.collab-proxy@0b1559bcd34e/Lib/Editor/TextMateSharp/Onigwrap/OnigwrapPlastic.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="nunit.framework">
       <HintPath>Library/PackageCache/com.unity.ext.nunit@44f7d31723bd/net472/unity-custom/nunit.framework.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.Plastic.Newtonsoft.Json">
+      <HintPath>Library/PackageCache/com.unity.collab-proxy@0b1559bcd34e/Lib/Editor/Unity.Plastic.Newtonsoft.Json.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="log4netPlastic">
+      <HintPath>Library/PackageCache/com.unity.collab-proxy@0b1559bcd34e/Lib/Editor/log4netPlastic.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="unityplastic">
+      <HintPath>Library/PackageCache/com.unity.collab-proxy@0b1559bcd34e/Lib/Editor/unityplastic.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Mono.Cecil">

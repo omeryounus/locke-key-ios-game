@@ -1,0 +1,334 @@
+using System;
+using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.UI;
+#if UNITY_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
+
+/// <summary>
+/// Implements the core Ghost Key mechanics, managing gesture detection,
+/// soul-body separation, timer depletion, body vulnerability, and events.
+/// </summary>
+public class GhostKeyAbility : MonoBehaviour
+{
+    [Header("Ability Constants")]
+    [SerializeField] private float ghostDuration = 45f;
+    [SerializeField] private float returnMergeDistance = 0.5f;
+    [SerializeField] private float swipeThreshold = 150f;
+    [SerializeField] private float bodyCapturedReturnGraceTime = 10f;
+
+    [Header("Entity References")]
+    [SerializeField] private GameObject ghostPrefab;
+    [SerializeField] private GameObject bodyVFXPrefab;
+    [SerializeField] private GameObject mergeVFXPrefab;
+    
+    [Header("UI & Visuals")]
+    [SerializeField] private Image uiCooldownRing;
+    [SerializeField] private GameObject ghostKeyUIPanel;
+    [SerializeField] private UnityEngine.Rendering.Volume ghostPostProcessVolume;
+
+    [Header("Events")]
+    public UnityEvent OnGhostActivate;
+    public UnityEvent OnGhostReturn;
+    public UnityEvent OnBodyCaptured;
+
+    private PlayerController playerController;
+    private Rigidbody2D playerRigidbody;
+    private Animator playerAnimator;
+    
+    private GameObject activeGhostInstance;
+    private bool isGhostActive;
+    private float ghostTimer;
+    private bool isReturning;
+    
+    // Swipe state
+    private Vector2 swipeStartPos;
+    private bool isSwiping;
+
+    // Body vulnerability state
+    private bool bodyCaptured;
+    private float bodyCapturedTimer;
+
+    private void Awake()
+    {
+        playerController = GetComponent<PlayerController>();
+        playerRigidbody = GetComponent<Rigidbody2D>();
+        playerAnimator = GetComponentInChildren<Animator>();
+    }
+
+    private void Update()
+    {
+        if (!isGhostActive)
+        {
+            DetectSwipeGesture();
+        }
+        else
+        {
+            UpdateGhostTimer();
+            if (isReturning)
+            {
+                PerformGhostReturnMerge();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Listens for a rapid swipe-up gesture on mobile screens to trigger soul separation.
+    /// </summary>
+    private void DetectSwipeGesture()
+    {
+#if UNITY_INPUT_SYSTEM
+        if (Touchscreen.current == null) return;
+
+        var touch = Touchscreen.current.primaryTouch;
+        if (!touch.press.isPressed)
+        {
+            isSwiping = false;
+            return;
+        }
+
+        var phase = touch.phase.ReadValue();
+        if (phase == UnityEngine.InputSystem.TouchPhase.Began)
+        {
+            swipeStartPos = touch.position.ReadValue();
+            isSwiping = true;
+        }
+        else if (isSwiping && phase == UnityEngine.InputSystem.TouchPhase.Moved)
+        {
+            Vector2 currentPos = touch.position.ReadValue();
+            float deltaY = currentPos.y - swipeStartPos.y;
+            if (deltaY > swipeThreshold)
+            {
+                ActivateGhostForm();
+                isSwiping = false;
+            }
+        }
+#else
+        // Editor desktop fallback: swipe using right-click drag up
+        if (Input.GetMouseButtonDown(1))
+        {
+            swipeStartPos = Input.mousePosition;
+            isSwiping = true;
+        }
+        else if (isSwiping && Input.GetMouseButton(1))
+        {
+            float deltaY = Input.mousePosition.y - swipeStartPos.y;
+            if (deltaY > swipeThreshold)
+            {
+                ActivateGhostForm();
+                isSwiping = false;
+            }
+        }
+#endif
+    }
+
+    /// <summary>
+    /// Detaches the player's soul from their body, instantiating the floating ghost prefab.
+    /// </summary>
+    public void ActivateGhostForm()
+    {
+        if (isGhostActive) return;
+
+        isGhostActive = true;
+        ghostTimer = ghostDuration;
+        bodyCaptured = false;
+
+        // 1. Spawn VFX
+        if (bodyVFXPrefab != null)
+        {
+            Instantiate(bodyVFXPrefab, transform.position, Quaternion.identity);
+        }
+
+        // 2. Spawn Ghost Instance
+        if (ghostPrefab != null)
+        {
+            activeGhostInstance = Instantiate(ghostPrefab, transform.position, Quaternion.identity);
+            
+            // Set up collision filters for ghost
+            var ghostRb = activeGhostInstance.GetComponent<Rigidbody2D>();
+            if (ghostRb != null)
+            {
+                // Disable ground collision for floating
+                int defaultLayer = LayerMask.NameToLayer("Default");
+                int groundLayer = LayerMask.NameToLayer("Ground");
+                int ghostWallLayer = LayerMask.NameToLayer("GhostWall");
+                int ghostPassableLayer = LayerMask.NameToLayer("GhostPassable");
+
+                // Note: Ghost movement component handles ignoring Default/Ground layers at runtime
+            }
+        }
+
+        // 3. Pause player controller physics and input
+        if (playerRigidbody != null)
+        {
+            playerRigidbody.simulated = false;
+        }
+        
+        if (playerController != null)
+        {
+            playerController.IsGhostPhasing = true;
+            playerController.IsInteracting = true; // Stops body movement
+        }
+
+        // 4. Trigger Animations & VFX Post Process
+        if (playerAnimator != null)
+        {
+            playerAnimator.SetBool("IsGhost", true);
+        }
+
+        if (ghostPostProcessVolume != null)
+        {
+            ghostPostProcessVolume.weight = 1f; // Fully desaturate/blue-tint
+        }
+
+        if (ghostKeyUIPanel != null)
+        {
+            ghostKeyUIPanel.SetActive(true);
+        }
+
+        OnGhostActivate?.Invoke();
+    }
+
+    /// <summary>
+    /// Called when the UI return button is clicked or timer expires. Initiates return merge transition.
+    /// </summary>
+    public void ReturnToBody()
+    {
+        if (!isGhostActive || isReturning) return;
+        isReturning = true;
+    }
+
+    /// <summary>
+    /// Tracks ghost timer depletion and controls UI cooldown ring fills.
+    /// </summary>
+    private void UpdateGhostTimer()
+    {
+        if (isReturning) return;
+
+        // Deplete normal timer
+        ghostTimer = Mathf.Max(0f, ghostTimer - Time.deltaTime);
+
+        if (uiCooldownRing != null)
+        {
+            uiCooldownRing.fillAmount = ghostTimer / ghostDuration;
+        }
+
+        // Handle body vulnerability timer if captured
+        if (bodyCaptured)
+        {
+            bodyCapturedTimer -= Time.deltaTime;
+            if (bodyCapturedTimer <= 0f)
+            {
+                LoseGameProgress();
+            }
+        }
+
+        // Automatically trigger return when timer hits zero
+        if (ghostTimer <= 0f)
+        {
+            ReturnToBody();
+        }
+    }
+
+    /// <summary>
+    /// Moves the ghost back towards the physical body. Merges them together upon arrival.
+    /// </summary>
+    private void PerformGhostReturnMerge()
+    {
+        if (activeGhostInstance == null)
+        {
+            CompleteMerge();
+            return;
+        }
+
+        // Pull the ghost towards the physical body position
+        Vector3 bodyPos = transform.position;
+        Vector3 ghostPos = activeGhostInstance.transform.position;
+
+        activeGhostInstance.transform.position = Vector3.MoveTowards(
+            ghostPos, 
+            bodyPos, 
+            12f * Time.deltaTime
+        );
+
+        if (Vector3.Distance(activeGhostInstance.transform.position, bodyPos) <= returnMergeDistance)
+        {
+            CompleteMerge();
+        }
+    }
+
+    /// <summary>
+    /// Destroys the ghost prefab, restores normal controller input, and triggers clean merge VFX.
+    /// </summary>
+    private void CompleteMerge()
+    {
+        isGhostActive = false;
+        isReturning = false;
+        bodyCaptured = false;
+
+        if (activeGhostInstance != null)
+        {
+            Destroy(activeGhostInstance);
+        }
+
+        // Spawn merge particles
+        if (mergeVFXPrefab != null)
+        {
+            Instantiate(mergeVFXPrefab, transform.position, Quaternion.identity);
+        }
+
+        // Restore normal player movement
+        if (playerRigidbody != null)
+        {
+            playerRigidbody.simulated = true;
+        }
+
+        if (playerController != null)
+        {
+            playerController.IsGhostPhasing = false;
+            playerController.IsInteracting = false;
+        }
+
+        if (playerAnimator != null)
+        {
+            playerAnimator.SetBool("IsGhost", false);
+        }
+
+        if (ghostPostProcessVolume != null)
+        {
+            ghostPostProcessVolume.weight = 0f;
+        }
+
+        if (ghostKeyUIPanel != null)
+        {
+            ghostKeyUIPanel.SetActive(false);
+        }
+
+        OnGhostReturn?.Invoke();
+    }
+
+    /// <summary>
+    /// Triggers the vulnerability penalty when an enemy collides with the player's physical body.
+    /// Gives the player 10 seconds to merge before failing.
+    /// </summary>
+    public void TriggerBodyCapture()
+    {
+        if (!isGhostActive || bodyCaptured) return;
+
+        bodyCaptured = true;
+        bodyCapturedTimer = bodyCapturedReturnGraceTime;
+        
+        OnBodyCaptured?.Invoke();
+    }
+
+    /// <summary>
+    /// Reloads the scene or resets save progress if the timer runs out after capture.
+    /// </summary>
+    private void LoseGameProgress()
+    {
+        isGhostActive = false;
+        // Reload current chapter from the last checkpoint
+        ChapterSaveManager.ReloadChapterScene();
+    }
+}
