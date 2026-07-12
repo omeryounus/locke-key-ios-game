@@ -380,6 +380,7 @@ public class PlayerController : MonoBehaviour
             FindFirstObjectByType<CameraFollow2D>()?.Shake(0.1f, 0.25f);
             FindFirstObjectByType<GameAudioController>()?.PlayMemoryTransition();
             GameHaptics.TriggerHapticLight();
+            eventBus?.MirrorTravel();
             FindFirstObjectByType<PlayerSpriteAnimator>()?.PlayMirrorTravel(0.55f);
             hud?.ShowToast("You step through the glass…", 2.5f);
             return true;

@@ -281,6 +281,17 @@ public class PlayerSpriteAnimator : MonoBehaviour
         PlayExpression(AnimState.Happy, duration);
     }
 
+    /// <summary>Mirror Key travel pose flash (step-through beat).</summary>
+    public void PlayMirrorTravel(float duration = 0.55f)
+    {
+        mirrorTimer = Mathf.Max(0.2f, duration);
+        state = AnimState.MirrorTravel;
+        frameIndex = 0;
+        frameTimer = 0f;
+        rig?.SetMode(PlayerCharacterRig.VisualMode.MirrorFlash);
+        PlayExpression(AnimState.Happy, duration * 0.5f);
+    }
+
     public void PlayExpression(AnimState emotion, float duration)
     {
         expressionState = emotion;
