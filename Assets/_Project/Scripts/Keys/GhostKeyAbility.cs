@@ -26,7 +26,7 @@ public class GhostKeyAbility : MonoBehaviour
     [Header("UI & Visuals")]
     [SerializeField] private Image uiCooldownRing;
     [SerializeField] private GameObject ghostKeyUIPanel;
-    [SerializeField] private UnityEngine.Rendering.Volume ghostPostProcessVolume;
+    [SerializeField] private Behaviour ghostPostProcessVolume;
 
     [Header("Events")]
     public UnityEvent OnGhostActivate;
@@ -179,7 +179,7 @@ public class GhostKeyAbility : MonoBehaviour
 
         if (ghostPostProcessVolume != null)
         {
-            ghostPostProcessVolume.weight = 1f; // Fully desaturate/blue-tint
+            ghostPostProcessVolume.enabled = true; // Fully desaturate/blue-tint
         }
 
         if (ghostKeyUIPanel != null)
@@ -297,7 +297,7 @@ public class GhostKeyAbility : MonoBehaviour
 
         if (ghostPostProcessVolume != null)
         {
-            ghostPostProcessVolume.weight = 0f;
+            ghostPostProcessVolume.enabled = false;
         }
 
         if (ghostKeyUIPanel != null)

@@ -141,12 +141,14 @@
     <Compile Include="Assets/_Project/Scripts/Environment/RoomEnvironmentDirector.cs" />
     <Compile Include="Assets/_Project/Scripts/UI/ChapterEndScreen.cs" />
     <Compile Include="Assets/_Project/Scripts/UI/KeySlotHUD.cs" />
+    <Compile Include="Assets/_Project/Scripts/Keys/GhostKeyAbility.cs" />
     <Compile Include="Assets/_Project/Scripts/Core/GameBootstrap.cs" />
     <Compile Include="Assets/_Project/Scripts/UI/UIIconLibrary.cs" />
     <Compile Include="Assets/_Project/Scripts/VFX/InteractGlow.cs" />
     <Compile Include="Assets/_Project/Scripts/Core/GameSettings.cs" />
     <Compile Include="Assets/_Project/Scripts/Keys/KeyGlowController.cs" />
     <Compile Include="Assets/_Project/Scripts/Player/PlayerInventory.cs" />
+    <Compile Include="Assets/_Project/Scripts/Environment/ParallaxBackground.cs" />
     <Compile Include="Assets/_Project/Scripts/UI/TitleScreenController.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -41,6 +41,37 @@ public class PlayerController : MonoBehaviour
     public bool AnimationDrivesFootsteps { get; set; }
     public float MoveInput => isWalking ? (facingRight ? 1f : -1f) : 0f;
     public Vector2 Velocity => new Vector2(isWalking ? (facingRight ? speed : -speed) : 0f, 0f);
+    public float HorizontalSpeed => isWalking ? speed : 0f;
+    public int WallSign => 0;
+    public bool JustLanded => false;
+
+    public void ActivateGhostPhase(float duration)
+    {
+        var ability = GetComponent<GhostKeyAbility>();
+        if (ability != null)
+        {
+            ability.ActivateGhostForm();
+        }
+        else
+        {
+            IsGhostPhasing = true;
+            GhostPhaseRemaining = duration;
+        }
+    }
+
+    public bool TryMirrorTravel() => false;
+    public void ManipulateShadows(bool active = true) {}
+    public void Move(float amount)
+    {
+        if (Mathf.Abs(amount) > 0.01f)
+        {
+            targetX = transform.position.x + amount * speed * Time.deltaTime;
+            hasTarget = true;
+        }
+    }
+    public void Jump() {}
+    public void SetJumpHeld(bool held) {}
+
 
     /// <summary>
     /// Prevents the player from moving when set to true (e.g., during active dialogue or interactions).
