@@ -172,22 +172,29 @@ public class HeadKeyMindscapePanel : MonoBehaviour
 
     private void ShowMemoryText()
     {
+        // Lore payoff after Mindscape — single narrative beat, then free the player
         if (uiManager != null)
         {
-            uiManager.OpenMemoryView();
+            uiManager.ShowMemoryFragment(
+                "Rendell's Warning",
+                "He pressed a key into cold brick behind the sealed door.\n\n" +
+                "\"Only a ghost can reach it,\" he whispered.\n\n" +
+                "Phase through the wall. Take what he hid.");
         }
-        Close();
+        Invoke(nameof(Close), 3.2f);
     }
 
     private void Close()
     {
         eventBus?.MindscapeExited();
         if (rootPanel != null)
-        {
             Destroy(rootPanel);
-        }
+
         var controller = FindFirstObjectByType<TouchGameplayController>();
         controller?.SetInputLocked(false);
+        var player = FindFirstObjectByType<PlayerController>();
+        if (player != null) player.IsInteracting = false;
+
         Destroy(gameObject);
     }
 

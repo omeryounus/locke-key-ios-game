@@ -33,8 +33,27 @@ public class HeadKey : MonoBehaviour, IKeyAbility
     {
         if (!CanActivate()) return;
 
+        // Head Key in Chapter 1 opens the portrait Mindscape via MemoryFragmentPuzzle,
+        // not a floating text-only view. Prefer interact/Use Key near the portrait.
         cooldownTimer = cooldown;
-        uiManager?.OpenMemoryView();
+        var portrait = FindFirstObjectByType<MemoryFragmentPuzzle>();
+        if (portrait != null && !portrait.isSolved)
+        {
+            portrait.Interact();
+            eventBus?.KeyActivated(this);
+            eventBus?.SetTension(0.45f);
+            return;
+        }
+
+        FindFirstObjectByType<GameplayHUD>()?.ShowToast(
+            "No open mind nearby. Find the family portrait.", 2.8f);
+        eventBus?.KeyActivated(this);
+    }
+
+    /// <summary>Apply cooldown without opening UI (used when Mindscape already started).</summary>
+    public void BeginCooldownOnly()
+    {
+        cooldownTimer = cooldown;
         eventBus?.KeyActivated(this);
         eventBus?.SetTension(0.45f);
     }

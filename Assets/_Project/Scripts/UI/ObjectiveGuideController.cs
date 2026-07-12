@@ -99,9 +99,30 @@ public class ObjectiveGuideController : MonoBehaviour
                 label = "Hide";
                 break;
             case ChapterBeatDirector.Beat.Aftermath:
-                next = FindFirstObjectByType<HeadKeyPickup>()?.transform
-                       ?? FindFirstObjectByType<MemoryFragmentPuzzle>()?.transform;
-                label = "Head Key";
+            {
+                var headPickup = FindFirstObjectByType<HeadKeyPickup>();
+                bool hasHead = FindFirstObjectByType<KeyManager>()?.ownedKeys
+                    .Exists(k => k.abilityType == KeyManager.KeyAbilityType.HeadMemory) == true;
+                if (!hasHead && headPickup != null)
+                {
+                    next = headPickup.transform;
+                    label = "Head Key";
+                }
+                else
+                {
+                    next = FindFirstObjectByType<MemoryFragmentPuzzle>()?.transform;
+                    label = "Portrait";
+                }
+                break;
+            }
+            case ChapterBeatDirector.Beat.MemorySolved:
+                next = FindFirstObjectByType<HiddenKeyPuzzle>()?.transform
+                       ?? GameObject.Find("SealedDoor")?.transform;
+                label = "Hidden Wall";
+                break;
+            case ChapterBeatDirector.Beat.ChapterComplete:
+                next = null;
+                label = "Complete";
                 break;
         }
 

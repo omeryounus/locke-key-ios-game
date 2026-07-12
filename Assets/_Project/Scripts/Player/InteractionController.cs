@@ -50,11 +50,17 @@ public class InteractionController : MonoBehaviour
                 FindFirstObjectByType<PlayerSpriteAnimator>()?.PlayInteractPose(0.4f);
             }
 
+            // Show contextual hint toast when available
+            var hint = NearestInteractable.InteractionHint;
+            if (!string.IsNullOrEmpty(hint) && NearestInteractable is PuzzleBase pb && !pb.isSolved)
+            {
+                // Don't spam full hint every interact — only soft rattle
+            }
+
             NearestInteractable.Interact();
             GameHaptics.TriggerHapticLight();
             FindFirstObjectByType<CameraFollow2D>()?.Shake(0.07f, 0.18f);
             FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.06f, 0.15f);
-            FindFirstObjectByType<GameAudioController>()?.PlayDoorRattle(); // soft feedback click-adjacent
             return;
         }
 
@@ -62,7 +68,12 @@ public class InteractionController : MonoBehaviour
         {
             nothingToastCooldown = 1.4f;
             var hud = FindFirstObjectByType<GameplayHUD>();
-            hud?.ShowToast("Nothing to interact with nearby.", 1.8f);
+            // Prefer nearest locked interactable hint if any in range
+            var almost = FindNearestAnyHint();
+            if (!string.IsNullOrEmpty(almost))
+                hud?.ShowToast(almost, 2.4f);
+            else
+                hud?.ShowToast("Nothing to interact with nearby.", 1.8f);
             FindFirstObjectByType<GameAudioController>()?.PlayDoorRattle();
         }
     }
@@ -97,6 +108,23 @@ public class InteractionController : MonoBehaviour
                 source = item;
             }
         }
+    }
+
+    private string FindNearestAnyHint()
+    {
+        string best = null;
+        float bestD = interactRadius * 1.35f;
+        foreach (var item in FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None))
+        {
+            if (item is not IInteractable inter) continue;
+            var dist = Vector2.Distance(transform.position, item.transform.position);
+            if (dist > bestD) continue;
+            var hint = inter.InteractionHint;
+            if (string.IsNullOrEmpty(hint)) continue;
+            bestD = dist;
+            best = hint;
+        }
+        return best;
     }
 
     private void OnDrawGizmosSelected()

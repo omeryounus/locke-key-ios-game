@@ -139,7 +139,7 @@ public class ObjectiveTrackerHUD : MonoBehaviour
 
         int keys = CountKeys();
         if (keysText != null)
-            keysText.text = $"{keys} / 6 Keys";
+            keysText.text = $"{keys} / 4 Keys";
 
         if (chapterText != null)
             chapterText.text = "Chapter 1";
@@ -153,16 +153,25 @@ public class ObjectiveTrackerHUD : MonoBehaviour
                 Set("Unlock the Front Door", "Go to the highlighted door");
                 break;
             case ChapterBeatDirector.Beat.Library:
-                Set("Clear the Bookshelf", "Tap Interact once");
+                Set("Clear the Bookshelf", "Inspect, then shove twice");
                 break;
             case ChapterBeatDirector.Beat.GhostKeyUse:
                 Set("Phase Through the Seal", "Use Key, then walk through");
                 break;
             case ChapterBeatDirector.Beat.EchoEncounter:
-                Set("Escape the Echo", "Hide in the arch or run");
+                Set("Escape the Echo", "Hide in the arch, then run");
+                break;
+            case ChapterBeatDirector.Beat.Aftermath:
+                Set("Uncover a Memory", "Head Key → family portrait");
+                break;
+            case ChapterBeatDirector.Beat.MemorySolved:
+                Set("Claim the Hidden Key", "Ghost-phase the cold wall");
+                break;
+            case ChapterBeatDirector.Beat.ChapterComplete:
+                Set("Chapter Complete", "The Black Door waits…");
                 break;
             default:
-                Set("Uncover a Memory", "Head Key → family portrait");
+                Set("Explore Keyhouse", "Follow the objective trail");
                 break;
         }
     }
@@ -177,6 +186,7 @@ public class ObjectiveTrackerHUD : MonoBehaviour
         {
             if (km.ownedKeys.Exists(k => k.abilityType == KeyManager.KeyAbilityType.GhostPhase)) n++;
             if (km.ownedKeys.Exists(k => k.abilityType == KeyManager.KeyAbilityType.HeadMemory)) n++;
+            if (km.ownedKeys.Exists(k => k.abilityType == KeyManager.KeyAbilityType.MirrorTravel)) n++;
         }
         return n;
     }

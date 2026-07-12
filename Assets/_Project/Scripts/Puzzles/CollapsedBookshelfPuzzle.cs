@@ -2,26 +2,42 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// Library obstacle: ONE clear action — Interact to clear the wreckage.
-/// Plays a multi-step collapse animation, then reveals the Ghost Key alcove.
+/// Library multi-step puzzle:
+/// 1) Inspect wreckage (clue)
+/// 2) Brace and push the lower beam (Interact again)
+/// 3) Clear path — Ghost Key alcove opens
 /// </summary>
 public class CollapsedBookshelfPuzzle : PuzzleBase
 {
+    public enum Stage { Inspect, Brace, Cleared }
+
     [SerializeField] private Collider2D blockingCollider;
     [SerializeField] private Transform shelfTransform;
     [SerializeField] private SpriteRenderer shelfRenderer;
     [SerializeField] private Transform debrisParent;
     [SerializeField] private float clearDuration = 1.15f;
 
+    private Stage stage = Stage.Inspect;
     private bool animating;
     private Vector3 shelfBasePos;
+    private int pushCount;
 
+    public Stage CurrentStage => stage;
     public override bool CanInteract => !isSolved && !animating;
 
-    public override string InteractionHint =>
-        isSolved
-            ? string.Empty
-            : "Collapsed bookshelf — tap Interact to clear the wreckage";
+    public override string InteractionHint
+    {
+        get
+        {
+            if (isSolved) return string.Empty;
+            return stage switch
+            {
+                Stage.Inspect => "Collapsed bookshelf — tap Interact to inspect",
+                Stage.Brace => "Loose beam — tap Interact twice to shove it free",
+                _ => string.Empty
+            };
+        }
+    }
 
     protected override void Awake()
     {
@@ -41,10 +57,74 @@ public class CollapsedBookshelfPuzzle : PuzzleBase
         }
     }
 
+    public override void Interact()
+    {
+        if (isSolved || animating) return;
+
+        switch (stage)
+        {
+            case Stage.Inspect:
+                StartCoroutine(InspectRoutine());
+                break;
+            case Stage.Brace:
+                pushCount++;
+                if (pushCount == 1)
+                {
+                    StartCoroutine(BracePulse());
+                    FindFirstObjectByType<GameplayHUD>()?.ShowToast(
+                        "It budges — shove again with Interact!", 2.6f);
+                }
+                else
+                    StartCoroutine(ClearWreckageRoutine());
+                break;
+        }
+    }
+
     protected override void TrySolve()
     {
-        if (animating || isSolved) return;
-        StartCoroutine(ClearWreckageRoutine());
+        // Multi-step uses Interact override
+    }
+
+    private IEnumerator InspectRoutine()
+    {
+        animating = true;
+        var hud = FindFirstObjectByType<GameplayHUD>();
+        hud?.ShowToast("Heavy wreckage… a gap under the lower beam. Brace and push.", 3.2f);
+        FindFirstObjectByType<GameAudioController>()?.PlayDoorRattle();
+        GameHaptics.TriggerHapticLight();
+
+        // Small dust shake on inspect
+        float e = 0f;
+        var start = shelfTransform.position;
+        while (e < 0.35f)
+        {
+            e += Time.deltaTime;
+            shelfTransform.position = start + Vector3.right * (Mathf.Sin(e * 40f) * 0.02f);
+            yield return null;
+        }
+        shelfTransform.position = start;
+        stage = Stage.Brace;
+        pushCount = 0;
+        animating = false;
+        hud?.ShowToast("Interact again to shove the beam.", 2.5f);
+    }
+
+    private IEnumerator BracePulse()
+    {
+        animating = true;
+        FindFirstObjectByType<GameAudioController>()?.PlayDoorRattle();
+        GameHaptics.TriggerHapticLight();
+        float e = 0f;
+        var start = shelfTransform.position;
+        while (e < 0.4f)
+        {
+            e += Time.deltaTime;
+            shelfTransform.position = start + Vector3.right * (Mathf.Sin(e * 55f) * 0.045f);
+            yield return null;
+        }
+        shelfTransform.position = start;
+        SpawnDebrisBurst(3);
+        animating = false;
     }
 
     private IEnumerator ClearWreckageRoutine()
@@ -61,7 +141,6 @@ public class CollapsedBookshelfPuzzle : PuzzleBase
         var startRot = shelfTransform.eulerAngles.z;
         var elapsed = 0f;
 
-        // Stage 1: shake
         while (elapsed < 0.28f)
         {
             elapsed += Time.deltaTime;
@@ -73,7 +152,6 @@ public class CollapsedBookshelfPuzzle : PuzzleBase
         SpawnDebrisBurst(6);
         FindFirstObjectByType<GameAudioController>()?.PlayDoorRattle();
 
-        // Stage 2: topple aside
         elapsed = 0f;
         while (elapsed < clearDuration)
         {
@@ -97,9 +175,10 @@ public class CollapsedBookshelfPuzzle : PuzzleBase
         if (blockingCollider != null)
             blockingCollider.enabled = false;
 
+        stage = Stage.Cleared;
         GameHaptics.Unlock();
         FindFirstObjectByType<CameraFollow2D>()?.Pulse(0.2f, 0.28f);
-        hud?.ShowToast("An alcove opens — a key glimmers inside.", 3.5f);
+        hud?.ShowToast("An alcove opens — a key glimmers inside. Claim the Ghost Key.", 3.5f);
         MarkAsSolved();
         animating = false;
     }
@@ -107,6 +186,7 @@ public class CollapsedBookshelfPuzzle : PuzzleBase
     public override void RestoreSolvedState()
     {
         base.RestoreSolvedState();
+        stage = Stage.Cleared;
         if (blockingCollider != null)
             blockingCollider.enabled = false;
         if (shelfTransform != null)

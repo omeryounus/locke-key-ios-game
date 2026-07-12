@@ -154,6 +154,8 @@ public class KeyManager : MonoBehaviour
     /// </summary>
     public void UseActiveKey()
     {
+        if (player == null)
+            player = FindFirstObjectByType<PlayerController>();
         var hud = FindFirstObjectByType<GameplayHUD>();
 
         if (currentActiveKey == null)
@@ -171,17 +173,54 @@ public class KeyManager : MonoBehaviour
 
         if (currentActiveKey.abilityType == KeyAbilityType.GhostPhase)
         {
+            if (player != null && player.IsGhostPhasing)
+            {
+                hud?.ShowToast("Already phasing…", 1.5f);
+                return;
+            }
+
             var sealedDoor = FindFirstObjectByType<SealedDoorPuzzle>();
-            // Allow free phase once the sealed door is solved; before that, require range.
-            if (sealedDoor != null && !sealedDoor.isSolved && !sealedDoor.IsPlayerInRange())
+            var hidden = FindFirstObjectByType<HiddenKeyPuzzle>();
+            bool freePhase = sealedDoor == null || sealedDoor.isSolved;
+            bool nearSealed = sealedDoor != null && sealedDoor.IsPlayerInRange();
+            bool nearHidden = hidden != null && !hidden.isSolved &&
+                              Vector2.Distance(player != null ? player.transform.position : Vector3.zero,
+                                  hidden.transform.position) < 3.2f;
+
+            // Teach first use at sealed door; after that allow phase for Hidden Key etc.
+            if (!freePhase && !nearSealed)
             {
                 hud?.ShowToast("Stand next to the sealed door, then tap Use Key.", 3f);
                 FindFirstObjectByType<GameAudioController>()?.PlayDoorRattle();
                 return;
             }
 
-            if (sealedDoor != null && !sealedDoor.isSolved && sealedDoor.IsPlayerInRange())
-                hud?.ShowToast("Phasing… walk through the door!", 2.5f);
+            if (!freePhase && nearSealed)
+                hud?.ShowToast("Phasing… walk through the sealed door!", 2.6f);
+            else if (nearHidden)
+                hud?.ShowToast("Phasing… reach into the glowing brickwork!", 2.6f);
+            else
+                hud?.ShowToast("Ghost phase active — move quickly.", 2.2f);
+        }
+
+        if (currentActiveKey.abilityType == KeyAbilityType.HeadMemory)
+        {
+            // Head Key Use opens mindscape only at the portrait puzzle
+            var portrait = FindFirstObjectByType<MemoryFragmentPuzzle>();
+            if (portrait != null && !portrait.isSolved && portrait.CanInteract)
+            {
+                float d = player != null
+                    ? Vector2.Distance(player.transform.position, portrait.transform.position)
+                    : 99f;
+                if (d <= 3.5f)
+                {
+                    portrait.Interact();
+                    OnKeyUsed?.Invoke(currentActiveKey);
+                    return;
+                }
+            }
+            hud?.ShowToast("Stand by the family portrait, then Use the Head Key.", 3f);
+            return;
         }
 
         ActivateAbility(currentActiveKey.abilityType);
@@ -190,24 +229,23 @@ public class KeyManager : MonoBehaviour
         if (currentActiveKey.usesRemaining > 0)
             currentActiveKey.usesRemaining--;
 
-        // Echo spawn is scripted after ghost phase ends near the sealed door (Beat 5).
-        if (currentActiveKey.hasRisk && currentActiveKey.abilityType != KeyAbilityType.GhostPhase)
-            CheckForHorrorConsequence(currentActiveKey.riskLevel);
-
         OnKeyUsed?.Invoke(currentActiveKey);
     }
 
     private void ActivateAbility(KeyAbilityType ability)
     {
+        if (player == null)
+            player = FindFirstObjectByType<PlayerController>();
+
         switch (ability)
         {
             case KeyAbilityType.GhostPhase:
-                player?.ActivateGhostPhase(duration: 5f);
+                player?.ActivateGhostPhase(5.5f);
                 break;
 
             case KeyAbilityType.HeadMemory:
-                // Trigger memory viewing UI or puzzle
-                uiManager?.OpenMemoryView();
+                // Portrait path handled in UseActiveKey
+                FindFirstObjectByType<GameplayHUD>()?.ShowToast("The Head Key needs a mind to open.", 2.5f);
                 break;
 
             case KeyAbilityType.MirrorTravel:
@@ -215,8 +253,7 @@ public class KeyManager : MonoBehaviour
                 break;
 
             case KeyAbilityType.AnywhereDoor:
-                // Open door creation UI or raycast to place door
-                Debug.Log("Anywhere Key activated - Door creation mode");
+                FindFirstObjectByType<GameplayHUD>()?.ShowToast("The Anywhere Key sleeps… not in this chapter.", 2.8f);
                 break;
 
             case KeyAbilityType.ShadowManipulate:
@@ -224,20 +261,8 @@ public class KeyManager : MonoBehaviour
                 break;
 
             case KeyAbilityType.Omega:
-                Debug.Log("Omega Key used - Major story consequences!");
-                // Trigger end-game sequence
+                FindFirstObjectByType<GameplayHUD>()?.ShowToast("The Omega Key is sealed beyond Chapter 1.", 2.8f);
                 break;
-        }
-    }
-
-    private void CheckForHorrorConsequence(float risk)
-    {
-        var eventBus = Resources.Load<EventBus>("EventBus");
-        float roll = Random.Range(0f, 1f);
-        if (roll < risk)
-        {
-            Debug.Log("Risk triggered! A demonic Echo has been attracted...");
-            eventBus?.TriggerEcho();
         }
     }
 

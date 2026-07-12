@@ -1,7 +1,8 @@
 using UnityEngine;
 
 /// <summary>
-/// Drives Chapter 1 storyboard beats: arrival tutorial, library flow, echo tension.
+/// Chapter 1 critical path beats with clear objectives and end conditions.
+/// Arrival → Door → Library → Ghost → Echo → Memory → Hidden → Complete
 /// </summary>
 public class ChapterBeatDirector : MonoBehaviour
 {
@@ -12,7 +13,9 @@ public class ChapterBeatDirector : MonoBehaviour
         Library,
         GhostKeyUse,
         EchoEncounter,
-        Aftermath
+        Aftermath,      // after Echo escape — go get Head Key / memory
+        MemorySolved,   // portrait done — hunt Hidden Key
+        ChapterComplete
     }
 
     [SerializeField] private CameraFollow2D cameraFollow;
@@ -23,6 +26,9 @@ public class ChapterBeatDirector : MonoBehaviour
     private EventBus eventBus;
     private bool playerHasMoved;
     private bool houseKeyCollected;
+    private bool memorySolved;
+    private bool hiddenKeySolved;
+    private bool echoEscaped;
 
     public Beat CurrentBeat => currentBeat;
 
@@ -65,7 +71,7 @@ public class ChapterBeatDirector : MonoBehaviour
             playerHasMoved = true;
             cameraFollow?.EndArrivalIntro();
             hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: false);
-            hud?.ShowToast("Tap Interact near glowing objects.", 3.5f);
+            hud?.ShowToast("Move with Left/Right. Interact near glowing objects.", 3.5f);
         }
     }
 
@@ -79,6 +85,20 @@ public class ChapterBeatDirector : MonoBehaviour
     public void NotifyGhostKeyCollected()
     {
         AdvanceTo(Beat.GhostKeyUse);
+    }
+
+    public void NotifyMemorySolved()
+    {
+        memorySolved = true;
+        if ((int)currentBeat < (int)Beat.MemorySolved)
+            AdvanceTo(Beat.MemorySolved);
+        TryFinishChapter();
+    }
+
+    public void NotifyHiddenKeySolved()
+    {
+        hiddenKeySolved = true;
+        TryFinishChapter();
     }
 
     private void HandlePuzzleSolved(PuzzleBase puzzle)
@@ -96,35 +116,68 @@ public class ChapterBeatDirector : MonoBehaviour
             case "chapter1_sealed_door":
                 AdvanceTo(Beat.EchoEncounter);
                 break;
+            case "chapter1_memory_fragment":
+                NotifyMemorySolved();
+                break;
+            case "chapter1_hidden_key":
+                NotifyHiddenKeySolved();
+                break;
         }
     }
 
     private void HandleGhostPhaseEnded()
     {
-        if (currentBeat == Beat.GhostKeyUse)
-            AdvanceTo(Beat.EchoEncounter);
+        // First phase near sealed door can still be mid-solve; Echo is driven by sealed door solve.
     }
 
     public void NotifyEchoEscaped()
     {
+        echoEscaped = true;
         if (currentBeat == Beat.EchoEncounter)
             AdvanceTo(Beat.Aftermath);
+        TryFinishChapter();
     }
 
     public void NotifyEchoCaught()
     {
         if (currentBeat != Beat.EchoEncounter) return;
+        hud?.ShowToast("The Echo caught you — try hiding in the arch!", 3f);
     }
 
     public void RestoreFromSave(int beatIndex)
     {
-        var beat = (Beat)Mathf.Clamp(beatIndex, 0, (int)Beat.Aftermath);
+        var beat = (Beat)Mathf.Clamp(beatIndex, 0, (int)Beat.ChapterComplete);
         houseKeyCollected = beatIndex >= (int)Beat.StuckDoor;
         playerHasMoved = beatIndex > (int)Beat.Arrival;
+        echoEscaped = beatIndex >= (int)Beat.Aftermath;
+        memorySolved = beatIndex >= (int)Beat.MemorySolved;
+        hiddenKeySolved = beatIndex >= (int)Beat.ChapterComplete;
         ApplyBeat(beat, announce: false);
 
         if (beatIndex > (int)Beat.Arrival)
             cameraFollow?.EndArrivalIntro();
+    }
+
+    private void TryFinishChapter()
+    {
+        // Chapter complete when: escaped Echo AND solved memory AND found hidden/mirror key
+        // Soft path: if memory + hidden done after aftermath, finish.
+        if (!echoEscaped && currentBeat != Beat.Aftermath && currentBeat != Beat.MemorySolved)
+            return;
+
+        if (memorySolved && hiddenKeySolved)
+        {
+            AdvanceTo(Beat.ChapterComplete);
+            eventBus?.ChapterCompleted();
+        }
+        else if (memorySolved && !hiddenKeySolved && currentBeat == Beat.MemorySolved)
+        {
+            hud?.ShowToast("Ghost-phase the sealed passage wall — a key waits inside.", 3.5f);
+        }
+        else if (hiddenKeySolved && !memorySolved)
+        {
+            hud?.ShowToast("The Mirror Key is yours. Still — the portrait hums for the Head Key.", 3.5f);
+        }
     }
 
     private void AdvanceTo(Beat beat)
@@ -144,7 +197,6 @@ public class ChapterBeatDirector : MonoBehaviour
         {
             case Beat.Arrival:
                 hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: false);
-                // Objective tracker + world guide handle permanent guidance; short toast only.
                 if (announce)
                     hud?.ShowToast("Follow the trail to the House Key.", 2.8f);
                 break;
@@ -152,7 +204,7 @@ public class ChapterBeatDirector : MonoBehaviour
                 hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: false);
                 if (announce)
                 {
-                    hud?.ShowToast("Walk to the highlighted Front Door.", 3f);
+                    hud?.ShowToast("Walk to the highlighted Front Door and Interact.", 3f);
                     hud?.FlashInteractButton(1.5f);
                     FindFirstObjectByType<ObjectiveTrackerHUD>()?.Peek();
                 }
@@ -161,7 +213,7 @@ public class ChapterBeatDirector : MonoBehaviour
                 hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: false);
                 if (announce)
                 {
-                    hud?.ShowToast("Clear the collapsed bookshelf with Interact.", 3f);
+                    hud?.ShowToast("Library: inspect the collapsed shelf, then shove it free.", 3.2f);
                     FindFirstObjectByType<ObjectiveTrackerHUD>()?.Peek();
                 }
                 break;
@@ -169,21 +221,32 @@ public class ChapterBeatDirector : MonoBehaviour
                 hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: true);
                 if (announce)
                 {
-                    hud?.ShowToast("At the sealed door: Use Key, then walk through.", 3.5f);
+                    hud?.ShowToast("Sealed door: equip Ghost Key, Use Key, then walk through.", 3.5f);
                     FindFirstObjectByType<ObjectiveTrackerHUD>()?.Peek();
                 }
                 break;
             case Beat.EchoEncounter:
                 hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: true);
                 if (announce)
-                    hud?.ShowToast("An Echo hunts you — hide in the arch or keep running!", 4.5f);
+                    hud?.ShowToast("An Echo hunts you — hide in the arch, then escape the passage!", 4.5f);
                 eventBus?.SetTension(0.9f);
                 break;
             case Beat.Aftermath:
                 hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: true);
                 if (announce)
-                    hud?.ShowToast("You escaped the Echo… for now.", 3.5f);
-                eventBus?.SetTension(0.2f);
+                    hud?.ShowToast("You escaped… Claim the Head Key, then open the portrait Mindscape.", 4f);
+                eventBus?.SetTension(0.25f);
+                break;
+            case Beat.MemorySolved:
+                hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: true);
+                if (announce)
+                    hud?.ShowToast("Use Ghost Key at the glowing wall in the sealed passage.", 4f);
+                break;
+            case Beat.ChapterComplete:
+                hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: true);
+                if (announce)
+                    hud?.ShowToast("Chapter 1 complete — the Black Door waits…", 4f);
+                eventBus?.SetTension(0.1f);
                 break;
         }
     }

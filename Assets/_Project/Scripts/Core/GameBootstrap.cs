@@ -86,6 +86,111 @@ public class GameBootstrap : MonoBehaviour
         EnsureRoomZones();
         EnsurePlayerAnimator();
         EnsureFrontDoorHighlight();
+        EnsureMirrorPair();
+        EnsureHiddenKeyVisuals();
+        EnsureGhostKeyAbilityClean();
+    }
+
+    private static void EnsureGhostKeyAbilityClean()
+    {
+        var player = FindFirstObjectByType<PlayerController>();
+        if (player == null) return;
+        // Keep thin proxy; remove if older broken swipe version somehow remains with missing deps
+        if (player.GetComponent<GhostKeyAbility>() == null)
+            player.gameObject.AddComponent<GhostKeyAbility>();
+        if (player.GetComponent<KeyManager>() == null)
+        {
+            // KeyManager is usually scene-level
+        }
+        var km = FindFirstObjectByType<KeyManager>();
+        if (km != null && km.player == null)
+            km.player = player;
+    }
+
+    /// <summary>Pair two mirrors for Mirror Key travel (library ↔ memory wing).</summary>
+    private static void EnsureMirrorPair()
+    {
+        var existing = FindObjectsByType<MirrorSurface>(FindObjectsSortMode.None);
+        MirrorSurface a = null, b = null;
+        if (existing.Length >= 2)
+        {
+            a = existing[0];
+            b = existing[1];
+        }
+        else
+        {
+            a = CreateMirror("Mirror_Library", new Vector3(3.4f, 0.2f, 0f));
+            b = CreateMirror("Mirror_Memory", new Vector3(9.6f, 0.2f, 0f));
+        }
+
+        if (a != null && b != null)
+        {
+            a.destinationMirror = b;
+            b.destinationMirror = a;
+            a.isReflective = true;
+            b.isReflective = true;
+        }
+    }
+
+    private static MirrorSurface CreateMirror(string name, Vector3 pos)
+    {
+        var existing = GameObject.Find(name);
+        GameObject go;
+        if (existing != null)
+            go = existing;
+        else
+        {
+            go = new GameObject(name, typeof(SpriteRenderer));
+            go.transform.position = pos;
+            go.transform.localScale = new Vector3(0.85f, 1.6f, 1f);
+            var sr = go.GetComponent<SpriteRenderer>();
+            sr.color = new Color(0.55f, 0.75f, 0.95f, 0.45f);
+            sr.sortingOrder = 6;
+            // soft disc sprite
+            var tex = new Texture2D(32, 32, TextureFormat.RGBA32, false);
+            for (var y = 0; y < 32; y++)
+            for (var x = 0; x < 32; x++)
+            {
+                float d = Vector2.Distance(new Vector2(x, y), new Vector2(15.5f, 15.5f)) / 16f;
+                tex.SetPixel(x, y, new Color(1f, 1f, 1f, Mathf.Clamp01(1f - d)));
+            }
+            tex.Apply();
+            sr.sprite = Sprite.Create(tex, new Rect(0, 0, 32, 32), new Vector2(0.5f, 0.5f), 32f);
+        }
+
+        var mirror = go.GetComponent<MirrorSurface>() ?? go.AddComponent<MirrorSurface>();
+        return mirror;
+    }
+
+    private static void EnsureHiddenKeyVisuals()
+    {
+        var puzzle = FindFirstObjectByType<HiddenKeyPuzzle>();
+        if (puzzle == null) return;
+
+        // Ensure glow sprite/light exist for ghost-only reveal
+        var t = puzzle.transform;
+        var glowT = t.Find("HiddenGlow");
+        if (glowT == null)
+        {
+            var glow = new GameObject("HiddenGlow", typeof(SpriteRenderer));
+            glow.transform.SetParent(t, false);
+            glow.transform.localPosition = Vector3.zero;
+            glow.transform.localScale = new Vector3(0.9f, 1.2f, 1f);
+            var sr = glow.GetComponent<SpriteRenderer>();
+            sr.color = new Color(0.3f, 0.95f, 0.9f, 0f);
+            sr.sortingOrder = 12;
+            var tex = new Texture2D(24, 24, TextureFormat.RGBA32, false);
+            for (var y = 0; y < 24; y++)
+            for (var x = 0; x < 24; x++)
+            {
+                float d = Vector2.Distance(new Vector2(x, y), new Vector2(11.5f, 11.5f)) / 12f;
+                tex.SetPixel(x, y, new Color(1f, 1f, 1f, Mathf.Pow(Mathf.Clamp01(1f - d), 1.4f)));
+            }
+            tex.Apply();
+            sr.sprite = Sprite.Create(tex, new Rect(0, 0, 24, 24), new Vector2(0.5f, 0.5f), 24f);
+
+            puzzle.BindGlow(sr);
+        }
     }
 
     private static void EnsureFrontDoorHighlight()

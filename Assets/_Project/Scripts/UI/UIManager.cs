@@ -22,6 +22,14 @@ public class UIManager : MonoBehaviour
 
     public void OpenMemoryView()
     {
+        // Prefer portrait Mindscape puzzle; do not soft-open random text from Use Key.
+        var portrait = FindFirstObjectByType<MemoryFragmentPuzzle>();
+        if (portrait != null && !portrait.isSolved)
+        {
+            portrait.Interact();
+            return;
+        }
+
         ShowMemoryFragment(
             "A Fragment of Rendell",
             "You see a man standing before a door that should not exist.\n\n" +

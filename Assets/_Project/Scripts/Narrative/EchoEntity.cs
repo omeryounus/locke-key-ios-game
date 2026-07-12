@@ -84,6 +84,10 @@ public class EchoEntity : MonoBehaviour
 
         if (player == null || lifeTimer <= 0f)
         {
+            // Lifetime end counts as escape opportunity
+            if (!hasCaughtPlayer && beatDirector != null &&
+                beatDirector.CurrentBeat == ChapterBeatDirector.Beat.EchoEncounter)
+                beatDirector.NotifyEchoEscaped();
             Despawn();
             return;
         }

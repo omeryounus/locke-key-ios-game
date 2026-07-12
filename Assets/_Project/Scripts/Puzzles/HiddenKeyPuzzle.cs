@@ -39,18 +39,66 @@ public class HiddenKeyPuzzle : PuzzleBase
         if (player == null)
             player = FindFirstObjectByType<PlayerController>();
 
-        // Ensure glow indicators are invisible initially
+        EnsureGlowVisuals();
+    }
+
+    /// <summary>Runtime-safe glow setup when scene refs are missing.</summary>
+    public void BindGlow(SpriteRenderer sr)
+    {
+        hiddenObjectGlow = sr;
         if (hiddenObjectGlow != null)
         {
-            Color c = hiddenObjectGlow.color;
+            var c = hiddenObjectGlow.color;
+            c.a = 0f;
+            hiddenObjectGlow.color = c;
+        }
+    }
+
+    private void EnsureGlowVisuals()
+    {
+        if (hiddenObjectGlow == null)
+        {
+            var glowT = transform.Find("HiddenGlow");
+            if (glowT != null)
+                hiddenObjectGlow = glowT.GetComponent<SpriteRenderer>();
+        }
+
+        if (hiddenObjectGlow == null)
+        {
+            var glow = new GameObject("HiddenGlow", typeof(SpriteRenderer));
+            glow.transform.SetParent(transform, false);
+            glow.transform.localPosition = Vector3.zero;
+            glow.transform.localScale = new Vector3(0.95f, 1.25f, 1f);
+            hiddenObjectGlow = glow.GetComponent<SpriteRenderer>();
+            hiddenObjectGlow.sortingOrder = 12;
+            var tex = new Texture2D(24, 24, TextureFormat.RGBA32, false);
+            for (var y = 0; y < 24; y++)
+            for (var x = 0; x < 24; x++)
+            {
+                float d = Vector2.Distance(new Vector2(x, y), new Vector2(11.5f, 11.5f)) / 12f;
+                tex.SetPixel(x, y, new Color(1f, 1f, 1f, Mathf.Pow(Mathf.Clamp01(1f - d), 1.4f)));
+            }
+            tex.Apply();
+            hiddenObjectGlow.sprite = Sprite.Create(tex, new Rect(0, 0, 24, 24), new Vector2(0.5f, 0.5f), 24f);
+            hiddenObjectGlow.color = new Color(0.3f, 0.95f, 0.9f, 0f);
+        }
+        else
+        {
+            var c = hiddenObjectGlow.color;
             c.a = 0f;
             hiddenObjectGlow.color = c;
         }
 
-        if (glowLight != null)
+        if (glowLight == null)
         {
-            glowLight.intensity = 0f;
+            var lightGo = new GameObject("HiddenGlowLight");
+            lightGo.transform.SetParent(transform, false);
+            glowLight = lightGo.AddComponent<Light2D>();
+            glowLight.lightType = Light2D.LightType.Point;
+            glowLight.color = new Color(0.35f, 0.95f, 0.9f);
+            glowLight.pointLightOuterRadius = 2.2f;
         }
+        glowLight.intensity = 0f;
     }
 
     private void Update()
@@ -151,22 +199,7 @@ public class HiddenKeyPuzzle : PuzzleBase
 
         // Grant the Mirror Key to the player
         var keyManager = FindFirstObjectByType<KeyManager>();
-        if (keyManager != null)
-        {
-            // Create the Mirror KeyData and grant it
-            var mirrorKey = new KeyManager.KeyData
-            {
-                keyName = "Mirror Key",
-                description = "Travel through reflective surfaces and explore reflections.",
-                abilityType = KeyManager.KeyAbilityType.MirrorTravel,
-                usesRemaining = -1,
-                cooldown = 10f,
-                hasRisk = true,
-                riskLevel = 0.4f
-            };
-
-            keyManager.DiscoverNewKey(mirrorKey);
-        }
+        keyManager?.GrantMirrorKey();
 
         // Save progress
         var save = ChapterSaveManager.Instance;
@@ -177,6 +210,9 @@ public class HiddenKeyPuzzle : PuzzleBase
         }
 
         MarkAsSolved();
+        FindFirstObjectByType<ChapterBeatDirector>()?.NotifyHiddenKeySolved();
+        FindFirstObjectByType<GameplayHUD>()?.ShowToast(
+            "Mirror Key claimed! Stand by a mirror and Use Key to travel.", 4f);
         animating = false;
     }
 }

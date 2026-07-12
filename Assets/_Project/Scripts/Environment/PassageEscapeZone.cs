@@ -2,11 +2,13 @@ using UnityEngine;
 
 /// <summary>
 /// Safe passage exit during the Echo encounter.
+/// Clears Echo and advances Aftermath — does NOT auto-end Chapter 1.
 /// </summary>
 [RequireComponent(typeof(Collider2D))]
 public class PassageEscapeZone : MonoBehaviour
 {
     [SerializeField] private ChapterBeatDirector beatDirector;
+    private bool used;
 
     private void Awake()
     {
@@ -19,16 +21,27 @@ public class PassageEscapeZone : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
+        if (used) return;
         if (other.GetComponent<PlayerController>() == null)
             return;
 
+        var beat = beatDirector != null ? beatDirector : FindFirstObjectByType<ChapterBeatDirector>();
+        // Only meaningful during Echo encounter
+        if (beat != null &&
+            beat.CurrentBeat != ChapterBeatDirector.Beat.EchoEncounter &&
+            beat.CurrentBeat != ChapterBeatDirector.Beat.GhostKeyUse)
+        {
+            // Still clear stragglers
+        }
+
+        used = true;
         var echoes = FindObjectsByType<EchoEntity>(FindObjectsSortMode.None);
         foreach (var echo in echoes)
             Destroy(echo.gameObject);
 
-        beatDirector?.NotifyEchoEscaped();
+        beat?.NotifyEchoEscaped();
         ChapterSaveManager.Instance?.RecordEchoCleared();
-        ChapterSaveManager.Instance?.RecordChapterComplete();
-        Resources.Load<EventBus>("EventBus")?.ChapterCompleted();
+        FindFirstObjectByType<GameplayHUD>()?.ShowToast(
+            "Safe — for now. Find the Head Key beyond the passage.", 3.5f);
     }
 }
