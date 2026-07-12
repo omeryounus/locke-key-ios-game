@@ -45,7 +45,13 @@ public class ParallaxBackground : MonoBehaviour
                 continue;
 
             layers[i].startX = layers[i].layerParent.transform.position.x;
-            layers[i].spriteWidth = layers[i].spriteA.bounds.size.x;
+            float localWidth = layers[i].spriteA.bounds.size.x;
+            float scaleX = layers[i].layerParent.transform.lossyScale.x;
+            if (scaleX > 0.0001f)
+            {
+                localWidth /= scaleX;
+            }
+            layers[i].spriteWidth = localWidth;
 
             // Position Sprite B immediately adjacent to Sprite A
             layers[i].spriteA.transform.localPosition = Vector3.zero;

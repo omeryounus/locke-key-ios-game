@@ -1,8 +1,5 @@
 using System;
 using UnityEngine;
-#if UNITY_INPUT_SYSTEM
-using UnityEngine.InputSystem;
-#endif
 
 /// <summary>
 /// Modern tap-to-move locomotion controller optimized for mobile portrait/landscape gameplay.
@@ -114,25 +111,20 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     private void ProcessTouchInput()
     {
-#if UNITY_INPUT_SYSTEM
-        // New Input System direct touch/press sensing
-        if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasPressedThisFrame)
+        // Mobile Touch Input
+        if (Input.touchCount > 0)
         {
-            Vector2 screenPos = Touchscreen.current.primaryTouch.position.ReadValue();
-            SetTargetDestination(screenPos);
+            Touch touch = Input.GetTouch(0);
+            if (touch.phase == TouchPhase.Began)
+            {
+                SetTargetDestination(touch.position);
+            }
         }
-        else if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
-        {
-            Vector2 screenPos = Mouse.current.position.ReadValue();
-            SetTargetDestination(screenPos);
-        }
-#else
-        // Fallback for legacy input configurations
-        if (Input.GetMouseButtonDown(0))
+        // Mouse/Editor Input fallback
+        else if (Input.GetMouseButtonDown(0))
         {
             SetTargetDestination(Input.mousePosition);
         }
-#endif
     }
 
     /// <summary>

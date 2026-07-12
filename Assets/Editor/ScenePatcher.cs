@@ -73,6 +73,9 @@ public static class ScenePatcher
         var flowHost = FindOrCreateGO(scene, "GrokUIFlowManager");
         dirty |= EnsureComponent<GrokUIFlowManager>(flowHost);
 
+        // Setup the Parallax Background
+        dirty |= SetupParallaxBackground(scene);
+
         if (dirty)
         {
             EditorSceneManager.MarkSceneDirty(scene);
@@ -84,6 +87,199 @@ public static class ScenePatcher
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────
+
+    private static bool SetupParallaxBackground(Scene scene)
+    {
+        bool dirty = false;
+
+        // 1. Find or create the controller object
+        var controllerGo = FindOrCreateGO(scene, "ParallaxController");
+        var parallax = controllerGo.GetComponent<ParallaxBackground>();
+        if (parallax == null)
+        {
+            parallax = controllerGo.AddComponent<ParallaxBackground>();
+            dirty = true;
+        }
+
+        // 2. Locate or create camera reference
+        var camGo = GameObject.FindWithTag("MainCamera");
+        Transform camTrans = camGo != null ? camGo.transform : null;
+
+        // 3. Find parent GameObjects for the 4 layers in the scene
+        GameObject groundGo = null;
+        GameObject farGo = null;
+        GameObject midGo = null;
+        GameObject nearGo = null;
+
+        foreach (var root in scene.GetRootGameObjects())
+        {
+            if (root.name == "Ground") groundGo = root;
+            else if (root.name == "ParallaxFar") farGo = root;
+            else if (root.name == "ParallaxMid") midGo = root;
+            else if (root.name == "ParallaxNear") nearGo = root;
+        }
+
+        if (groundGo == null) groundGo = FindOrCreateGO(scene, "Ground");
+        if (farGo == null) farGo = FindOrCreateGO(scene, "ParallaxFar");
+        if (midGo == null) midGo = FindOrCreateGO(scene, "ParallaxMid");
+        if (nearGo == null) nearGo = FindOrCreateGO(scene, "ParallaxNear");
+
+        // 4. Load the sprites from the Assets folder
+        Sprite farSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/_Project/Art/Parallax/foyer_far.png");
+        Sprite midSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/_Project/Art/Parallax/foyer_mid.png");
+        Sprite nearSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/_Project/Art/Parallax/foyer_near.png");
+
+        // 5. Gather current SpriteRenderer properties from Ground to preserve them
+        var groundSR = groundGo.GetComponent<SpriteRenderer>();
+        Sprite groundSprite = groundSR != null ? groundSR.sprite : null;
+        Color groundColor = groundSR != null ? groundSR.color : new Color(0.18f, 0.16f, 0.22f, 1f);
+        int groundSortingOrder = groundSR != null ? groundSR.sortingOrder : 0;
+        int groundSortingLayerID = groundSR != null ? groundSR.sortingLayerID : 0;
+
+        // 6. Setup SpriteA/B for all 4 layers
+        SpriteRenderer groundSpriteA, groundSpriteB;
+        PrepareLayerSprites(groundGo, groundSprite, groundColor, groundSortingOrder, groundSortingLayerID, out groundSpriteA, out groundSpriteB);
+
+        SpriteRenderer farSpriteA, farSpriteB;
+        PrepareLayerSprites(farGo, farSprite, new Color(0.55f, 0.6f, 0.75f, 0.85f), -30, 0, out farSpriteA, out farSpriteB);
+
+        SpriteRenderer midSpriteA, midSpriteB;
+        PrepareLayerSprites(midGo, midSprite, new Color(0.7f, 0.72f, 0.8f, 0.9f), -20, 0, out midSpriteA, out midSpriteB);
+
+        SpriteRenderer nearSpriteA, nearSpriteB;
+        PrepareLayerSprites(nearGo, nearSprite, new Color(0.85f, 0.82f, 0.78f, 0.75f), -5, 0, out nearSpriteA, out nearSpriteB);
+
+        // 7. Write the values to the serialized ParallaxBackground component
+        SerializedObject so = new SerializedObject(parallax);
+        so.Update();
+
+        var camProperty = so.FindProperty("targetCamera");
+        if (camProperty.objectReferenceValue != camTrans)
+        {
+            camProperty.objectReferenceValue = camTrans;
+            dirty = true;
+        }
+
+        var layersProperty = so.FindProperty("layers");
+        if (layersProperty.arraySize != 4)
+        {
+            layersProperty.arraySize = 4;
+            dirty = true;
+        }
+
+        ConfigureLayerProperty(layersProperty.GetArrayElementAtIndex(0), "Floor", groundGo, groundSpriteA, groundSpriteB, 0f);
+        ConfigureLayerProperty(layersProperty.GetArrayElementAtIndex(1), "Far", farGo, farSpriteA, farSpriteB, 0.08f);
+        ConfigureLayerProperty(layersProperty.GetArrayElementAtIndex(2), "MidArch", midGo, midSpriteA, midSpriteB, 0.18f);
+        ConfigureLayerProperty(layersProperty.GetArrayElementAtIndex(3), "Props", nearGo, nearSpriteA, nearSpriteB, 0.32f);
+
+        if (so.ApplyModifiedProperties())
+        {
+            dirty = true;
+        }
+
+        return dirty;
+    }
+
+    private static void PrepareLayerSprites(
+        GameObject parentGo, 
+        Sprite sprite, 
+        Color color, 
+        int sortingOrder, 
+        int sortingLayerID,
+        out SpriteRenderer spriteA, 
+        out SpriteRenderer spriteB)
+    {
+        // 1. Remove old ParallaxLayer component if present
+        var oldLayer = parentGo.GetComponent<ParallaxLayer>();
+        if (oldLayer != null)
+        {
+            Object.DestroyImmediate(oldLayer);
+        }
+
+        // 2. Clear out any existing sprite renderer on the parent itself to keep it clean
+        var parentSR = parentGo.GetComponent<SpriteRenderer>();
+        if (parentSR != null)
+        {
+            Object.DestroyImmediate(parentSR);
+        }
+
+        // 3. Find or create child SpriteA
+        GameObject childA = null;
+        foreach (Transform child in parentGo.transform)
+        {
+            if (child.name == "SpriteA")
+            {
+                childA = child.gameObject;
+                break;
+            }
+        }
+        if (childA == null)
+        {
+            childA = new GameObject("SpriteA");
+            childA.transform.SetParent(parentGo.transform);
+        }
+        childA.transform.localPosition = Vector3.zero;
+        childA.transform.localScale = Vector3.one;
+
+        spriteA = childA.GetComponent<SpriteRenderer>();
+        if (spriteA == null)
+        {
+            spriteA = childA.AddComponent<SpriteRenderer>();
+        }
+        spriteA.sprite = sprite;
+        spriteA.color = color;
+        spriteA.sortingOrder = sortingOrder;
+        if (sortingLayerID != 0)
+        {
+            spriteA.sortingLayerID = sortingLayerID;
+        }
+
+        // 4. Find or create child SpriteB
+        GameObject childB = null;
+        foreach (Transform child in parentGo.transform)
+        {
+            if (child.name == "SpriteB")
+            {
+                childB = child.gameObject;
+                break;
+            }
+        }
+        if (childB == null)
+        {
+            childB = new GameObject("SpriteB");
+            childB.transform.SetParent(parentGo.transform);
+        }
+        childB.transform.localPosition = Vector3.zero;
+        childB.transform.localScale = Vector3.one;
+
+        spriteB = childB.GetComponent<SpriteRenderer>();
+        if (spriteB == null)
+        {
+            spriteB = childB.AddComponent<SpriteRenderer>();
+        }
+        spriteB.sprite = sprite;
+        spriteB.color = color;
+        spriteB.sortingOrder = sortingOrder;
+        if (sortingLayerID != 0)
+        {
+            spriteB.sortingLayerID = sortingLayerID;
+        }
+    }
+
+    private static void ConfigureLayerProperty(
+        SerializedProperty layerProp, 
+        string name, 
+        GameObject parentGo, 
+        SpriteRenderer spriteA, 
+        SpriteRenderer spriteB, 
+        float parallaxFactor)
+    {
+        layerProp.FindPropertyRelative("name").stringValue = name;
+        layerProp.FindPropertyRelative("layerParent").objectReferenceValue = parentGo;
+        layerProp.FindPropertyRelative("spriteA").objectReferenceValue = spriteA;
+        layerProp.FindPropertyRelative("spriteB").objectReferenceValue = spriteB;
+        layerProp.FindPropertyRelative("parallaxFactor").floatValue = parallaxFactor;
+    }
 
     private static GameObject FindOrCreateGO(Scene scene, string name)
     {

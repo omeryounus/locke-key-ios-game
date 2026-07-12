@@ -2,9 +2,6 @@ using System;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
-#if UNITY_INPUT_SYSTEM
-using UnityEngine.InputSystem;
-#endif
 
 /// <summary>
 /// Implements the core Ghost Key mechanics, managing gesture detection,
@@ -78,49 +75,51 @@ public class GhostKeyAbility : MonoBehaviour
     /// </summary>
     private void DetectSwipeGesture()
     {
-#if UNITY_INPUT_SYSTEM
-        if (Touchscreen.current == null) return;
-
-        var touch = Touchscreen.current.primaryTouch;
-        if (!touch.press.isPressed)
+        // 1. Mobile touch swipe gesture
+        if (Input.touchCount > 0)
         {
-            isSwiping = false;
-            return;
-        }
-
-        var phase = touch.phase.ReadValue();
-        if (phase == UnityEngine.InputSystem.TouchPhase.Began)
-        {
-            swipeStartPos = touch.position.ReadValue();
-            isSwiping = true;
-        }
-        else if (isSwiping && phase == UnityEngine.InputSystem.TouchPhase.Moved)
-        {
-            Vector2 currentPos = touch.position.ReadValue();
-            float deltaY = currentPos.y - swipeStartPos.y;
-            if (deltaY > swipeThreshold)
+            Touch touch = Input.GetTouch(0);
+            if (touch.phase == TouchPhase.Began)
             {
-                ActivateGhostForm();
+                swipeStartPos = touch.position;
+                isSwiping = true;
+            }
+            else if (isSwiping && touch.phase == TouchPhase.Moved)
+            {
+                float deltaY = touch.position.y - swipeStartPos.y;
+                if (deltaY > swipeThreshold)
+                {
+                    ActivateGhostForm();
+                    isSwiping = false;
+                }
+            }
+            else if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
+            {
                 isSwiping = false;
             }
         }
-#else
-        // Editor desktop fallback: swipe using right-click drag up
-        if (Input.GetMouseButtonDown(1))
+        // 2. Editor/Desktop mouse drag fallback (left click or right click drag up)
+        else
         {
-            swipeStartPos = Input.mousePosition;
-            isSwiping = true;
-        }
-        else if (isSwiping && Input.GetMouseButton(1))
-        {
-            float deltaY = Input.mousePosition.y - swipeStartPos.y;
-            if (deltaY > swipeThreshold)
+            if (Input.GetMouseButtonDown(1) || Input.GetMouseButtonDown(0))
             {
-                ActivateGhostForm();
+                swipeStartPos = Input.mousePosition;
+                isSwiping = true;
+            }
+            else if (isSwiping && (Input.GetMouseButton(1) || Input.GetMouseButton(0)))
+            {
+                float deltaY = Input.mousePosition.y - swipeStartPos.y;
+                if (deltaY > swipeThreshold)
+                {
+                    ActivateGhostForm();
+                    isSwiping = false;
+                }
+            }
+            else if (Input.GetMouseButtonUp(1) || Input.GetMouseButtonUp(0))
+            {
                 isSwiping = false;
             }
         }
-#endif
     }
 
     /// <summary>
