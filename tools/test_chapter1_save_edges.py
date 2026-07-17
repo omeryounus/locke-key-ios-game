@@ -132,6 +132,8 @@ def main() -> None:
     objective_guide = (ROOT / "Assets/_Project/Scripts/UI/ObjectiveGuideController.cs").read_text()
     world_foundation = (ROOT / "Assets/_Project/Scripts/Environment/PlayableWorldFoundation.cs").read_text()
     save_manager = (ROOT / "Assets/_Project/Scripts/Core/ChapterSaveManager.cs").read_text()
+    layout = (ROOT / "Assets/_Project/Scripts/UI/LockeUILayout.cs").read_text()
+    player_rig = (ROOT / "Assets/_Project/Scripts/Player/PlayerCharacterRig.cs").read_text()
     assert "pressureResetInterval" in echo_entity
     assert "beatDirector.NotifyEchoEscaped();" not in echo_entity
     assert "public void ClearEncounter()" in echo_manager
@@ -144,6 +146,9 @@ def main() -> None:
     assert "public const float PlayerWalkY = -1.05f;" in world_foundation
     assert "collider.size = new Vector2(MaxWalkX - MinWalkX + 1f, GroundHeight);" in world_foundation
     assert "PlayableWorldFoundation.ClampToWalkablePosition" in save_manager
+    assert "UsesPortraitLetterbox" in layout
+    assert "RuntimePlatform.OSXPlayer" in layout
+    assert "DisableLegacyVisualLayers" in player_rig
 
     print("Chapter 1 save and Echo escape edge cases validated.")
 

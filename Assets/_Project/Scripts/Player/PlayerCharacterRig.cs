@@ -76,6 +76,7 @@ public class PlayerCharacterRig : MonoBehaviour
     private void Awake()
     {
         player = GetComponent<PlayerController>();
+        DisableLegacyVisualLayers(transform);
         var rs = transform.localScale;
         if (Mathf.Abs(rs.x) > 1.01f || Mathf.Abs(rs.y) > 1.01f)
         {
@@ -86,6 +87,23 @@ public class PlayerCharacterRig : MonoBehaviour
         BuildHierarchy();
         LoadLayerSprites();
         EnsureRim();
+    }
+
+    /// <summary>
+    /// Older presentation components create their own cape, hood, and shadow renderers.
+    /// The modern rig owns those layers, so leave legacy helpers inactive instead of
+    /// letting them render a second character over the animated body.
+    /// </summary>
+    public static void DisableLegacyVisualLayers(Transform root)
+    {
+        if (root == null) return;
+
+        foreach (var name in new[] { "BlinkLid", "CloakFlutter", "HoodSway", "PlayerShadow" })
+        {
+            var legacy = root.Find(name);
+            if (legacy != null)
+                legacy.gameObject.SetActive(false);
+        }
     }
 
     private void BuildHierarchy()

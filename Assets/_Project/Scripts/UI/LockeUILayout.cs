@@ -88,6 +88,9 @@ public static class LockeUILayout
             screenHeight = Mathf.Max(screenHeight, (int)LockeKeyUITheme.RefHeight);
         }
 
+        if (!UsesPortraitLetterbox())
+            return new Vector2(screenWidth, screenHeight);
+
         float targetAspect = LockeKeyUITheme.RefWidth / LockeKeyUITheme.RefHeight;
         float screenAspect = (float)screenWidth / screenHeight;
 
@@ -111,6 +114,15 @@ public static class LockeUILayout
         RectTransform left, RectTransform right, RectTransform top, RectTransform bottom)
     {
         if (viewport == null) return;
+
+        if (!UsesPortraitLetterbox())
+        {
+            if (left != null) left.gameObject.SetActive(false);
+            if (right != null) right.gameObject.SetActive(false);
+            if (top != null) top.gameObject.SetActive(false);
+            if (bottom != null) bottom.gameObject.SetActive(false);
+            return;
+        }
 
         var vpSize = viewport.sizeDelta;
         if (vpSize.x <= 1f || vpSize.y <= 1f)
@@ -181,6 +193,14 @@ public static class LockeUILayout
 
         float scale = vpSize.y / LockeKeyUITheme.RefHeight;
         content.localScale = Vector3.one * Mathf.Max(scale, 0.01f);
+    }
+
+    /// <summary>Portrait framing belongs on phones; desktop playtests use the whole window.</summary>
+    private static bool UsesPortraitLetterbox()
+    {
+        return Application.platform != RuntimePlatform.OSXPlayer
+               && Application.platform != RuntimePlatform.WindowsPlayer
+               && Application.platform != RuntimePlatform.LinuxPlayer;
     }
 
     public static Transform GetContentRoot(FlowCanvas flow)

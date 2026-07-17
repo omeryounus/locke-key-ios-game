@@ -99,6 +99,7 @@ public class PlayerSpriteAnimator : MonoBehaviour
 
         var idleDetail = GetComponent<PlayerIdleDetail>();
         if (idleDetail != null) idleDetail.enabled = false;
+        PlayerCharacterRig.DisableLegacyVisualLayers(transform);
 
         if (player != null)
             player.AnimationDrivesFootsteps = true;

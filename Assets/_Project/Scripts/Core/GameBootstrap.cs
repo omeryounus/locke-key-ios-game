@@ -231,6 +231,7 @@ public class GameBootstrap : MonoBehaviour
         var idleDetail = player.GetComponent<PlayerIdleDetail>();
         if (idleDetail != null)
             idleDetail.enabled = false;
+        PlayerCharacterRig.DisableLegacyVisualLayers(player.transform);
 
         if (player.GetComponent<GhostPhaseVFX>() == null)
             player.gameObject.AddComponent<GhostPhaseVFX>();
