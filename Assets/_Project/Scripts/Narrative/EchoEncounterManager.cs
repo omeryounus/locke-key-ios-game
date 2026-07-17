@@ -58,8 +58,21 @@ public class EchoEncounterManager : MonoBehaviour
 
     public void RespawnEchoIfNeeded()
     {
-        if (!encounterActive || player == null) return;
+        if (!encounterActive || player == null
+            || ChapterSaveManager.Instance?.Data.echoEncounterCleared == true)
+            return;
         SpawnEcho(force: true);
+    }
+
+    public void ClearEncounter()
+    {
+        encounterActive = false;
+        hasSpawned = true;
+
+        foreach (var echo in FindObjectsByType<EchoEntity>(FindObjectsSortMode.None))
+            Destroy(echo.gameObject);
+
+        eventBus?.SetTension(0.1f);
     }
 
     private void HandleEchoTriggered()

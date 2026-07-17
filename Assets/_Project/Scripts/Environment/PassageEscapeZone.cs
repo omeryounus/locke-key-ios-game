@@ -35,9 +35,15 @@ public class PassageEscapeZone : MonoBehaviour
         }
 
         used = true;
-        var echoes = FindObjectsByType<EchoEntity>(FindObjectsSortMode.None);
-        foreach (var echo in echoes)
-            Destroy(echo.gameObject);
+        var echoManager = FindFirstObjectByType<EchoEncounterManager>();
+        if (echoManager != null)
+            echoManager.ClearEncounter();
+        else
+        {
+            var echoes = FindObjectsByType<EchoEntity>(FindObjectsSortMode.None);
+            foreach (var echo in echoes)
+                Destroy(echo.gameObject);
+        }
 
         beat?.NotifyEchoEscaped();
         ChapterSaveManager.Instance?.RecordEchoCleared();

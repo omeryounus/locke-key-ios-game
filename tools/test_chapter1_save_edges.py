@@ -125,7 +125,15 @@ def main() -> None:
                 else:
                     assert loaded[key] == value, f"{name}: {key}"
 
-    print("Chapter 1 save edge-case payloads validated.")
+    echo_entity = (ROOT / "Assets/_Project/Scripts/Narrative/EchoEntity.cs").read_text()
+    echo_manager = (ROOT / "Assets/_Project/Scripts/Narrative/EchoEncounterManager.cs").read_text()
+    escape_zone = (ROOT / "Assets/_Project/Scripts/Environment/PassageEscapeZone.cs").read_text()
+    assert "pressureResetInterval" in echo_entity
+    assert "beatDirector.NotifyEchoEscaped();" not in echo_entity
+    assert "public void ClearEncounter()" in echo_manager
+    assert "echoManager.ClearEncounter();" in escape_zone
+
+    print("Chapter 1 save and Echo escape edge cases validated.")
 
 
 if __name__ == "__main__":

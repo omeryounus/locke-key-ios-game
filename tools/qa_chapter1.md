@@ -54,6 +54,15 @@
 | A3 | Landscape | Centered 393×852 viewport | ☐ |
 | A4 | Menu: Spawn A4 Test Canvas | Toast + Hello button, zero missing refs | ☐ |
 
+## Gate F — Echo encounter (S7)
+
+| # | Step | Expected | Pass |
+|---|------|----------|------|
+| F1 | Open the sealed passage | Echo appears and objective says to escape | ☐ |
+| F2 | Stay in the encounter for 20 seconds without entering the passage | Encounter remains active; it does not advance to aftermath | ☐ |
+| F3 | Let the Echo catch the player | Player returns to the checkpoint, receives a short input lock, then Echo respawns | ☐ |
+| F4 | Cross the passage exit | Echo despawns, tension drops, aftermath begins, and save marks encounter cleared | ☐ |
+
 ## Notes
 
 ```

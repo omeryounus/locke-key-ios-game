@@ -20,7 +20,7 @@ public class EchoEntity : MonoBehaviour
     [SerializeField] private float moveSpeed = 1.15f;
     [SerializeField] private float hiddenSpeedMultiplier = 0.2f;
     [SerializeField] private float blindSpeedMultiplier = 0.35f;
-    [SerializeField] private float lifetime = 18f;
+    [SerializeField] private float pressureResetInterval = 18f;
     [SerializeField] private float reachDistance = 0.75f;
     [SerializeField] private LayerMask lineOfSightMask = ~0;
 
@@ -54,7 +54,7 @@ public class EchoEntity : MonoBehaviour
         spriteRenderer = GetComponent<SpriteRenderer>();
         eventBus = Resources.Load<EventBus>("EventBus");
         beatDirector = FindFirstObjectByType<ChapterBeatDirector>();
-        lifeTimer = lifetime;
+        lifeTimer = pressureResetInterval;
         active = true;
         hasCaughtPlayer = false;
         transform.localScale = Vector3.zero;
@@ -82,14 +82,24 @@ public class EchoEntity : MonoBehaviour
         transform.localScale = Vector3.Lerp(transform.localScale, Vector3.one * targetScale, Time.deltaTime * 3.5f);
         lifeTimer -= Time.deltaTime;
 
-        if (player == null || lifeTimer <= 0f)
+        if (player == null)
         {
-            // Lifetime end counts as escape opportunity
-            if (!hasCaughtPlayer && beatDirector != null &&
-                beatDirector.CurrentBeat == ChapterBeatDirector.Beat.EchoEncounter)
-                beatDirector.NotifyEchoEscaped();
             Despawn();
             return;
+        }
+
+        // Losing the Echo's trail gives the player breathing room, but never completes
+        // the encounter. The passage escape zone is the sole completion condition.
+        if (lifeTimer <= 0f)
+        {
+            lifeTimer = pressureResetInterval;
+            if (currentState == AIState.Chase)
+            {
+                currentState = AIState.Investigate;
+                investigateTarget = player.position;
+                investigateTimer = investigateDuration;
+                eventBus?.SetTension(0.55f);
+            }
         }
 
         HasLineOfSight = EvaluateLineOfSight();
