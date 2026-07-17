@@ -9,6 +9,7 @@ public class PassageEscapeZone : MonoBehaviour
 {
     [SerializeField] private ChapterBeatDirector beatDirector;
     private bool used;
+    private float nextBlockedHintTime;
 
     private void Awake()
     {
@@ -21,33 +22,46 @@ public class PassageEscapeZone : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (used) return;
         if (other.GetComponent<PlayerController>() == null)
             return;
 
+        TryEscape();
+    }
+
+    private void OnTriggerStay2D(Collider2D other)
+    {
+        if (other.GetComponent<PlayerController>() == null)
+            return;
+
+        TryEscape();
+    }
+
+    private void TryEscape()
+    {
+        if (used) return;
+
         var beat = beatDirector != null ? beatDirector : FindFirstObjectByType<ChapterBeatDirector>();
-        // Only meaningful during Echo encounter
-        if (beat != null &&
-            beat.CurrentBeat != ChapterBeatDirector.Beat.EchoEncounter &&
-            beat.CurrentBeat != ChapterBeatDirector.Beat.GhostKeyUse)
+        if (beat == null || beat.CurrentBeat != ChapterBeatDirector.Beat.EchoEncounter)
+            return;
+
+        var echoManager = FindFirstObjectByType<EchoEncounterManager>();
+        if (echoManager == null || !echoManager.CanEscape)
         {
-            // Still clear stragglers
+            if (Time.unscaledTime >= nextBlockedHintTime)
+            {
+                nextBlockedHintTime = Time.unscaledTime + 2f;
+                FindFirstObjectByType<GameplayHUD>()?.ShowGuidanceToast(
+                    "Break the Echo's gaze in the arch before you run.", 2.8f);
+            }
+            return;
         }
 
         used = true;
-        var echoManager = FindFirstObjectByType<EchoEncounterManager>();
-        if (echoManager != null)
-            echoManager.ClearEncounter();
-        else
-        {
-            var echoes = FindObjectsByType<EchoEntity>(FindObjectsSortMode.None);
-            foreach (var echo in echoes)
-                Destroy(echo.gameObject);
-        }
+        echoManager.ClearEncounter();
 
         beat?.NotifyEchoEscaped();
         ChapterSaveManager.Instance?.RecordEchoCleared();
-        FindFirstObjectByType<GameplayHUD>()?.ShowToast(
+        FindFirstObjectByType<GameplayHUD>()?.ShowGuidanceToast(
             "Safe — for now. Find the Head Key beyond the passage.", 3.5f);
     }
 }

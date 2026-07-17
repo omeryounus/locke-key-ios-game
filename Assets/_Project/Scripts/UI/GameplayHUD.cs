@@ -41,6 +41,10 @@ public class GameplayHUD : MonoBehaviour
     private AccessibilitySettingsPanel settingsPanel;
     private Text worldTooltip;
     private Transform canvasContentRoot;
+    private string activeToastMessage;
+    private float activeToastUntil;
+    private float nextGuidanceToastTime;
+    private int activeToastPriority;
 
     private void Awake()
     {
@@ -245,6 +249,40 @@ public class GameplayHUD : MonoBehaviour
 
     public void ShowToast(string message, float duration = 3f)
     {
+        ShowToastInternal(message, duration, priority: 0);
+    }
+
+    /// <summary>
+    /// Presents the current objective without letting short, routine feedback replace it.
+    /// </summary>
+    public void ShowGuidanceToast(string message, float duration = 3f)
+    {
+        if (Time.unscaledTime < nextGuidanceToastTime)
+            return;
+
+        nextGuidanceToastTime = Time.unscaledTime + 1.25f;
+        ShowToastInternal(message, duration, priority: 1);
+    }
+
+    public void ShowUrgentToast(string message, float duration = 3f)
+    {
+        ShowToastInternal(message, duration, priority: 2);
+    }
+
+    private void ShowToastInternal(string message, float duration, int priority)
+    {
+        if (string.IsNullOrEmpty(message)) return;
+
+        var now = Time.unscaledTime;
+        if (message == activeToastMessage && now < activeToastUntil)
+            return;
+        if (now < activeToastUntil && priority < activeToastPriority)
+            return;
+
+        activeToastMessage = message;
+        activeToastUntil = now + Mathf.Max(0.4f, duration);
+        activeToastPriority = priority;
+
         if (toastPresenter != null)
         {
             toastPresenter.Show(message, duration);

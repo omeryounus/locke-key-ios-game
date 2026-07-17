@@ -14,6 +14,9 @@ public class EchoEncounterManager : MonoBehaviour
     private PlayerController player;
     private bool hasSpawned;
     private bool encounterActive;
+    private bool hasBrokenLineOfSight;
+
+    public bool CanEscape => encounterActive && hasBrokenLineOfSight;
 
     private void Awake()
     {
@@ -42,6 +45,8 @@ public class EchoEncounterManager : MonoBehaviour
     {
         if (save == null) return;
 
+        hasBrokenLineOfSight = false;
+
         if (save.chapterComplete || save.echoEncounterCleared)
         {
             hasSpawned = true;
@@ -68,11 +73,19 @@ public class EchoEncounterManager : MonoBehaviour
     {
         encounterActive = false;
         hasSpawned = true;
+        hasBrokenLineOfSight = false;
 
         foreach (var echo in FindObjectsByType<EchoEntity>(FindObjectsSortMode.None))
             Destroy(echo.gameObject);
 
         eventBus?.SetTension(0.1f);
+    }
+
+    public void MarkHideSpotUsed()
+    {
+        if (!encounterActive || hasBrokenLineOfSight) return;
+
+        hasBrokenLineOfSight = true;
     }
 
     private void HandleEchoTriggered()
@@ -99,6 +112,7 @@ public class EchoEncounterManager : MonoBehaviour
 
         hasSpawned = true;
         encounterActive = true;
+        hasBrokenLineOfSight = false;
         ChapterSaveManager.Instance?.RecordEchoEncounterStarted();
 
         var echoGo = new GameObject("Echo");

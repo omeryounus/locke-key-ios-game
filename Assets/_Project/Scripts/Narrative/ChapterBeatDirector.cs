@@ -141,7 +141,7 @@ public class ChapterBeatDirector : MonoBehaviour
     public void NotifyEchoCaught()
     {
         if (currentBeat != Beat.EchoEncounter) return;
-        hud?.ShowToast("The Echo caught you — try hiding in the arch!", 3f);
+        hud?.ShowUrgentToast("The Echo caught you — try hiding in the arch!", 3f);
     }
 
     public void RestoreFromSave(int beatIndex)
@@ -198,13 +198,13 @@ public class ChapterBeatDirector : MonoBehaviour
             case Beat.Arrival:
                 hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: false);
                 if (announce)
-                    hud?.ShowToast("Follow the trail to the House Key.", 2.8f);
+                    hud?.ShowGuidanceToast("Follow the trail to the House Key.", 2.8f);
                 break;
             case Beat.StuckDoor:
                 hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: false);
                 if (announce)
                 {
-                    hud?.ShowToast("Walk to the highlighted Front Door and Interact.", 3f);
+                    hud?.ShowGuidanceToast("Walk to the highlighted Front Door and Interact.", 3f);
                     hud?.FlashInteractButton(1.5f);
                     FindFirstObjectByType<ObjectiveTrackerHUD>()?.Peek();
                 }
@@ -213,7 +213,7 @@ public class ChapterBeatDirector : MonoBehaviour
                 hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: false);
                 if (announce)
                 {
-                    hud?.ShowToast("Library: inspect the collapsed shelf, then shove it free.", 3.2f);
+                    hud?.ShowGuidanceToast("Library: inspect the collapsed shelf, then shove it free.", 3.2f);
                     FindFirstObjectByType<ObjectiveTrackerHUD>()?.Peek();
                 }
                 break;
@@ -221,31 +221,31 @@ public class ChapterBeatDirector : MonoBehaviour
                 hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: true);
                 if (announce)
                 {
-                    hud?.ShowToast("Sealed door: equip Ghost Key, Use Key, then walk through.", 3.5f);
+                    hud?.ShowGuidanceToast("Sealed door: equip Ghost Key, Use Key, then walk through.", 3.5f);
                     FindFirstObjectByType<ObjectiveTrackerHUD>()?.Peek();
                 }
                 break;
             case Beat.EchoEncounter:
                 hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: true);
                 if (announce)
-                    hud?.ShowToast("An Echo hunts you — hide in the arch, then escape the passage!", 4.5f);
+                    hud?.ShowGuidanceToast("An Echo hunts you — hide in the arch, then escape the passage!", 4.5f);
                 eventBus?.SetTension(0.9f);
                 break;
             case Beat.Aftermath:
                 hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: true);
                 if (announce)
-                    hud?.ShowToast("You escaped… Claim the Head Key, then open the portrait Mindscape.", 4f);
+                    hud?.ShowGuidanceToast("You escaped… Claim the Head Key, then open the portrait Mindscape.", 4f);
                 eventBus?.SetTension(0.25f);
                 break;
             case Beat.MemorySolved:
                 hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: true);
                 if (announce)
-                    hud?.ShowToast("Use Ghost Key at the glowing wall in the sealed passage.", 4f);
+                    hud?.ShowGuidanceToast("Use Ghost Key at the glowing wall in the sealed passage.", 4f);
                 break;
             case Beat.ChapterComplete:
                 hud?.SetControlVisibility(move: true, interact: true, jump: true, useKey: true);
                 if (announce)
-                    hud?.ShowToast("Chapter 1 complete — the Black Door waits…", 4f);
+                    hud?.ShowGuidanceToast("Chapter 1 complete — the Black Door waits…", 4f);
                 eventBus?.SetTension(0.1f);
                 break;
         }

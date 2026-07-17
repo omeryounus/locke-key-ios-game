@@ -58,10 +58,12 @@
 
 | # | Step | Expected | Pass |
 |---|------|----------|------|
-| F1 | Open the sealed passage | Echo appears and objective says to escape | ☐ |
-| F2 | Stay in the encounter for 20 seconds without entering the passage | Encounter remains active; it does not advance to aftermath | ☐ |
-| F3 | Let the Echo catch the player | Player returns to the checkpoint, receives a short input lock, then Echo respawns | ☐ |
-| F4 | Cross the passage exit | Echo despawns, tension drops, aftermath begins, and save marks encounter cleared | ☐ |
+| F1 | Open the sealed passage | Echo appears; world marker and minimap point to the hide arch | ☐ |
+| F2 | Reach the passage without hiding | Exit remains blocked and the encounter does not advance | ☐ |
+| F3 | Hide in the arch | Guidance moves from the arch to the passage | ☐ |
+| F4 | Stay in the encounter for 20 seconds without entering the passage | Encounter remains active; it does not advance to aftermath | ☐ |
+| F5 | Let the Echo catch the player | Player returns to the checkpoint, receives a short input lock, then Echo respawns and guidance returns to the arch | ☐ |
+| F6 | Hide, then cross the passage exit | Echo despawns, tension drops, aftermath begins, and save marks encounter cleared | ☐ |
 
 ## Notes
 

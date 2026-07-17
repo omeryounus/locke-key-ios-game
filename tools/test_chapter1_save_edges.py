@@ -128,10 +128,17 @@ def main() -> None:
     echo_entity = (ROOT / "Assets/_Project/Scripts/Narrative/EchoEntity.cs").read_text()
     echo_manager = (ROOT / "Assets/_Project/Scripts/Narrative/EchoEncounterManager.cs").read_text()
     escape_zone = (ROOT / "Assets/_Project/Scripts/Environment/PassageEscapeZone.cs").read_text()
+    hide_spot = (ROOT / "Assets/_Project/Scripts/Environment/HideSpot.cs").read_text()
+    objective_guide = (ROOT / "Assets/_Project/Scripts/UI/ObjectiveGuideController.cs").read_text()
     assert "pressureResetInterval" in echo_entity
     assert "beatDirector.NotifyEchoEscaped();" not in echo_entity
     assert "public void ClearEncounter()" in echo_manager
+    assert "public bool CanEscape" in echo_manager
+    assert "MarkHideSpotUsed" in echo_manager
+    assert "MarkHideSpotUsed" in hide_spot
+    assert "echoManager.CanEscape" in escape_zone
     assert "echoManager.ClearEncounter();" in escape_zone
+    assert 'label = "Passage";' in objective_guide
 
     print("Chapter 1 save and Echo escape edge cases validated.")
 

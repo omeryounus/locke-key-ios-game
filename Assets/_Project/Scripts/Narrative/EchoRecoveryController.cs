@@ -60,7 +60,7 @@ public class EchoRecoveryController : MonoBehaviour
 
         cameraFollow?.Pulse(0.35f, 0.45f);
         eventBus?.SetTension(recoveryTension);
-        hud?.ShowToast("Hide behind the arch to break its gaze, then run to the passage.", 4.5f);
+        hud?.ShowUrgentToast("Hide behind the arch to break its gaze, then run to the passage.", 4.5f);
 
         yield return new WaitForSeconds(stunDuration);
 

@@ -170,7 +170,7 @@ public class EchoEntity : MonoBehaviour
                 if (ghostAbility != null && !ghostAbility.IsBodyCaptured)
                 {
                     ghostAbility.TriggerBodyCapture();
-                    FindFirstObjectByType<GameplayHUD>()?.ShowToast("The Echo has seized your physical body! Return immediately!", 4f);
+                    FindFirstObjectByType<GameplayHUD>()?.ShowUrgentToast("The Echo has seized your physical body! Return immediately!", 4f);
                     Stun(3.5f);
                 }
             }

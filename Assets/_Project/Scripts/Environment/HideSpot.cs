@@ -45,7 +45,13 @@ public class HideSpot : MonoBehaviour
         HiddenPlayers.Add(col);
         if (HiddenPlayers.Count == 1)
         {
-            FindFirstObjectByType<GameplayHUD>()?.ShowToast("Hidden in the arch — stay still.", 2.2f);
+            var beat = FindFirstObjectByType<ChapterBeatDirector>();
+            if (beat != null && beat.CurrentBeat == ChapterBeatDirector.Beat.EchoEncounter)
+            {
+                FindFirstObjectByType<EchoEncounterManager>()?.MarkHideSpotUsed();
+                FindFirstObjectByType<GameplayHUD>()?.ShowGuidanceToast(
+                    "The Echo lost your trail. Run for the passage.", 2.8f);
+            }
             GameHaptics.TriggerHapticLight();
             FindFirstObjectByType<GameAudioController>()?.SetMuffled(true);
             Resources.Load<EventBus>("EventBus")?.HideEntered();

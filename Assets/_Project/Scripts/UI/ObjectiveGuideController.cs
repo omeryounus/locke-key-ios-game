@@ -16,6 +16,11 @@ public class ObjectiveGuideController : MonoBehaviour
     private Transform footRoot;
     private Sprite softSprite;
     private float bob;
+    private ChapterBeatDirector beatDirector;
+    private EchoEncounterManager echoManager;
+    private ChapterBeatDirector.Beat resolvedBeat = (ChapterBeatDirector.Beat)(-1);
+    private bool resolvedEscapeReady;
+    private float nextTargetResolveTime;
     private readonly Vector3[] footSlots = new Vector3[6];
     private SpriteRenderer[] footRenderers;
 
@@ -24,6 +29,8 @@ public class ObjectiveGuideController : MonoBehaviour
     private void Awake()
     {
         player = FindFirstObjectByType<PlayerController>()?.transform;
+        beatDirector = FindFirstObjectByType<ChapterBeatDirector>();
+        echoManager = FindFirstObjectByType<EchoEncounterManager>();
         softSprite = CreateDisc(32);
         BuildVisuals();
     }
@@ -33,7 +40,21 @@ public class ObjectiveGuideController : MonoBehaviour
         if (player == null)
             player = FindFirstObjectByType<PlayerController>()?.transform;
 
-        ResolveTargetFromBeat();
+        if (beatDirector == null)
+            beatDirector = FindFirstObjectByType<ChapterBeatDirector>();
+        if (echoManager == null)
+            echoManager = FindFirstObjectByType<EchoEncounterManager>();
+
+        var currentBeat = beatDirector != null ? beatDirector.CurrentBeat : (ChapterBeatDirector.Beat)(-1);
+        var escapeReady = echoManager != null && echoManager.CanEscape;
+        if (target == null || currentBeat != resolvedBeat || escapeReady != resolvedEscapeReady
+            || Time.unscaledTime >= nextTargetResolveTime)
+        {
+            ResolveTargetFromBeat();
+            resolvedBeat = currentBeat;
+            resolvedEscapeReady = escapeReady;
+            nextTargetResolveTime = Time.unscaledTime + 0.75f;
+        }
         UpdateVisuals();
     }
 
@@ -48,13 +69,12 @@ public class ObjectiveGuideController : MonoBehaviour
 
     private void ResolveTargetFromBeat()
     {
-        var beat = FindFirstObjectByType<ChapterBeatDirector>();
-        if (beat == null) return;
+        if (beatDirector == null) return;
 
         Transform next = null;
         string label = "";
 
-        switch (beat.CurrentBeat)
+        switch (beatDirector.CurrentBeat)
         {
             case ChapterBeatDirector.Beat.Arrival:
                 next = FindFirstObjectByType<HouseKeyPickup>()?.transform;
@@ -94,9 +114,17 @@ public class ObjectiveGuideController : MonoBehaviour
                 label = "Sealed Door";
                 break;
             case ChapterBeatDirector.Beat.EchoEncounter:
-                next = GameObject.Find("HideArch")?.transform
-                       ?? FindFirstObjectByType<HideSpot>()?.transform;
-                label = "Hide";
+                if (echoManager != null && echoManager.CanEscape)
+                {
+                    next = FindFirstObjectByType<PassageEscapeZone>()?.transform;
+                    label = "Passage";
+                }
+                else
+                {
+                    next = GameObject.Find("HideArch")?.transform
+                           ?? FindFirstObjectByType<HideSpot>()?.transform;
+                    label = "Hide";
+                }
                 break;
             case ChapterBeatDirector.Beat.Aftermath:
             {
