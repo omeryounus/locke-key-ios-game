@@ -37,7 +37,8 @@ public class ProductionPropSpawner : MonoBehaviour
             {
                 sr.sprite = doorSpr;
                 sr.color = Color.white;
-                door.transform.localScale = Vector3.one * 1.35f;
+                // Keep the door as a room-scale objective, never a screen-filling plate.
+                door.transform.localScale = Vector3.one * 0.92f;
             }
         }
     }

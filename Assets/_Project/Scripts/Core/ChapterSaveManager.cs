@@ -310,7 +310,8 @@ public class ChapterSaveManager : MonoBehaviour
     public Vector3 GetCheckpointPosition()
     {
         if (data.checkpointX != 0f || data.checkpointY != 0f)
-            return new Vector3(data.checkpointX, data.checkpointY, 0f);
+            return PlayableWorldFoundation.ClampToWalkablePosition(
+                new Vector3(data.checkpointX, data.checkpointY, 0f));
 
         return BeatCheckpoints.TryGetValue(data.currentBeat, out var pos)
             ? new Vector3(pos.x, pos.y, 0f)
@@ -319,6 +320,7 @@ public class ChapterSaveManager : MonoBehaviour
 
     public void RecordCheckpoint(Vector3 position)
     {
+        position = PlayableWorldFoundation.ClampToWalkablePosition(position);
         data.checkpointX = position.x;
         data.checkpointY = position.y;
         WriteSave();
@@ -405,7 +407,8 @@ public class ChapterSaveManager : MonoBehaviour
 
         var player = FindFirstObjectByType<PlayerController>();
         if (player != null && data.hasSavedPosition)
-            player.transform.position = new Vector3(data.playerX, data.playerY, 0f);
+            player.transform.position = PlayableWorldFoundation.ClampToWalkablePosition(
+                new Vector3(data.playerX, data.playerY, 0f));
         else if (player != null && data.currentBeat > 0)
             player.transform.position = GetCheckpointPosition();
 
@@ -468,7 +471,7 @@ public class ChapterSaveManager : MonoBehaviour
         var player = FindFirstObjectByType<PlayerController>();
         if (player == null) return;
 
-        var pos = player.transform.position;
+        var pos = PlayableWorldFoundation.ClampToWalkablePosition(player.transform.position);
         data.playerX = pos.x;
         data.playerY = pos.y;
         data.hasSavedPosition = true;

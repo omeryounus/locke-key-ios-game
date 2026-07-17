@@ -130,6 +130,8 @@ def main() -> None:
     escape_zone = (ROOT / "Assets/_Project/Scripts/Environment/PassageEscapeZone.cs").read_text()
     hide_spot = (ROOT / "Assets/_Project/Scripts/Environment/HideSpot.cs").read_text()
     objective_guide = (ROOT / "Assets/_Project/Scripts/UI/ObjectiveGuideController.cs").read_text()
+    world_foundation = (ROOT / "Assets/_Project/Scripts/Environment/PlayableWorldFoundation.cs").read_text()
+    save_manager = (ROOT / "Assets/_Project/Scripts/Core/ChapterSaveManager.cs").read_text()
     assert "pressureResetInterval" in echo_entity
     assert "beatDirector.NotifyEchoEscaped();" not in echo_entity
     assert "public void ClearEncounter()" in echo_manager
@@ -139,6 +141,9 @@ def main() -> None:
     assert "echoManager.CanEscape" in escape_zone
     assert "echoManager.ClearEncounter();" in escape_zone
     assert 'label = "Passage";' in objective_guide
+    assert "public const float PlayerWalkY = -1.05f;" in world_foundation
+    assert "collider.size = new Vector2(MaxWalkX - MinWalkX + 1f, GroundHeight);" in world_foundation
+    assert "PlayableWorldFoundation.ClampToWalkablePosition" in save_manager
 
     print("Chapter 1 save and Echo escape edge cases validated.")
 

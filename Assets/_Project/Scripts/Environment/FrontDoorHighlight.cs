@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
 /// <summary>
-/// Dominant front door: scale-up, edge light leak, keyhole glow, engraved symbols,
+/// Front-door objective: edge light leak, keyhole glow, engraved symbols,
 /// particles, and pulsing outline when it is the current objective.
 /// </summary>
 [RequireComponent(typeof(StuckDoorPuzzle))]
@@ -32,11 +32,7 @@ public class FrontDoorHighlight : MonoBehaviour
         if (doorRenderer != null)
             baseDoorColor = doorRenderer.color;
 
-        // Make door visually dominant
-        baseScale = transform.localScale;
-        if (baseScale.x < 1.35f || baseScale.y < 1.55f)
-            transform.localScale = new Vector3(Mathf.Max(1.45f, baseScale.x * 1.35f),
-                Mathf.Max(1.7f, baseScale.y * 1.4f), 1f);
+        // Respect the authored room scale. The highlight, not raw size, carries focus.
         baseScale = transform.localScale;
 
         disc = SoftDisc(40);

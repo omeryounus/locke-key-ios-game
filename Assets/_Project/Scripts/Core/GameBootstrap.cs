@@ -74,6 +74,8 @@ public class GameBootstrap : MonoBehaviour
             gameObject.AddComponent<RoomEnvironmentDirector>();
         if (GetComponent<ProductionPropSpawner>() == null)
             gameObject.AddComponent<ProductionPropSpawner>();
+        if (GetComponent<PlayableWorldFoundation>() == null)
+            gameObject.AddComponent<PlayableWorldFoundation>();
         if (GetComponent<CinematicPostProcessOverlay>() == null)
             gameObject.AddComponent<CinematicPostProcessOverlay>();
         if (FindFirstObjectByType<HideSpot>() == null)

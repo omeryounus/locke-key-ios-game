@@ -9,7 +9,7 @@ using UnityEngine;
 /// </summary>
 public static class MacBuildMenu
 {
-    private const string OutputPath = "Builds/Mac/LockeKey.app";
+    private const string OutputPath = "Builds/macOS/LockeKey.app";
 
     [MenuItem("LockeKey/Build/Mac Standalone")]
     public static void BuildMac()
