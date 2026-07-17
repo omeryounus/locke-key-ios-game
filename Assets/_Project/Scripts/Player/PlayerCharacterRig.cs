@@ -42,6 +42,9 @@ public class PlayerCharacterRig : MonoBehaviour
 
     private Light2D rimLight;
     private PlayerController player;
+    // The supplied hood/cape image is a multi-part concept sheet, not independently
+    // cropped rig art. Keep the clean full-body atlas as the production character.
+    [SerializeField] private bool useLayeredArt;
     private Vector3 baseVisualScale = new(1.55f, 1.55f, 1f);
     private float facing = 1f;
     private float facingVel;
@@ -172,6 +175,12 @@ public class PlayerCharacterRig : MonoBehaviour
         ShadowRenderer.sprite = disc;
         ShadowRenderer.color = new Color(0f, 0f, 0f, 0.4f);
 
+        if (!useLayeredArt)
+        {
+            DisableLayeredRenderers();
+            return;
+        }
+
         var cape = PlayerSpriteAtlas.LoadSingle("Art/Characters/Layers/player_hood_cape")
                    ?? PlayerSpriteAtlas.LoadSingle("Art/Characters/Layers/player_hair_hood")
                    ?? disc;
@@ -191,6 +200,19 @@ public class PlayerCharacterRig : MonoBehaviour
         BrowsRenderer.sprite = disc;
         EyesRenderer.color = new Color(0.05f, 0.04f, 0.07f, 0f);
         BrowsRenderer.color = new Color(0.12f, 0.08f, 0.1f, 0f);
+    }
+
+    private void DisableLayeredRenderers()
+    {
+        foreach (var renderer in new[]
+                 {
+                     CapeRenderer, CapeTipRenderer, HairRenderer, FaceRenderer,
+                     EyesRenderer, BrowsRenderer, ArmLRenderer, ArmRRenderer, KeyPropRenderer
+                 })
+        {
+            if (renderer != null)
+                renderer.enabled = false;
+        }
     }
 
     private void EnsureRim()

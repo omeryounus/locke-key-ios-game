@@ -149,6 +149,8 @@ def main() -> None:
     assert "UsesPortraitLetterbox" in layout
     assert "RuntimePlatform.OSXPlayer" in layout
     assert "DisableLegacyVisualLayers" in player_rig
+    assert "private bool useLayeredArt;" in player_rig
+    assert "DisableLayeredRenderers();" in player_rig
 
     print("Chapter 1 save and Echo escape edge cases validated.")
 
