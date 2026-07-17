@@ -60,24 +60,24 @@ public class InventoryStripHUD : MonoBehaviour
         btn.onClick.AddListener(() => GrokUIFlowManager.Instance?.ShowKeyRing());
         UIButtonFeedback.Ensure(gameObject);
 
-        headerText = MakeText("Header", "Inventory", 10, FontStyle.Bold, LockeKeyUITheme.CaptionText,
-            new Vector2(0.5f, 0.82f), new Vector2(120f, 14f));
+        headerText = MakeText("Header", "KEYS", 8, FontStyle.Bold, LockeKeyUITheme.CaptionText,
+            new Vector2(0.5f, 0.82f), new Vector2(46f, 12f));
 
         keyIcon = new GameObject("KeyIcon", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
         keyIcon.transform.SetParent(transform, false);
         keyIcon.preserveAspect = true;
         keyIcon.raycastTarget = false;
         var iRect = keyIcon.rectTransform;
-        iRect.anchorMin = iRect.anchorMax = new Vector2(0.14f, 0.42f);
+        iRect.anchorMin = iRect.anchorMax = new Vector2(0.5f, 0.48f);
         iRect.pivot = new Vector2(0.5f, 0.5f);
-        iRect.sizeDelta = new Vector2(22f, 22f);
+        iRect.sizeDelta = new Vector2(24f, 24f);
 
-        itemText = MakeText("Item", "— empty —", 11, FontStyle.Normal, LockeKeyUITheme.BodyText,
-            new Vector2(0.62f, 0.45f), new Vector2(90f, 28f));
-        itemText.alignment = TextAnchor.MiddleLeft;
+        itemText = MakeText("Item", "", 1, FontStyle.Normal, Color.clear,
+            new Vector2(0.5f, 0.45f), Vector2.zero);
+        itemText.gameObject.SetActive(false);
 
-        countText = MakeText("Count", "0 / 6", 11, FontStyle.Bold, GameSettings.AccentColor,
-            new Vector2(0.5f, 0.14f), new Vector2(120f, 16f));
+        countText = MakeText("Count", "0", 11, FontStyle.Bold, GameSettings.AccentColor,
+            new Vector2(0.5f, 0.14f), new Vector2(42f, 14f));
     }
 
     public void Relayout()
@@ -117,7 +117,7 @@ public class InventoryStripHUD : MonoBehaviour
         int count = (hasHouse ? 1 : 0) + (hasGhost ? 1 : 0) + (hasHead ? 1 : 0);
 
         if (countText != null)
-            countText.text = $"{count} / 6";
+            countText.text = count.ToString();
 
         if (hasHouse)
         {

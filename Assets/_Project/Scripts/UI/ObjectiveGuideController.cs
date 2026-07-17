@@ -77,8 +77,16 @@ public class ObjectiveGuideController : MonoBehaviour
         switch (beatDirector.CurrentBeat)
         {
             case ChapterBeatDirector.Beat.Arrival:
-                next = FindFirstObjectByType<HouseKeyPickup>()?.transform;
-                label = "House Key";
+                if (FindFirstObjectByType<PlayerInventory>()?.HasHouseKey == true)
+                {
+                    next = FindFirstObjectByType<StuckDoorPuzzle>()?.transform;
+                    label = "Front Door";
+                }
+                else
+                {
+                    next = FindFirstObjectByType<HouseKeyPickup>()?.transform;
+                    label = "House Key";
+                }
                 break;
             case ChapterBeatDirector.Beat.StuckDoor:
                 next = FindFirstObjectByType<StuckDoorPuzzle>()?.transform;

@@ -9,16 +9,16 @@ using UnityEngine.UI;
 /// </summary>
 public static class TopHudLayout
 {
-    public const float BarHeight = 44f;
-    public const float InvSize = 40f; // legacy single-icon size
-    public const float InvPanelW = 132f;
-    public const float InvPanelH = 72f;
-    public const float MiniW = 96f;
-    public const float MiniH = 56f;
-    public const float ObjectiveW = 260f;
-    public const float ObjectiveH = 78f;
-    public const float EdgePad = 10f;
-    public const float TopInset = 6f;
+    public const float BarHeight = 0f;
+    public const float InvSize = 40f;
+    public const float InvPanelW = 52f;
+    public const float InvPanelH = 48f;
+    public const float MiniW = 52f;
+    public const float MiniH = 48f;
+    public const float ObjectiveW = 304f;
+    public const float ObjectiveH = 40f;
+    public const float EdgePad = 12f;
+    public const float TopInset = 8f;
 
     /// <summary>Semi-transparent dark glass (blur approximated with layered soft panels).</summary>
     public static readonly Color Glass = new(0.06f, 0.07f, 0.11f, 0.62f);
@@ -67,10 +67,10 @@ public static class TopHudLayout
     public static void PlaceObjective(RectTransform rect)
     {
         if (rect == null) return;
-        // Centered under title row
+        // One focused objective below the compact key/map controls.
         rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
         rect.pivot = new Vector2(0.5f, 1f);
-        rect.anchoredPosition = new Vector2(0f, -(TopInset + BarHeight + 4f));
+        rect.anchoredPosition = new Vector2(0f, -(TopInset + InvPanelH + 6f));
         rect.sizeDelta = new Vector2(ObjectiveW, ObjectiveH);
     }
 
@@ -85,7 +85,7 @@ public static class TopHudLayout
         if (rect != null)
             rect.sizeDelta = new Vector2(0f, BarHeight);
 
-        // Hide default Map/Key nav that fights inventory + minimap (re-wire map via minimap tap if needed)
+        // Map and key actions live in the compact controls, not a competing title bar.
         var mapBtn = barGo.transform.Find("MapBtn");
         if (mapBtn != null) mapBtn.gameObject.SetActive(false);
         var keyBtn = barGo.transform.Find("KeyBtn");

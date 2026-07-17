@@ -45,6 +45,7 @@ public class GameplayHUD : MonoBehaviour
     private float activeToastUntil;
     private float nextGuidanceToastTime;
     private int activeToastPriority;
+    private static Sprite touchControlSprite;
 
     private void Awake()
     {
@@ -80,11 +81,11 @@ public class GameplayHUD : MonoBehaviour
         canvasContentRoot = content != null ? content : canvas.transform;
         var font = LockeUILayout.GetUIFont();
 
-        // Horizontal top layout: inv (L) · title (bar) · minimap (R) · objective under title
+        // The gameplay HUD has one compact objective, a key button, and a map button.
         TopHudLayout.HideLegacyTopChrome(canvasContentRoot);
         var bar = canvasContentRoot.Find("HudBar");
         if (bar != null)
-            TopHudLayout.StyleTitleBar(bar.gameObject);
+            bar.gameObject.SetActive(false);
 
         InventoryStripHUD.Ensure(canvasContentRoot, font);
         MiniMapHUD.Ensure(canvasContentRoot, font);
@@ -153,22 +154,90 @@ public class GameplayHUD : MonoBehaviour
     {
         if (leftButton == null || rightButton == null) return;
         bool left = GameSettings.LeftHanded;
-        // Keep wide gap between move and interact clusters.
-        SetButtonAnchor(leftButton, left ? 0.90f : 0.10f);
-        SetButtonAnchor(rightButton, left ? 0.72f : 0.28f);
-        SetButtonAnchor(jumpButton, left ? 0.28f : 0.68f, yExtra: 38f);
-        SetButtonAnchor(interactButton, left ? 0.10f : 0.88f);
-        SetButtonAnchor(useKeyButton, left ? 0.10f : 0.88f, yExtra: 88f);
+        // Two compact clusters leave the center unobstructed for the player and objective.
+        SetTouchButtonLayout(leftButton, left ? 0.88f : 0.12f, 28f, 58f);
+        SetTouchButtonLayout(rightButton, left ? 0.74f : 0.26f, 28f, 58f);
+        SetTouchButtonLayout(jumpButton, left ? 0.26f : 0.74f, 28f, 58f);
+        SetTouchButtonLayout(interactButton, left ? 0.12f : 0.88f, 28f, 58f);
+        SetTouchButtonLayout(useKeyButton, left ? 0.12f : 0.88f, 96f, 50f);
     }
 
-    private static void SetButtonAnchor(GameObject go, float x, float yExtra = 22f)
+    private static void SetTouchButtonLayout(GameObject go, float x, float y, float size)
     {
         if (go == null) return;
         var rect = go.GetComponent<RectTransform>();
         if (rect == null) return;
         rect.anchorMin = rect.anchorMax = new Vector2(x, 0f);
         rect.pivot = new Vector2(0.5f, 0f);
-        rect.anchoredPosition = new Vector2(0f, yExtra);
+        rect.anchoredPosition = new Vector2(0f, y);
+        rect.sizeDelta = new Vector2(size, size);
+    }
+
+    private void RestyleTouchControls()
+    {
+        StyleTouchControl(leftButton, "<", 28);
+        StyleTouchControl(rightButton, ">", 28);
+        StyleTouchControl(jumpButton, "JUMP", 12);
+        StyleTouchControl(interactButton, "USE", 13);
+        StyleTouchControl(useKeyButton, "KEY", 11);
+    }
+
+    private static void StyleTouchControl(GameObject buttonGo, string glyph, int size)
+    {
+        if (buttonGo == null) return;
+
+        var image = buttonGo.GetComponent<Image>();
+        if (image != null)
+        {
+            image.sprite = GetTouchControlSprite();
+            image.type = Image.Type.Simple;
+            image.color = new Color(0.045f, 0.055f, 0.08f, 0.82f);
+            image.preserveAspect = true;
+        }
+
+        var existing = buttonGo.transform.Find("ControlGlyph");
+        var glyphGo = existing != null
+            ? existing.gameObject
+            : new GameObject("ControlGlyph", typeof(RectTransform), typeof(Text));
+        if (existing == null)
+            glyphGo.transform.SetParent(buttonGo.transform, false);
+
+        var text = glyphGo.GetComponent<Text>();
+        text.font = LockeUILayout.GetUIFont();
+        text.fontSize = size;
+        text.fontStyle = FontStyle.Bold;
+        text.color = LockeKeyUITheme.BodyText;
+        text.alignment = TextAnchor.MiddleCenter;
+        text.text = glyph;
+        text.raycastTarget = false;
+        var rect = glyphGo.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.14f, 0.14f);
+        rect.anchorMax = new Vector2(0.86f, 0.86f);
+        rect.offsetMin = rect.offsetMax = Vector2.zero;
+
+        var outline = glyphGo.GetComponent<Outline>() ?? glyphGo.AddComponent<Outline>();
+        outline.effectColor = new Color(0f, 0f, 0f, 0.65f);
+        outline.effectDistance = new Vector2(1f, -1f);
+    }
+
+    private static Sprite GetTouchControlSprite()
+    {
+        if (touchControlSprite != null) return touchControlSprite;
+
+        const int size = 64;
+        var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        var center = (size - 1) * 0.5f;
+        for (var y = 0; y < size; y++)
+        for (var x = 0; x < size; x++)
+        {
+            var distance = Vector2.Distance(new Vector2(x, y), new Vector2(center, center)) / center;
+            var alpha = Mathf.Clamp01((1f - distance) * 12f);
+            texture.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
+        }
+
+        texture.Apply();
+        touchControlSprite = Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), size);
+        return touchControlSprite;
     }
 
     public void SetWorldTooltip(string text)
@@ -200,6 +269,7 @@ public class GameplayHUD : MonoBehaviour
         UIButtonFeedback.Ensure(jumpButton);
         UIButtonFeedback.Ensure(interactButton);
         UIButtonFeedback.Ensure(useKeyButton);
+        RestyleTouchControls();
 
         if (interactButton != null)
         {
